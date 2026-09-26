@@ -8,12 +8,14 @@ The assistant layer for our Claude-powered Linux OS (CachyOS base, KDE). It is t
 | Built | Not built yet |
 |---|---|
 | Electron app in `ui/`, launched with `./claudeos ui` | Command bar, PR views, Actions menu (Ctrl/⌘+K focuses the composer for now) |
-| Menu bar: brand, agent status, sandbox and game-mode chips, Wi-Fi, battery, light/dark toggle, clock | Task view, permission sheet |
-| Desktop: clock, greeting with the user's first name, "What do you want to cook?" composer |
-| @ (or +) project picker listing git repos; Enter runs `claudeos agent start <project> <task>` |
-| Bottom corners: agent status and task, sandbox / game mode / CPU / memory | Notifications with Undo, widgets side panel |
-| Live state from `~/.claudeos/state.json`, sample data fallback | Running `claudeos` commands from the UI |
+| Menu bar: Claude spark + brand, agent status (pulsing dot when working), Wi-Fi, battery, light/dark toggle, clock | Task view, permission sheet |
+| Desktop, vertically centred: clock, greeting with the user's first name, "What do you want to cook?" composer | Notifications with Undo, widgets side panel |
+| @ (or +) project picker listing git repos; Enter runs `claudeos agent start <project> <task>` | |
+| Weather in the top-right corner (Open-Meteo, geolocated by IP), click for the full card | |
+| Bottom corners: agent status and task, sandbox / game mode / CPU / memory | |
+| Live state from `~/.claudeos/state.json`, sample data fallback | Running other `claudeos` commands from the UI |
 | Light/dark in Claude brand colours, circular reveal | Spring engine, progressive blur |
+| macOS-style app icon (`assets/brand/app-icon.png`, squircle) | |
 
 The spec below describes the full target. Where it differs from what's built, the **Status** table wins.
 
@@ -195,7 +197,7 @@ Hand-drawn inline SVG, 16×16, 1.6px stroke, round caps. Keep new icons in the s
 ## 6. Demo script (about 3 minutes)
 
 1. **Open on the desktop.** "This is an OS where the assistant is part of the system, not an app."
-2. **Start a task.** Ctrl+K → "Refactor the auth module and run the tests". The sandbox chip appears; the original project is protected.
+2. **Start a task.** Ctrl+K → "Refactor the auth module and run the tests". The sandbox note appears in the bottom-right corner; the original project is protected.
 3. **Watch it work.** Steps tick through live from the agent's output.
 4. **Review changes.** The sheet shows files changed, lines added/removed, test results.
 5. **Merge or roll back.** "Nothing is permanent until a human says so."
@@ -221,7 +223,7 @@ Backup: record the full run once as a video before presenting.
 | File | Purpose |
 |---|---|
 | `ui/run.sh` | Launcher: installs Electron on first run, detects VM quirks, opens the app |
-| `ui/main.js` | Reads `~/.claudeos` and system stats, pushes snapshots to the page |
+| `ui/main.js` | Reads `~/.claudeos`, system stats and weather; pushes snapshots to the page |
 | `ui/preload.js` | The only bridge between the page and the system |
 | `ui/index.html` | Markup |
 | `ui/styles.css` | Design tokens and styles |

@@ -158,33 +158,26 @@ body {
 }
 
 .status[data-state="working"] { color: var(--text); }
-.status-spark { display: none; width: 13px; height: 13px; color: var(--accent); }
-.status[data-state="working"] .dot { display: none; }
-.status[data-state="working"] .status-spark {
-  display: block;
-  animation: spin 6s linear infinite;
+.status[data-state="working"] .dot {
+  position: relative;
+  background: var(--accent);
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+/* Ring expands out of the dot and fades: the one opacity animation, kept to a
+   compositor-only property on a tiny element. */
+.status[data-state="working"] .dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
 
-.chip {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 9px;
-  margin-right: 4px;
-  border-radius: 999px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 12px;
+@keyframes ping {
+  0%       { transform: scale(1);   opacity: 0.55; }
+  80%, 100% { transform: scale(2.8); opacity: 0; }
 }
-
-.chip[hidden] { display: none; }
-.chip .icon { width: 14px; height: 14px; }
-.chip-accent { color: var(--accent); }
 
 .tray {
   display: flex;
@@ -225,10 +218,11 @@ body {
 
 .desktop {
   height: 100%;
-  padding: calc(var(--menubar-h) + 12vh) 48px 96px;
+  padding: var(--menubar-h) 48px 72px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 7vh;
 }
 
@@ -239,7 +233,7 @@ body {
   font-weight: 300;
   letter-spacing: -0.045em;
   line-height: 1;
-  margin: 14px 0 18px;
+  margin: 0 0 18px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -443,6 +437,140 @@ kbd {
 @keyframes pop-in {
   from { transform: translateY(-4px) scale(0.96); filter: blur(4px); }
   to   { transform: none; filter: none; }
+}
+
+/* ─── Weather ────────────────────────────────────────────────────────────── */
+
+.wx { stroke-width: 2; }
+
+.weather {
+  position: fixed;
+  top: calc(var(--menubar-h) + 18px);
+  right: 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  transition: transform 160ms var(--ease-out), background-color 160ms var(--ease-out);
+  animation: enter 620ms var(--ease-out) 120ms both;
+}
+
+.weather[hidden] { display: none; }
+.weather:active { transform: scale(0.96); }
+.weather:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+@media (hover: hover) and (pointer: fine) {
+  .weather:hover { background: color-mix(in srgb, var(--surface) 70%, transparent); }
+}
+
+.weather-now {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.weather-now .wx { width: 26px; height: 26px; stroke-width: 1.8; }
+
+.weather-temp {
+  font-size: 30px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.weather-city { font-size: 14px; color: var(--muted); }
+
+.weather-card {
+  position: fixed;
+  top: calc(var(--menubar-h) + 96px);
+  right: 16px;
+  width: 380px;
+  padding: 20px 22px 16px;
+  border-radius: 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: 0 20px 48px rgb(0 0 0 / 0.18);
+  transform-origin: calc(100% - 50px) top;
+  animation: pop-in 220ms var(--ease-out) both;
+  z-index: 20;
+}
+
+.weather-card[hidden] { display: none; }
+.weather-card.is-closing { animation: pop-out 150ms var(--ease-out) both; }
+
+@keyframes pop-out {
+  to { transform: translateY(-4px) scale(0.96); filter: blur(4px); }
+}
+
+.wc-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.wc-head .wx { width: 22px; height: 22px; }
+
+.wc-cond {
+  margin: 14px 0 6px;
+  font-size: 16px;
+  color: var(--muted);
+}
+
+.wc-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.wc-big {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.wx-big { width: 52px; height: 52px; stroke-width: 1.6; }
+
+.wc-temp {
+  font-size: 64px;
+  font-weight: 300;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.wc-facts {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 4px 10px;
+  font-size: 14px;
+}
+
+.wc-facts dt { color: var(--muted); }
+.wc-facts dd {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.wc-arrow { width: 14px; height: 14px; }
+
+.wc-foot {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--muted);
 }
 
 /* ─── Corners ──────────────────────────────────────────────────────────── */

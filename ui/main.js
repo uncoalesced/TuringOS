@@ -132,6 +132,62 @@ async function findProjects() {
   return [...found.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
+// ─── Weather ────────────────────────────────────────────────────────────────
+// Location from the public IP (ipapi.co, fallback ipwho.is), weather from
+// Open-Meteo. No API keys. Override with CLAUDEOS_WEATHER="lat,lon,City",
+// or turn it off with CLAUDEOS_WEATHER=off.
+
+const WEATHER_MS = 15 * 60 * 1000;
+let weather = null;
+let place = null;
+
+async function getJSON(url) {
+  const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
+  if (!res.ok) throw new Error(`${res.status} ${url}`);
+  return res.json();
+}
+
+async function locate() {
+  const env = process.env.CLAUDEOS_WEATHER;
+  if (env && env !== 'off') {
+    const [lat, lon, ...city] = env.split(',');
+    return { lat: Number(lat), lon: Number(lon), city: city.join(',').trim() || null };
+  }
+  try {
+    const j = await getJSON('https://ipapi.co/json/');
+    if (j.latitude) return { lat: j.latitude, lon: j.longitude, city: j.city };
+  } catch {}
+  const j = await getJSON('https://ipwho.is/');
+  return { lat: j.latitude, lon: j.longitude, city: j.city };
+}
+
+async function refreshWeather() {
+  if (process.env.CLAUDEOS_WEATHER === 'off') return;
+  try {
+    place ??= await locate();
+    const q = new URLSearchParams({
+      latitude: place.lat,
+      longitude: place.lon,
+      current: 'temperature_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m,is_day',
+      timezone: 'auto',
+    });
+    const { current: c } = await getJSON(`https://api.open-meteo.com/v1/forecast?${q}`);
+    weather = {
+      city: place.city,
+      temp: Math.round(c.temperature_2m),
+      feels: Math.round(c.apparent_temperature),
+      rain: c.precipitation,
+      wind: Math.round(c.wind_speed_10m),
+      windDir: c.wind_direction_10m,
+      code: c.weather_code,
+      day: c.is_day === 1,
+    };
+    push();
+  } catch {
+    // Offline or blocked: keep the last reading, or none.
+  }
+}
+
 function snapshot() {
   const state = readJSON(STATE_FILE);
   return {
@@ -151,6 +207,7 @@ function snapshot() {
       battery: readBattery(),
       wifi,
     },
+    weather,
   };
 }
 
@@ -245,6 +302,8 @@ app.whenReady().then(() => {
   if (process.platform === 'darwin') app.dock?.setIcon(path.join(__dirname, 'assets/brand/app-icon.png'));
   createWindow();
   refreshWifi();
+  refreshWeather();
+  setInterval(refreshWeather, WEATHER_MS);
   watchData();
   setInterval(() => {
     watchData();

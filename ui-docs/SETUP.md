@@ -18,8 +18,10 @@ git pull
 Options:
 
 ```bash
-KIOSK=1 ./claudeos ui   # fullscreen, for the demo
-LITE=1  ./claudeos ui   # force software drawing (auto-on when the VM has no 3D)
+KIOSK=1 ./claudeos ui                              # fullscreen, for the demo
+LITE=1  ./claudeos ui                              # force software drawing (auto-on when the VM has no 3D)
+CLAUDEOS_WEATHER=off ./claudeos ui                  # hide the weather widget
+CLAUDEOS_WEATHER="12.97,77.59,Bengaluru" ./claudeos ui  # fixed location instead of IP geolocation
 ```
 
 Quit: Ctrl+Q, or Alt+F4 in fullscreen.
