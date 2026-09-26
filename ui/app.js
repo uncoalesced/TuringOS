@@ -91,18 +91,23 @@ function pickDefined(obj) {
 // ─── Theme ──────────────────────────────────────────────────────────────────
 
 function setTheme(next, x, y) {
+  const root = document.documentElement;
   const apply = () => {
-    document.documentElement.dataset.theme = next;
+    root.dataset.theme = next;
   };
   if (!document.startViewTransition || reducedMotion.matches) return apply();
 
-  const r = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
-  document.startViewTransition(apply).ready.then(() => {
-    document.documentElement.animate(
-      { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${r}px at ${x}px ${y}px)`] },
-      { duration: 560, easing: 'cubic-bezier(0.23, 1, 0.32, 1)', pseudoElement: '::view-transition-new(root)' },
-    );
-  });
+  // Percentages, not pixels: on HiDPI screens Chromium can resolve pixel
+  // clip-paths on the snapshot in device pixels, which moves the circle.
+  // A circle's % radius is relative to hypot(w, h) / √2.
+  const w = innerWidth;
+  const h = innerHeight;
+  const r = Math.hypot(Math.max(x, w - x), Math.max(y, h - y));
+  root.style.setProperty('--reveal-x', `${(100 * x) / w}%`);
+  root.style.setProperty('--reveal-y', `${(100 * y) / h}%`);
+  root.style.setProperty('--reveal-r', `${(100 * r) / (Math.hypot(w, h) / Math.SQRT2)}%`);
+  root.classList.add('theme-switching');
+  document.startViewTransition(apply).finished.finally(() => root.classList.remove('theme-switching'));
 }
 
 $('#theme-toggle').addEventListener('click', (e) => {

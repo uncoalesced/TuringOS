@@ -168,7 +168,8 @@ Light/dark follows the system. The half-circle icon in the menu bar overrides it
 
 ### Typography
 
-- `--sans` for the UI, `--serif` for the greeting and "Your day", `--mono` for eyebrow labels, commands and code. Put the team's fonts first in these three variables.
+- **Timeless Sans** (`--sans`, weights 300–800) for the UI and **Timeless Serif** (`--serif`, 200–700) for the greeting and "Your day". Both are variable fonts bundled in `ui/fonts/`, so they work offline in the VM.
+- `--mono` (system mono) for eyebrow labels, commands and code.
 - Big numbers (clock, stats) use light weights (250–300) with tight letter spacing.
 - Eyebrow labels use the mono font, uppercase, with wide letter spacing.
 
@@ -222,5 +223,6 @@ Backup: record the full run once as a video before presenting.
 | `ui/styles.css` | Design tokens and styles |
 | `ui/app.js` | Renders snapshots, clock, theme toggle, sample data |
 | `ui/theme.js` | Picks the theme before first paint |
+| `ui/fonts/` | Timeless Sans and Serif (variable, bundled) |
 | `ui-docs/SETUP.md` | Running it in the VM, troubleshooting |
 | `ui-docs/UI_SHELL.md` | This document |

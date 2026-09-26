@@ -1,6 +1,20 @@
 /* ui-shell — design tokens from Claude's brand colors:
    Japonica #D97757 · Pampas #F4F3EE · Cloudy #B1ADA1 · Tuatara #373734 · White #FFFFFF */
 
+/* Timeless type, bundled in ui/fonts. Variable: Sans 300–800, Serif 200–700. */
+@font-face {
+  font-family: "Timeless Sans";
+  src: url("fonts/TimelessSansVF.ttf") format("truetype");
+  font-weight: 300 800;
+  font-display: block;
+}
+@font-face {
+  font-family: "Timeless Serif";
+  src: url("fonts/TimelessSerifVF.ttf") format("truetype");
+  font-weight: 200 700;
+  font-display: block;
+}
+
 :root {
   /* Brand */
   --japonica: #d97757;
@@ -17,8 +31,8 @@
   --error: #bf4d43;
 
   /* Type */
-  --sans: "Styrene B", "Inter", system-ui, -apple-system, "Segoe UI", "Noto Sans", sans-serif;
-  --serif: "Tiempos Text", "Iowan Old Style", Georgia, "Noto Serif", serif;
+  --sans: "Timeless Sans", system-ui, -apple-system, "Segoe UI", "Noto Sans", sans-serif;
+  --serif: "Timeless Serif", "Iowan Old Style", Georgia, "Noto Serif", serif;
   --mono: "JetBrains Mono", "SF Mono", ui-monospace, "Noto Sans Mono", monospace;
 
   /* Motion */
@@ -145,13 +159,12 @@ body {
 .status[data-state="working"] { color: var(--text); }
 .status[data-state="working"] .dot {
   background: var(--accent);
-  animation: pulse 1.6s var(--ease-out) infinite;
+  animation: pulse 1.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
 }
 
 @keyframes pulse {
-  0%   { transform: scale(1);   box-shadow: 0 0 0 0 rgb(217 119 87 / 0.5); }
-  70%  { transform: scale(1.1); box-shadow: 0 0 0 6px rgb(217 119 87 / 0); }
-  100% { transform: scale(1);   box-shadow: 0 0 0 0 rgb(217 119 87 / 0); }
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.35); }
 }
 
 .chip {
@@ -221,7 +234,7 @@ body {
 
 .hero-time {
   font-size: clamp(88px, 12vw, 148px);
-  font-weight: 250;
+  font-weight: 300;
   letter-spacing: -0.045em;
   line-height: 1;
   margin: 14px 0 12px;
@@ -299,10 +312,28 @@ body {
 
 /* ─── Theme reveal ─────────────────────────────────────────────────────── */
 
-::view-transition-old(root),
-::view-transition-new(root) {
+/* The new theme grows as a circle from the toggle. Runs in CSS so it starts
+   on the same frame as the transition, with no script gap. */
+::view-transition-old(root) {
   animation: none;
   mix-blend-mode: normal;
+}
+
+::view-transition-new(root) {
+  animation: reveal 600ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  mix-blend-mode: normal;
+}
+
+@keyframes reveal {
+  from { clip-path: circle(0 at var(--reveal-x) var(--reveal-y)); }
+  to   { clip-path: circle(var(--reveal-r) at var(--reveal-x) var(--reveal-y)); }
+}
+
+/* While the reveal runs, the live page underneath must stay cheap to paint:
+   drop blur (nothing sits behind it yet) and hold looping animations. */
+.theme-switching * {
+  backdrop-filter: none !important;
+  animation-play-state: paused !important;
 }
 
 @media (max-width: 1100px) {

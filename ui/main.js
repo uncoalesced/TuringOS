@@ -16,6 +16,9 @@ const POLL_MS = 2000;
 
 let win = null;
 
+// Run the theme reveal's clip-path animation on the compositor, off the main thread.
+app.commandLine.appendSwitch('enable-features', 'CompositeClipPathAnimation');
+
 // ─── Readers ────────────────────────────────────────────────────────────────
 
 function readJSON(file) {
