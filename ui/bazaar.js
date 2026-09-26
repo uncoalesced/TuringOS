@@ -266,7 +266,7 @@
     if (!isOpen) return;
     isOpen = false;
     win.classList.add('is-closing');
-    closeTimer = setTimeout(() => { win.hidden = true; win.classList.remove('is-closing'); }, reduced.matches ? 0 : 200);
+    closeTimer = setTimeout(() => { win.hidden = true; win.classList.remove('is-closing'); }, reduced.matches ? 0 : 240);
   }
 
   function toggleZoom() {
