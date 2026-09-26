@@ -216,6 +216,9 @@ function setPanelOpen(open) {
 }
 
 $('#menubar-clock').addEventListener('click', () => setPanelOpen(!panelOpen));
+document.addEventListener('click', (e) => {
+  if (panelOpen && !e.target.closest('#side-panel, #menubar-clock')) setPanelOpen(false);
+});
 document.addEventListener('keydown', (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'j') {
     e.preventDefault();
