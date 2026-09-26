@@ -1,34 +1,336 @@
-The Winning Concept: "ClaudeOS — The Agentic Substrate"
-To stand out at the Anthropic Build Day, frame ClaudeOS not just as a "distro with Claude installed," but as the world’s first operating system built to safely unleash autonomous agents while keeping the machine a high-performance gaming rig.
+# ClaudeOS — Build Plan
 
-Here are the 4 core pillars to present:
+## The Concept
 
-Pillar 1: "The Clawd Bazaar" (GitHub-Integrated MCP & Skills Marketplace)
-The Problem: Discovering and installing MCP servers, Anthropic skills, and agent tools is fragmented across scattered GitHub repos and requires manual JSON wiring.
-The ClaudeOS Solution: A native GUI and CLI store ("Clawd Store" or "Skills Bazaar") that indexes open-source GitHub repositories tagged with #mcp-server, #claude-skill, or #hermes-tool.
-How It Works:
-User browses the Bazaar, finds a tool (e.g., GitHub PR Automator, Postgres Inspector, Blender Python Agent).
-1-Click Install: ClaudeOS automatically pulls the GitHub repo, builds its container/pip environment, and dynamically injects it into both Claude Desktop's claude_desktop_config.json and Hermes Agent's tool registry.
-Why Anthropic Judges Will Love This: Anthropic created and open-sourced the Model Context Protocol (MCP). An OS that builds a visual App Store for MCP demonstrates leadership in their ecosystem.
-Pillar 2: Ephemeral Btrfs "Agent Sandboxes" (Zero Blast Radius)
-The Problem: Nobody wants an autonomous agent running sudo rm -rf, installing untracked global packages, or overwriting working trees.
-The ClaudeOS Solution: Leverage CachyOS’s native Btrfs Copy-on-Write (CoW) filesystem:
-When Claude Code or Hermes starts a task, ClaudeOS spins up an instant, zero-cost snapshot of the project directory.
-The agent works inside this isolated bubble.
-When finished, the desktop displays an OS Diff Inspector: a side-by-side GUI showing everything the agent modified.
-The user hits [Merge Changes] or [Discard / Rollback].
-Complete peace of mind for autonomous work.
-Pillar 3: "Game While You Build" (BORE Scheduler Dual-Persona)
-The Problem: AI agents running local LLMs or heavy builds hog the CPU/GPU, causing stutters when playing games or running creative software.
-The ClaudeOS Solution:
-CachyOS features the BORE (Burst-Oriented Response Enhancer) kernel scheduler.
-In ClaudeOS, when you launch a game (via Steam, Lutris, or Heroic), the OS triggers "Game Mode":
-GPU VRAM is dynamically prioritized for the game.
-The local Ollama service drops to low-priority background CPU threads or suspends its VRAM footprint.
-Claude agents continue running in the background at low priority.
-When the agent completes the build or hits a checkpoint, Clawd pops up a non-intrusive game notification (or plays a discrete chime): "Claude Code finished refactoring tests (All 14 Passed)".
-Pillar 4: The Multi-Agent Cockpit (Spatial Multitasking)
-Instead of one boring terminal, the OS has a global workspace view:
-Panel 1: Claude 3.7 Sonnet (High-level architecture, orchestrator, and planning).
-Panel 2: Nous Hermes Agent (Autonomous local execution and terminal bash tools).
-Panel 3: Live Task & Spend HUD (Tracks API tokens, local VRAM usage on your 8GB GPU, and active MCP connections).
+Not "a distro with Claude installed." An **agent-computer interaction model** — a Bash orchestration layer that wraps CachyOS primitives into a cohesive, safe execution environment for autonomous agents.
+
+The interesting framing for Anthropic:
+
+**Traditional:**
+```
+Human → Terminal → Program → Filesystem
+```
+
+**ClaudeOS:**
+```
+Human
+  ↓
+Intent
+  ↓
+Claude Agent
+  ↓
+ClaudeOS Policy Layer
+  ↓
+Ephemeral Sandbox
+  ↓
+Filesystem
+  ↓
+Diff
+  ↓
+Human Approval
+  ↓
+Merge
+```
+
+---
+
+## Architecture
+
+```
+                    ┌──────────────────────┐
+                    │       CLAUDEOS       │
+                    │   Bash Control Plane │
+                    └──────────┬───────────┘
+                               │
+       ┌───────────────┬───────┼───────────────┐
+       ▼               ▼       ▼               ▼
+   CLAUDE CODE       MCP     SANDBOX        GAME MODE
+       │               │       │               │
+       │               │     Btrfs          BORE/Linux
+       │               │       │               │
+       └───────────────┴───────┼───────────────┘
+                               ▼
+                         CACHYOS KERNEL
+                               │
+                         HARDWARE / GPU
+```
+
+The Bash layer **is** the product.
+
+---
+
+## CLI Interface
+
+One executable: `claudeos`
+
+```bash
+claudeos init
+claudeos dashboard
+
+claudeos agent start
+claudeos agent stop
+claudeos agent status
+
+claudeos sandbox create
+claudeos sandbox diff
+claudeos sandbox merge
+claudeos sandbox rollback
+
+claudeos bazaar
+claudeos bazaar install <tool>
+
+claudeos game on
+claudeos game off
+claudeos game status
+
+claudeos status
+```
+
+---
+
+## File Structure
+
+```
+claudeos/
+├── claudeos              # main entrypoint
+├── core/
+│   ├── ui.sh
+│   ├── config.sh
+│   └── logging.sh
+├── agent/
+│   ├── claude.sh
+│   └── hermes.sh
+├── sandbox/
+│   ├── btrfs.sh
+│   └── diff.sh
+├── bazaar/
+│   ├── registry.sh
+│   └── install.sh
+├── game/
+│   └── gamemode.sh
+└── monitor/
+    └── system.sh
+```
+
+Start as one giant Bash script. Split only if there's time.
+
+---
+
+## Pillar 1: Btrfs Agent Sandbox (Core Feature — Build This First)
+
+This is the real differentiator. It's technically grounded and visually demonstrable.
+
+```bash
+PROJECT="$PWD"
+SANDBOX="$HOME/.claudeos/sandboxes/task-$(date +%s)"
+
+sudo btrfs subvolume snapshot "$PROJECT" "$SANDBOX"
+cd "$SANDBOX"
+claude
+```
+
+Claude works inside the snapshot. Original project is untouched.
+
+**Diff:**
+```bash
+claudeos sandbox diff
+# combines git diff + btrfs info
+```
+
+**Rollback:**
+```bash
+sudo btrfs subvolume delete "$SANDBOX"
+```
+
+**Merge:**
+```bash
+# apply git changes from sandbox back to original repo
+```
+
+This is a real feature, not a mock.
+
+---
+
+## Pillar 2: Clawd Bazaar (Keep It Honest — 2–3 Tools, One Must Actually Install)
+
+`registry.json`:
+```json
+{
+  "github-agent": {
+    "name": "GitHub Agent",
+    "repo": "some/repository",
+    "type": "mcp"
+  },
+  "postgres": {
+    "name": "Postgres Inspector",
+    "repo": "some/repository",
+    "type": "mcp"
+  }
+}
+```
+
+Flow:
+```bash
+claudeos bazaar
+```
+→ `fzf` selection  
+→ `git clone`  
+→ install dependencies  
+→ generate MCP config entry  
+
+Don't claim 500 tools. Have 2–3, with one actually working end-to-end.
+
+---
+
+## Pillar 3: Game Mode (Bash-Native, Don't Oversell It)
+
+```bash
+claudeos game on
+
+PID=$(pgrep -af claude)
+renice +10 -p "$PID"
+ionice -c 3 -p "$PID"
+```
+
+Display:
+```
+╭────────────────────────────────────╮
+│       CLAUDEOS GAME MODE           │
+├────────────────────────────────────┤
+│ Steam              ✓               │
+│ Game detected      ✓               │
+│                                    │
+│ Claude Agent       LOW             │
+│ Build processes    LOW             │
+│ Interactive apps   PRIORITY        │
+│                                    │
+│ 🎮 GAME MODE ACTIVE                │
+╰────────────────────────────────────╯
+```
+
+You're orchestrating CachyOS, not reinventing its scheduler. Frame it that way.
+
+---
+
+## UI Tools (No Frontend Needed)
+
+```bash
+gum
+fzf
+jq
+git
+btrfs
+notify-send
+nvidia-smi
+systemctl
+ps
+```
+
+Example:
+```bash
+gum choose \
+  "Launch Claude Agent" \
+  "Create Agent Sandbox" \
+  "Review Changes" \
+  "Clawd Bazaar" \
+  "Game Mode" \
+  "System Status"
+```
+
+Terminal UI without writing a frontend.
+
+---
+
+## The Demo (3 Minutes)
+
+**Scene 1 — Agent request**
+```bash
+claudeos agent start
+```
+> "Refactor this authentication module and run the tests."
+
+**Scene 2 — ClaudeOS protects the machine**
+```
+Creating Btrfs CoW Agent Sandbox...
+
+✓ Original project protected
+✓ Sandbox created
+✓ Claude execution authorized
+```
+
+**Scene 3 — Claude works**
+```
+Claude Agent
+
+> Inspecting repository
+> Modifying auth.py
+> Updating tests
+> Running test suite
+
+✓ 14/14 tests passed
+```
+
+**Scene 4 — ClaudeOS catches everything**
+```bash
+claudeos sandbox diff
+```
+```
+7 files changed
++143 lines
+-67 lines
+
+Tests: 14/14 ✓
+```
+
+**Scene 5 — Human remains in control**
+```
+[ M ] Merge Changes
+[ R ] Rollback
+[ V ] View Diff
+```
+
+**Scene 6 — Game Mode**
+```bash
+claudeos game on
+```
+```
+🎮 GAME MODE
+
+Claude → background priority
+Build → background priority
+Game → interactive priority
+
+Agent continues running.
+```
+
+Then notification fires:
+```
+╭──────────────────────────────────────╮
+│ 🟢 ClaudeOS                          │
+│                                      │
+│ Agent task completed                 │
+│ 14/14 tests passed                   │
+╰──────────────────────────────────────╯
+```
+
+---
+
+## Time Budget (6 Hours)
+
+| Time | Task |
+|------|------|
+| 0–2h | Core sandbox: `claudeos sandbox create/diff/merge/rollback` working end-to-end |
+| 2–3h | `claudeos agent start` — Claude running inside sandbox |
+| 3–4h | Clawd Bazaar — fzf + registry.json + one real MCP install |
+| 4–5h | Game Mode + `claudeos status` dashboard |
+| 5–6h | UI polish with gum, demo script, notification on agent completion |
+
+---
+
+## What to Say to Anthropic Judges
+
+Not: *"We put Claude on CachyOS."*
+
+Instead: **"We changed the execution model around autonomous agents."**
+
+The OS enforces a human-approval gate between every agent action and the real filesystem. Agents get full autonomy inside sandboxes. Humans see a diff before anything is permanent. That's the product.
