@@ -190,6 +190,7 @@ function createWindow() {
     fullscreen: KIOSK,
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#262624' : '#F4F3EE',
     title: 'ui-shell',
+    icon: path.join(__dirname, 'assets/brand/app-icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -241,6 +242,7 @@ ipcMain.handle('agent:start', (_e, { project, task }) => {
 });
 
 app.whenReady().then(() => {
+  if (process.platform === 'darwin') app.dock?.setIcon(path.join(__dirname, 'assets/brand/app-icon.png'));
   createWindow();
   refreshWifi();
   watchData();

@@ -138,7 +138,8 @@ body {
   margin-right: 10px;
 }
 
-.brand .icon { color: var(--accent); stroke-width: 1.9; }
+.spark { fill: currentColor; flex: none; }
+.brand-spark { width: 17px; height: 17px; color: var(--accent); }
 
 .status {
   display: flex;
@@ -157,14 +158,15 @@ body {
 }
 
 .status[data-state="working"] { color: var(--text); }
-.status[data-state="working"] .dot {
-  background: var(--accent);
-  animation: pulse 1.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+.status-spark { display: none; width: 13px; height: 13px; color: var(--accent); }
+.status[data-state="working"] .dot { display: none; }
+.status[data-state="working"] .status-spark {
+  display: block;
+  animation: spin 6s linear infinite;
 }
 
-@keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50%      { transform: scale(1.35); }
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .chip {
@@ -523,3 +525,5 @@ kbd {
     transition: none !important;
   }
 }
+
+.sprite { position: absolute; width: 0; height: 0; }

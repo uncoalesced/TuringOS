@@ -177,7 +177,9 @@ Light/dark follows the system. The half-circle icon in the menu bar overrides it
 
 ### Icons
 
-Hand-drawn inline SVG, 16×16, 1.6px stroke, round caps. Keep new icons in the same style (Lucide and Phosphor match it). Don't use Anthropic's or GitHub's logos.
+Hand-drawn inline SVG, 16×16, 1.6px stroke, round caps. Keep new icons in the same style (Lucide and Phosphor match it).
+
+**Brand:** official Claude assets live in `ui/assets/brand/`. The Claude spark is the menu bar mark and, spinning slowly, the "agent working" indicator. `app-icon.png` is the window and launcher icon. Don't use GitHub's logo.
 
 ### Motion
 
@@ -226,5 +228,6 @@ Backup: record the full run once as a video before presenting.
 | `ui/app.js` | Renders snapshots, clock, theme toggle, sample data |
 | `ui/theme.js` | Picks the theme before first paint |
 | `ui/fonts/` | Timeless Sans and Serif (variable, bundled) |
+| `ui/assets/brand/` | Claude symbol, logo, app icon |
 | `ui-docs/SETUP.md` | Running it in the VM, troubleshooting |
 | `ui-docs/UI_SHELL.md` | This document |
