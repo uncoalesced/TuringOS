@@ -140,6 +140,14 @@ function createWindow() {
   });
   win.loadFile(path.join(__dirname, 'index.html'));
 
+  // Frameless and kiosk windows have no close button, so Ctrl/⌘+Q always quits.
+  win.webContents.on('before-input-event', (e, input) => {
+    if (input.type === 'keyDown' && (input.control || input.meta) && input.key.toLowerCase() === 'q') {
+      e.preventDefault();
+      app.quit();
+    }
+  });
+
   // Dev only: ASTER_SHOT=/path/out.png captures the window after it settles.
   if (process.env.ASTER_SHOT) {
     win.webContents.once('did-finish-load', () => {

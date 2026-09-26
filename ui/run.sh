@@ -42,6 +42,19 @@ fi
 args=()
 if [[ "$(uname -s)" == "Linux" ]]; then
     args+=(--ozone-platform-hint=auto)
+
+    # VMs without 3D acceleration have no render node; draw in software.
+    if ! compgen -G "/dev/dri/renderD*" >/dev/null; then
+        LITE=1
+    fi
+
+    # Electron's sandbox needs unprivileged user namespaces (on by default
+    # on CachyOS). If the kernel blocks them, run without it instead of
+    # asking for sudo to fix chrome-sandbox permissions.
+    if [[ "$(cat /proc/sys/kernel/unprivileged_userns_clone 2>/dev/null)" == "0" ||
+          "$(cat /proc/sys/kernel/apparmor_restrict_unprivileged_userns 2>/dev/null)" == "1" ]]; then
+        args+=(--no-sandbox)
+    fi
 fi
 if [[ "${LITE:-0}" == "1" ]]; then
     args+=(--disable-gpu)
