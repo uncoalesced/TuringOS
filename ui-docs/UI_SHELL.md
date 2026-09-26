@@ -8,16 +8,20 @@
 | Built | Not built yet |
 |---|---|
 | Electron app in `ui/`, launched with `./claudeos ui` | Command bar, PR views, Actions menu (Ctrl/⌘+K focuses the composer for now) |
-| Menu bar: Claude spark + "HushOS" brand, Wi-Fi, battery, light/dark toggle, clock | Task view, permission sheet |
-| Desktop, vertically centred: clock, greeting with the user's first name, "What do you want to cook?" composer | Notifications with Undo, widgets side panel |
+| Menu bar: Claude spark + "HushOS" brand, Wi-Fi, battery, light/dark toggle, clock (click to open the side panel) | Task view, permission sheet |
+| Desktop, vertically centred: clock, greeting with the user's first name, "What do you want to cook?" composer | Notifications with Undo |
 | @ (or +) project picker listing git repos; Enter runs `claudeos agent start <project> <task>` | |
 | Weather in the top-right corner (Open-Meteo, geolocated by IP), click for the full card | |
 | Bottom-left corner: agent status (**idle** / **working** / **agentic**) and task; bottom-right: sandbox / game mode / CPU / memory | |
 | Live state from `~/.claudeos/state.json`, sample data fallback | Running other `claudeos` commands from the UI |
 | Light/dark in Claude brand colours, circular reveal | Spring engine, progressive blur |
 | macOS-style app icon (`assets/brand/app-icon.png`, squircle) | |
-| "Focused today" and a quote-of-the-day, centred above/below the composer (placeholders — no focus-tracking or quote backend yet) | |
-| Dock: hidden until the cursor hits the bottom edge, floating (detached, all corners rounded, iOS-style continuous curvature via CSS `corner-shape: squircle`), tight resting spacing, macOS-style magnification toward the cursor with a name-label tooltip above the hovered icon. Fixed 4-icon set (Terminal, Files, Browser, Settings) launching real system commands via the main process | Auto-discovered/configurable icon list |
+| "Focused today", centred above the composer (placeholder — no focus-tracking backend yet) | |
+| Dock: hidden until the cursor hits the bottom edge, floating (detached, all corners rounded, iOS-style continuous curvature via CSS `corner-shape: squircle`), tight resting spacing, macOS-style magnification toward the cursor with a name-label tooltip above the hovered icon. Fixed set: Terminal, Files (wide fallback chain: xdg-open/dolphin/nautilus/pcmanfm/nemo/thunar), Browser, Settings — all launching real system commands via the main process | Auto-discovered/configurable icon list |
+| Side panel (Ctrl/⌘+J or click the clock): a right-edge slide-in shell | Calendar/"Your day"/Ask widgets beyond what's listed below |
+| GitHub widget in the side panel — My PRs + Review Requests via `gh` (assumes `gh auth login` already done), refreshed every 5 min, verified against a real authenticated account | |
+| Calendar widget in the side panel — real Google OAuth (system-browser consent + loopback redirect, `google-auth-library`), shows the next event once connected; honest "Connect Google Calendar" empty state otherwise, not fake data | Needs a real Google Cloud OAuth "Desktop app" client — see §9 below |
+| Clawd: a small pixel mascot that patrols a corner near the dock and answers one-off questions (Haiku, single question → single answer, no history) in a popover | |
 
 The spec below describes the full target. Where it differs from what's built, the **Status** table wins.
 
@@ -225,14 +229,32 @@ Backup: record the full run once as a video before presenting.
 | File | Purpose |
 |---|---|
 | `ui/run.sh` | Launcher: installs Electron on first run, detects VM quirks, opens the app |
-| `ui/main.js` | Reads `~/.claudeos`, system stats and weather; pushes snapshots to the page |
+| `ui/main.js` | Reads `~/.claudeos`, system stats, weather, GitHub (`gh`), Google Calendar (OAuth), and answers Clawd's questions (Anthropic API); pushes snapshots to the page |
 | `ui/preload.js` | The only bridge between the page and the system |
 | `ui/index.html` | Markup, plus the icon sprite (`<symbol>`s) |
 | `ui/styles.css` | Design tokens and styles |
-| `ui/app.js` | Renders snapshots, clock, theme toggle, weather, quote of the day, dock reveal/magnify, sample data |
+| `ui/app.js` | Renders snapshots, clock, theme toggle, weather, side panel + its widgets, dock reveal/magnify, Clawd patrol + chat, sample data |
 | `ui/theme.js` | Picks the theme before first paint |
 | `ui/fonts/` | Timeless Sans and Serif (variable, bundled) |
 | `ui/assets/brand/` | Claude symbol, logo, app icon |
 | `ui/assets/icons/feather/` | Feather icon set (reference library) and its `LICENSE` |
 | `ui-docs/SETUP.md` | Running it in the VM, troubleshooting |
 | `ui-docs/UI_SHELL.md` | This document |
+| `ui-docs/NEXT_FEATURES.md` | The plan these features were built from — kept as a record of what was decided and why |
+
+## 9. Config keys (`~/.claudeos/config.env`)
+
+Needed for the side panel's Calendar widget and for Clawd. Plain `KEY=VALUE`
+lines — `ui/main.js` parses this file itself rather than relying on
+`process.env`, since `./claudeos ui` execs into `ui/run.sh` without
+inheriting non-exported shell variables that `core/config.sh` sources.
+
+| Key | Used by | Where to get it |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | Clawd's chat popover | An Anthropic API key |
+| `GOOGLE_CLIENT_ID` | Calendar widget | A Google Cloud OAuth **"Desktop app"** client (Google Cloud Console → APIs & Services → Credentials) |
+| `GOOGLE_CLIENT_SECRET` | Calendar widget | Same OAuth client as above |
+
+Without these, Clawd shows a "needs an API key" error when asked a question,
+and the Calendar widget shows an honest "Connect Google Calendar" empty
+state instead of a fake meeting — both fail loudly, not silently.

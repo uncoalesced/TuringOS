@@ -1,5 +1,15 @@
 # Next three features — plan
 
+**Status: all five pieces below are built** (Finder Option A, side panel
+shell, GitHub widget, Gmail/Calendar OAuth widget, Clawd). See
+`ui-docs/UI_SHELL.md`'s Status table for the current one-line summary of
+each, and its new §9 for the exact `~/.claudeos/config.env` keys the
+project owner needs to set (`ANTHROPIC_API_KEY` for Clawd,
+`GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` for Calendar — the Google one
+needs a real Google Cloud OAuth "Desktop app" client registered first,
+which can't be done from inside this repo). Everything else below is kept
+as-written, as the record of what was planned and why.
+
 Research doc, not a spec — written by a planning pass over the current
 codebase before any of this is built. Two load-bearing facts shape every
 section below, both confirmed by reading the actual code (not assumed):
