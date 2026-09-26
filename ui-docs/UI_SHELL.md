@@ -17,7 +17,7 @@
 | Light/dark in Claude brand colours, circular reveal | Spring engine, progressive blur |
 | macOS-style app icon (`assets/brand/app-icon.png`, squircle) | |
 | "Focused today" and a quote-of-the-day, centred above/below the composer (placeholders — no focus-tracking or quote backend yet) | |
-| Dock: hidden until the cursor hits the bottom edge, floating (detached, all corners rounded, iOS-style continuous curvature via CSS `corner-shape: squircle`), macOS-style magnification toward the cursor. Fixed 4-icon set (Terminal, Files, Browser, Settings) launching real system commands via the main process | Auto-discovered/configurable icon list |
+| Dock: hidden until the cursor hits the bottom edge, floating (detached, all corners rounded, iOS-style continuous curvature via CSS `corner-shape: squircle`), tight resting spacing, macOS-style magnification toward the cursor with a name-label tooltip above the hovered icon. Fixed 4-icon set (Terminal, Files, Browser, Settings) launching real system commands via the main process | Auto-discovered/configurable icon list |
 
 The spec below describes the full target. Where it differs from what's built, the **Status** table wins.
 

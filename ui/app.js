@@ -430,8 +430,8 @@ const dock = $('#dock');
 const dockItems = [...document.querySelectorAll('.dock-item')];
 const dockError = $('#dock-error');
 
-const DOCK_MAX_SCALE = 1.45;
-const DOCK_SPREAD = 90; // px — how far the magnification falloff reaches
+const DOCK_MAX_SCALE = 1.6;
+const DOCK_SPREAD = 55; // px — how far the magnification falloff reaches; tight, so the peak is under the cursor and it drops off within a couple of icons, not the whole row
 const DOCK_HIDE_DELAY = 250; // ms grace period before hiding, so crossing the gap between edge and dock doesn't flicker it shut
 
 let dockHideTimer = null;
@@ -484,13 +484,29 @@ dock.addEventListener('mousemove', (e) => {
   });
 });
 
+const dockTooltip = $('#dock-tooltip');
+
+function showDockTooltip(el) {
+  const box = el.getBoundingClientRect();
+  dockTooltip.textContent = el.title;
+  dockTooltip.style.left = `${box.left + box.width / 2}px`;
+  dockTooltip.style.bottom = `${innerHeight - box.top + 12}px`;
+  dockTooltip.classList.add('is-visible');
+}
+
+function hideDockTooltip() {
+  dockTooltip.classList.remove('is-visible');
+}
+
 dockItems.forEach((el) => {
+  el.addEventListener('mouseenter', () => showDockTooltip(el));
   el.addEventListener('mousedown', () => {
     pressedDockItem = el;
+    hideDockTooltip();
     magnifyDock(el.getBoundingClientRect().left + el.getBoundingClientRect().width / 2);
   });
   el.addEventListener('mouseup', () => { pressedDockItem = null; });
-  el.addEventListener('mouseleave', () => { pressedDockItem = null; });
+  el.addEventListener('mouseleave', () => { pressedDockItem = null; hideDockTooltip(); });
 });
 
 function showDockError(text) {

@@ -693,9 +693,9 @@ kbd {
   z-index: 26;
   display: flex;
   align-items: flex-end;
-  gap: 16px;
-  padding: 10px 14px;
-  border-radius: 24px;
+  gap: 7px;
+  padding: 9px 9px;
+  border-radius: 22px;
   corner-shape: squircle; /* continuous iOS/macOS-style corner, not a plain circular arc */
   background: color-mix(in srgb, var(--surface) 82%, transparent);
   backdrop-filter: blur(24px) saturate(1.4);
@@ -715,10 +715,10 @@ kbd {
   position: relative;
   display: grid;
   place-items: center;
-  width: 46px;
-  height: 46px;
+  width: 52px;
+  height: 52px;
   border: 0;
-  border-radius: 12px;
+  border-radius: 13px;
   corner-shape: squircle;
   background: var(--surface-strong);
   color: var(--text);
@@ -728,7 +728,7 @@ kbd {
 
 .dock-item:hover { background: color-mix(in srgb, var(--accent) 14%, var(--surface-strong)); }
 .dock-item:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-.dock-item .icon { width: 20px; height: 20px; }
+.dock-item .icon { width: 24px; height: 24px; }
 
 .dock-error {
   position: fixed;
@@ -753,6 +753,45 @@ kbd {
   filter: none;
   visibility: visible;
   transition: transform 180ms var(--ease-out), filter 180ms var(--ease-out), visibility 0s;
+}
+
+/* Name label above the hovered icon — a fixed dark chrome bubble, like the
+   real dock's, not themed to light/dark since it's system-level chrome. */
+.dock-tooltip {
+  position: fixed;
+  z-index: 28;
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: #262624;
+  color: #faf9f7;
+  font-size: 12.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: 0 6px 16px rgb(0 0 0 / 0.28);
+  /* left/bottom are set inline in JS to track the hovered icon exactly. */
+  transform: translate(-50%, 4px) scale(0.9);
+  filter: blur(3px);
+  visibility: hidden;
+  transition: transform 130ms var(--ease-out), filter 130ms var(--ease-out), visibility 0s 130ms;
+}
+
+.dock-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: 7px;
+  height: 7px;
+  background: inherit;
+  transform: translate(-50%, -55%) rotate(45deg);
+  border-radius: 0 0 2px 0;
+}
+
+.dock-tooltip.is-visible {
+  transform: translate(-50%, 0) scale(1);
+  filter: none;
+  visibility: visible;
+  transition: transform 130ms var(--ease-out), filter 130ms var(--ease-out), visibility 0s;
 }
 
 @media (prefers-reduced-motion: reduce) {
