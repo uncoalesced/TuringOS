@@ -504,10 +504,12 @@ function createWindow() {
   // renderer (html/css/js) — main.js/preload.js need a real restart, since
   // that code is already loaded into this process.
   if (!KIOSK && process.env.NO_WATCH !== '1') {
-    const RELOAD_FILES = new Set(['index.html', 'styles.css', 'app.js', 'theme.js']);
+    // Any renderer file (incl. new ones like palette.js / bazaar.js), but not
+    // main.js / preload.js, which need a real restart.
+    const isRendererFile = (f) => /\.(html|css|js)$/.test(f) && !['main.js', 'preload.js'].includes(f);
     let reloadTimer = null;
     fs.watch(__dirname, (_event, filename) => {
-      if (!filename || !RELOAD_FILES.has(filename)) return;
+      if (!filename || !isRendererFile(filename)) return;
       clearTimeout(reloadTimer);
       reloadTimer = setTimeout(() => {
         if (win && !win.isDestroyed()) win.webContents.reload();
