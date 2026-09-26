@@ -767,30 +767,24 @@ function scheduleClawdWander() {
 }
 scheduleClawdWander();
 
-// Shake the cursor near Clawd — like macOS's shake-to-locate making the
-// pointer huge — and the chat pops open, no click needed. A "shake" is
-// several quick direction reversals close together, not just fast motion in
-// one direction (that's just someone moving the mouse across the screen).
+// Shake the cursor anywhere — like macOS's shake-to-locate making the
+// pointer huge — and Clawd's chat pops open, no click, no need to be near
+// it. In kiosk mode (the real target) the window covers the whole screen,
+// so this is effectively "anywhere on the OS". A "shake" is several quick
+// direction reversals close together, not just fast motion in one
+// direction (that's just someone moving the mouse across the screen).
 const CLAWD_SHAKE_WINDOW_MS = 450;
 const CLAWD_SHAKE_MIN_DIST = 220; // px of total horizontal travel inside the window
 const CLAWD_SHAKE_MIN_REVERSALS = 3;
-const CLAWD_SHAKE_RADIUS = 70; // px around Clawd that counts as "near"
 
 let clawdShakeSamples = []; // { x, t }
-
-function isNearClawd(x, y) {
-  const box = clawd.getBoundingClientRect();
-  const cx = box.left + box.width / 2;
-  const cy = box.top + box.height / 2;
-  return Math.hypot(x - cx, y - cy) < CLAWD_SHAKE_RADIUS;
-}
 
 document.addEventListener('mousemove', (e) => {
   if (clawdOpen) { clawdShakeSamples = []; return; }
   const now = performance.now();
   clawdShakeSamples.push({ x: e.clientX, t: now });
   clawdShakeSamples = clawdShakeSamples.filter((s) => now - s.t <= CLAWD_SHAKE_WINDOW_MS);
-  if (clawdShakeSamples.length < 5 || !isNearClawd(e.clientX, e.clientY)) return;
+  if (clawdShakeSamples.length < 5) return;
 
   let dist = 0;
   let reversals = 0;
