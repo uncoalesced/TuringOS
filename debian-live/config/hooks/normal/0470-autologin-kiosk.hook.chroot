@@ -1,15 +1,19 @@
 #!/bin/bash
 # 0470-autologin-kiosk.hook.chroot
 #
-# Wires lightdm autologin + openbox autostart so the ClaudeOS Electron UI
-# launches full-screen automatically on boot, no login prompt.
+# Wires lightdm autologin into openbox so the ClaudeOS Electron UI (launched
+# by config/includes.chroot/etc/xdg/openbox/autostart) actually runs on boot
+# without sitting at a login prompt.
 #
-# Runs AFTER 0460 (Electron pre-bundled) so claudeos-ui is ready to launch.
+# Runs AFTER 0460 (Electron pre-bundled). Does NOT touch openbox/autostart —
+# that file is baked in via includes.chroot and already handles tint2/picom/
+# wallpaper/kiosk launch; this hook only owns lightdm's autologin config.
+#
 # live-build's default live user is 'user'.
 
 set -euo pipefail
 
-echo "==> [0470-autologin-kiosk] Configuring autologin + kiosk autostart..."
+echo "==> [0470-autologin-kiosk] Configuring lightdm autologin..."
 
 mkdir -p /etc/lightdm/lightdm.conf.d
 cat > /etc/lightdm/lightdm.conf.d/50-autologin.conf <<'EOF'
@@ -18,14 +22,6 @@ autologin-user=user
 autologin-user-timeout=0
 autologin-session=openbox
 user-session=openbox
-EOF
-
-mkdir -p /etc/xdg/openbox
-cat > /etc/xdg/openbox/autostart <<'EOF'
-xset s off
-xset -dpms
-xset s noblank
-KIOSK=1 /usr/local/bin/claudeos-ui &
 EOF
 
 echo "==> [0470-autologin-kiosk] Done."
