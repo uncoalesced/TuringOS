@@ -828,6 +828,13 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && clawdOpen) setClawdOpen(false);
 });
 
+$('#clawd-input').addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    e.preventDefault();
+    $('#clawd-form').requestSubmit();
+  }
+});
+
 $('#clawd-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const input = $('#clawd-input');
