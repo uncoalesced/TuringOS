@@ -1034,6 +1034,8 @@ function showDockError(text) {
 dockItems.forEach((el) => {
   el.addEventListener('click', async () => {
     const id = el.dataset.app;
+    // Bazaar is built into the shell, not a system app.
+    if (id === 'bazaar') { window.openBazaar?.(); return; }
     if (!window.shell) {
       showDockError('Not available in this preview');
       return;
@@ -1093,7 +1095,7 @@ document.addEventListener('mousemove', (e) => {
   // reveals it) is browsing apps, not a shake. Same for scrubbing through the
   // notification panel or the Cmd+K palette.
   if (panelOpen || document.querySelector('.palette')?.checkVisibility()
-    || e.target.closest?.('#dock, .dock-edge, #side-panel, .palette')
+    || e.target.closest?.('#dock, .dock-edge, #side-panel, .palette, .app-window')
     || e.clientY > innerHeight - 120) {
     clawdShakeSamples = [];
     return;

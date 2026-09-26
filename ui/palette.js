@@ -18,6 +18,7 @@
   const click = (sel) => () => document.querySelector(sel)?.click();
   const COMMANDS = [
     { id: 'plugins', name: 'Plugins', desc: 'Browse new plugins available', icon: 'ic-plus', hint: 'Browse', run: () => openPlugins() },
+    { id: 'bazaar', name: 'Open Bazaar', desc: 'Skills and plugins store', icon: 'ic-bag', run: () => window.openBazaar?.() },
     { id: 'terminal', name: 'Open Terminal', desc: 'Launch a terminal window', icon: 'ic-terminal', run: click('.dock-item[data-app="terminal"]') },
     { id: 'browser', name: 'Open Browser', desc: 'Launch the web browser', icon: 'ic-globe', run: click('.dock-item[data-app="browser"]') },
     { id: 'files', name: 'Open Files', desc: 'Browse your home folder', icon: 'ic-folder', run: click('.dock-item[data-app="files"]') },
