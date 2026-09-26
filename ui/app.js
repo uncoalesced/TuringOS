@@ -809,6 +809,10 @@ function setClawdOpen(open) {
   if (open) {
     chat.hidden = false;
     chat.classList.remove('is-closing');
+    // A shake doesn't click into the window, so it may not have real OS
+    // keyboard focus yet — window.focus() brings the app forward first,
+    // otherwise the input looks focused but keystrokes go elsewhere.
+    window.focus();
     $('#clawd-input').focus();
   } else if (!chat.hidden) {
     chat.classList.add('is-closing');
