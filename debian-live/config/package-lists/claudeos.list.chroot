@@ -89,7 +89,7 @@ python3-venv
 # Hook 0450 installs these too — listing here ensures they're present
 # even if the hook ordering changes.
 libgtk-3-0
-libgdk-pixbuf2.0-0
+libgdk-pixbuf-2.0-0
 libcairo2
 libpango-1.0-0
 libpangocairo-1.0-0
@@ -155,8 +155,6 @@ xserver-xorg-video-vmware
 xserver-xorg-video-qxl
 open-vm-tools
 open-vm-tools-desktop
-virtualbox-guest-utils
-virtualbox-guest-x11
 spice-vdagent
 
 # ── Audio ─────────────────────────────────────────────────────────────────────
@@ -165,7 +163,8 @@ pavucontrol
 
 # ── Misc ──────────────────────────────────────────────────────────────────────
 sudo
-policykit-1
+polkitd
+pkexec
 gvfs
 shared-mime-info
 xdg-utils
