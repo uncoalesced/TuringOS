@@ -448,6 +448,101 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+// ─── Dock ───────────────────────────────────────────────────────────────────
+// Hidden until the cursor hits the bottom edge (mirrors the real macOS dock).
+// Icons magnify toward the cursor; transform-origin is the bottom of each
+// icon so they grow upward without reflowing their neighbors.
+
+const dock = $('#dock');
+const dockItems = [...document.querySelectorAll('.dock-item')];
+const dockError = $('#dock-error');
+
+const DOCK_MAX_SCALE = 1.45;
+const DOCK_SPREAD = 90; // px — how far the magnification falloff reaches
+const DOCK_HIDE_DELAY = 250; // ms grace period before hiding, so crossing the gap between edge and dock doesn't flicker it shut
+
+let dockHideTimer = null;
+let dockRaf = null;
+let pressedDockItem = null;
+let dockErrorTimer = null;
+
+function setDockVisible(visible) {
+  clearTimeout(dockHideTimer);
+  if (visible) {
+    dock.classList.add('is-visible');
+    $('#sample-badge').classList.add('is-hidden');
+  } else {
+    dockHideTimer = setTimeout(() => {
+      dock.classList.remove('is-visible');
+      resetDockScale();
+      $('#sample-badge').classList.remove('is-hidden');
+    }, DOCK_HIDE_DELAY);
+  }
+}
+
+function resetDockScale() {
+  dockItems.forEach((el) => { el.style.transform = ''; });
+}
+
+function magnifyDock(clientX) {
+  if (reducedMotion.matches) return;
+  dockItems.forEach((el) => {
+    const box = el.getBoundingClientRect();
+    const center = box.left + box.width / 2;
+    const dist = Math.abs(clientX - center);
+    const falloff = Math.exp(-(dist * dist) / (2 * DOCK_SPREAD * DOCK_SPREAD));
+    const scale = 1 + (DOCK_MAX_SCALE - 1) * falloff;
+    const pressed = el === pressedDockItem ? 0.93 : 1;
+    el.style.transform = `scale(${(scale * pressed).toFixed(3)})`;
+  });
+}
+
+$('#dock-edge').addEventListener('mouseenter', () => setDockVisible(true));
+dock.addEventListener('mouseenter', () => setDockVisible(true));
+$('#dock-edge').addEventListener('mouseleave', () => setDockVisible(false));
+dock.addEventListener('mouseleave', () => setDockVisible(false));
+
+dock.addEventListener('mousemove', (e) => {
+  if (dockRaf) return;
+  const x = e.clientX;
+  dockRaf = requestAnimationFrame(() => {
+    magnifyDock(x);
+    dockRaf = null;
+  });
+});
+
+dockItems.forEach((el) => {
+  el.addEventListener('mousedown', () => {
+    pressedDockItem = el;
+    magnifyDock(el.getBoundingClientRect().left + el.getBoundingClientRect().width / 2);
+  });
+  el.addEventListener('mouseup', () => { pressedDockItem = null; });
+  el.addEventListener('mouseleave', () => { pressedDockItem = null; });
+});
+
+function showDockError(text) {
+  clearTimeout(dockErrorTimer);
+  dockError.textContent = text;
+  dockError.hidden = false;
+  requestAnimationFrame(() => dockError.classList.add('is-visible'));
+  dockErrorTimer = setTimeout(() => {
+    dockError.classList.remove('is-visible');
+    setTimeout(() => { dockError.hidden = true; }, 180);
+  }, 3200);
+}
+
+dockItems.forEach((el) => {
+  el.addEventListener('click', async () => {
+    const id = el.dataset.app;
+    if (!window.shell) {
+      showDockError('Not available in this preview');
+      return;
+    }
+    const res = await window.shell.launchApp(id);
+    if (!res.ok) showDockError(res.error);
+  });
+});
+
 // ─── Boot ───────────────────────────────────────────────────────────────────
 
 tickClock();

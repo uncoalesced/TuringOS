@@ -280,6 +280,42 @@ function createWindow() {
   });
 }
 
+// ─── Dock ───────────────────────────────────────────────────────────────────
+// Fixed, curated set for now (not auto-discovered from installed .desktop
+// files). Each entry lists real system commands to try in order, so it works
+// across whatever's actually installed on the VM.
+
+const DOCK_APPS = {
+  terminal: { label: 'Terminal', commands: [['x-terminal-emulator', []], ['xterm', []], ['konsole', []]] },
+  files: { label: 'Files', commands: [['xdg-open', [os.homedir()]], ['dolphin', [os.homedir()]]] },
+  browser: { label: 'Browser', commands: [['xdg-open', ['https://']], ['x-www-browser', []]] },
+  settings: { label: 'Settings', commands: [['systemsettings', []], ['systemsettings5', []]] },
+};
+
+function commandExists(cmd) {
+  try {
+    execFileSync('command', ['-v', cmd], { shell: '/bin/bash' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+ipcMain.handle('dock:launch', (_e, id) => {
+  const app_ = DOCK_APPS[id];
+  if (!app_) return { ok: false, error: `Unknown dock app: ${id}` };
+  const found = app_.commands.find(([cmd]) => commandExists(cmd));
+  if (!found) return { ok: false, error: `${app_.label} isn't installed on this machine.` };
+  const [cmd, args] = found;
+  try {
+    const child = spawn(cmd, args, { detached: true, stdio: 'ignore' });
+    child.unref();
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: `Couldn't start ${app_.label}: ${err.message}` };
+  }
+});
+
 ipcMain.handle('state:get', () => snapshot());
 ipcMain.handle('projects:list', () => findProjects());
 

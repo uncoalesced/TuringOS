@@ -17,6 +17,7 @@
 | Light/dark in Claude brand colours, circular reveal | Spring engine, progressive blur |
 | macOS-style app icon (`assets/brand/app-icon.png`, squircle) | |
 | "Focused today" and a quote-of-the-day, centred above/below the composer (placeholders — no focus-tracking or quote backend yet) | |
+| Dock: hidden until the cursor hits the bottom edge, floating (detached, all corners rounded, iOS-style continuous curvature via CSS `corner-shape: squircle`), macOS-style magnification toward the cursor. Fixed 4-icon set (Terminal, Files, Browser, Settings) launching real system commands via the main process | Auto-discovered/configurable icon list |
 
 The spec below describes the full target. Where it differs from what's built, the **Status** table wins.
 
@@ -228,7 +229,7 @@ Backup: record the full run once as a video before presenting.
 | `ui/preload.js` | The only bridge between the page and the system |
 | `ui/index.html` | Markup, plus the icon sprite (`<symbol>`s) |
 | `ui/styles.css` | Design tokens and styles |
-| `ui/app.js` | Renders snapshots, clock, theme toggle, weather, quote of the day, sample data |
+| `ui/app.js` | Renders snapshots, clock, theme toggle, weather, quote of the day, dock reveal/magnify, sample data |
 | `ui/theme.js` | Picks the theme before first paint |
 | `ui/fonts/` | Timeless Sans and Serif (variable, bundled) |
 | `ui/assets/brand/` | Claude symbol, logo, app icon |
