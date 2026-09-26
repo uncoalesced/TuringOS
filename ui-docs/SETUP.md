@@ -1,4 +1,4 @@
-# ui-shell — desktop UI for HushOS (ClaudeOS)
+# ui-shell — desktop UI for TuringOS (ClaudeOS)
 
 ## Run it in the VM (Debian)
 

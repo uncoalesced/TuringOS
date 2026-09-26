@@ -342,7 +342,7 @@ async function connectGoogle() {
       res.writeHead(200, { 'content-type': 'text/html' });
       res.end(authError
         ? '<html><body>Could not connect Google Calendar. You can close this tab.</body></html>'
-        : '<html><body>Google Calendar connected — you can close this tab and go back to HushOS.</body></html>');
+        : '<html><body>Google Calendar connected — you can close this tab and go back to TuringOS.</body></html>');
       server.close();
       clearTimeout(giveUp);
 
@@ -479,7 +479,7 @@ function createWindow() {
     kiosk: KIOSK,
     fullscreen: KIOSK,
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#262624' : '#F4F3EE',
-    title: 'HushOS',
+    title: 'TuringOS',
     icon: path.join(__dirname, 'assets/brand/app-icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -615,7 +615,7 @@ async function askAnthropic({ message, model, effort, systemPrompt, maxTokens, w
   }
 }
 
-const CLAWD_SYSTEM_PROMPT = 'You are Clawd, a small, friendly pixel mascot that lives on the HushOS desktop. Answer questions briefly and helpfully, in a couple of sentences unless more detail is clearly needed.';
+const CLAWD_SYSTEM_PROMPT = 'You are Clawd, a small, friendly pixel mascot that lives on the TuringOS desktop. Answer questions briefly and helpfully, in a couple of sentences unless more detail is clearly needed.';
 
 ipcMain.handle('clawd:ask', (_e, { message }) => askAnthropic({
   message, model: 'claude-haiku-4-5', systemPrompt: CLAWD_SYSTEM_PROMPT, maxTokens: 512, whoLabel: 'Clawd',
@@ -624,7 +624,7 @@ ipcMain.handle('clawd:ask', (_e, { message }) => askAnthropic({
 // The composer without a @project attached is a plain question, not a
 // coding task — answer it directly instead of starting a sandboxed agent.
 ipcMain.handle('chat:ask', (_e, { message, model, effort }) => askAnthropic({
-  message, model, effort, maxTokens: 2048, whoLabel: 'HushOS',
+  message, model, effort, maxTokens: 2048, whoLabel: 'TuringOS',
 }));
 
 ipcMain.handle('state:get', () => snapshot());
@@ -633,7 +633,7 @@ ipcMain.handle('projects:list', () => findProjects());
 // Start the agent on a task. The UI never builds shell strings: arguments go
 // straight to the claudeos script, which creates the sandbox first.
 ipcMain.handle('agent:start', (_e, { project, task, model, effort }) => {
-  if (!fs.existsSync(DATA_DIR)) return { ok: false, error: 'HushOS is not set up. Run ./claudeos init first.' };
+  if (!fs.existsSync(DATA_DIR)) return { ok: false, error: 'TuringOS is not set up. Run ./claudeos init first.' };
   if (typeof project !== 'string' || !fs.existsSync(project)) return { ok: false, error: 'That project folder no longer exists.' };
   if (typeof task !== 'string' || !task.trim()) return { ok: false, error: 'Describe the task first.' };
   // Passed through as env vars, not yet read by agent/claude.sh — additive

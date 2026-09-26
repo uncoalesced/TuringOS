@@ -1,6 +1,6 @@
 # ui-shell
 
-**HushOS** is the on-screen name; the codebase is still called ClaudeOS/ui-shell (CLI, data dir, branch, package name — unchanged). The assistant layer for our Claude-powered Linux OS (Debian base, KDE). It is the part people see: a menu bar, a Raycast-style command bar, a permission sheet, notifications with Undo, and a side panel of widgets.
+**TuringOS** is the on-screen name; the codebase is still called ClaudeOS/ui-shell (CLI, data dir, branch, package name — unchanged). The assistant layer for our Claude-powered Linux OS (Debian base, KDE). It is the part people see: a menu bar, a Raycast-style command bar, a permission sheet, notifications with Undo, and a side panel of widgets.
 
 
 ## Status
@@ -8,7 +8,7 @@
 | Built | Not built yet |
 |---|---|
 | Electron app in `ui/`, launched with `./claudeos ui` | Command bar, PR views, Actions menu (Ctrl/⌘+K focuses the composer for now) |
-| Menu bar: Claude spark + "HushOS" brand, Wi-Fi, battery, light/dark toggle, clock (click to open the side panel) | Task view, permission sheet |
+| Menu bar: Claude spark + "TuringOS" brand, Wi-Fi, battery, light/dark toggle, clock (click to open the side panel) | Task view, permission sheet |
 | Desktop, vertically centred: clock, greeting with the user's first name, "What do you want to cook?" composer | Notifications with Undo |
 | @ (or +) project picker listing git repos; Enter runs `claudeos agent start <project> <task>` | |
 | Weather in the top-right corner (Open-Meteo, geolocated by IP), click for the full card | |
