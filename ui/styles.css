@@ -1,0 +1,804 @@
+/* ui-shell — design tokens from Claude's brand colors:
+   Japonica #D97757 · Pampas #F4F3EE · Cloudy #B1ADA1 · Tuatara #373734 · White #FFFFFF */
+
+/* Timeless type, bundled in ui/fonts. Variable: Sans 300–800, Serif 200–700. */
+@font-face {
+  font-family: "Timeless Sans";
+  src: url("fonts/TimelessSansVF.ttf") format("truetype");
+  font-weight: 300 800;
+  font-display: block;
+}
+@font-face {
+  font-family: "Timeless Serif";
+  src: url("fonts/TimelessSerifVF.ttf") format("truetype");
+  font-weight: 200 700;
+  font-display: block;
+}
+
+:root {
+  /* Brand */
+  --japonica: #d97757;
+  --pampas: #f4f3ee;
+  --cloudy: #b1ada1;
+  --tuatara: #373734;
+  --white: #ffffff;
+
+  /* Derived (not brand colors, only for contrast and states) */
+  --tuatara-deep: #262624;
+  --tuatara-raised: #42423f;
+  --stone: #6f6c64;
+  --focus: #61aaf2;
+  --error: #bf4d43;
+
+  /* Type */
+  --sans: "Timeless Sans", system-ui, -apple-system, "Segoe UI", "Noto Sans", sans-serif;
+  --serif: "Timeless Serif", "Iowan Old Style", Georgia, "Noto Serif", serif;
+  --mono: "JetBrains Mono", "SF Mono", ui-monospace, "Noto Sans Mono", monospace;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+
+  --menubar-h: 34px;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: var(--pampas);
+  --surface: var(--white);
+  --surface-strong: #e9e7df;
+  --line: rgb(55 55 52 / 0.09);
+  --text: var(--tuatara);
+  --muted: var(--stone);
+  --faint: var(--cloudy);
+  --accent: var(--japonica);
+  --glow: rgb(217 119 87 / 0.16);
+  --danger: var(--error);
+  --bar: rgb(244 243 238 / 0.72);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: var(--tuatara-deep);
+  --surface: var(--tuatara);
+  --surface-strong: var(--tuatara-raised);
+  --line: rgb(244 243 238 / 0.08);
+  --text: var(--pampas);
+  --muted: var(--cloudy);
+  --faint: #8a877e;
+  --accent: var(--japonica);
+  --glow: rgb(217 119 87 / 0.22);
+  --danger: #e07a70;
+  --bar: rgb(38 38 36 / 0.66);
+}
+
+* { box-sizing: border-box; margin: 0; }
+
+html, body { height: 100%; }
+
+body {
+  font-family: var(--sans);
+  color: var(--text);
+  background:
+    radial-gradient(150% 110% at 50% 125%, var(--glow), transparent 72%),
+    var(--bg);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+.icon {
+  display: block;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex: none;
+}
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ─── Menu bar ─────────────────────────────────────────────────────────── */
+
+.menubar {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: var(--menubar-h);
+  padding: 0 10px 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bar);
+  backdrop-filter: blur(24px) saturate(1.4);
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+  z-index: 10;
+  -webkit-app-region: drag;
+}
+
+.menubar-side {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-right: 10px;
+}
+
+.spark { display: block; fill: currentColor; flex: none; }
+.brand-spark { width: 17px; height: 17px; color: var(--accent); }
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--faint);
+}
+
+.status[data-state="working"],
+.status[data-state="agentic"] { color: var(--text); }
+
+.status[data-state="working"] .dot,
+.status[data-state="agentic"] .dot {
+  position: relative;
+  background: var(--accent);
+}
+
+/* Ring expands out of the dot and fades: the one opacity animation, kept to a
+   compositor-only property on a tiny element. Only while an agent is
+   actually running — "working" (queued/starting) is a plain solid dot. */
+.status[data-state="agentic"] .dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes ping {
+  0%       { transform: scale(1);   opacity: 0.55; }
+  80%, 100% { transform: scale(2.8); opacity: 0; }
+}
+
+.tray {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 7px;
+  border-radius: 7px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.tray[hidden] { display: none; }
+#battery .icon { width: 20px; }
+.battery-fill { fill: currentColor; stroke: none; }
+
+.tray-button {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  cursor: default;
+  -webkit-app-region: no-drag;
+  transition: transform 160ms var(--ease-out), background-color 160ms var(--ease-out);
+}
+
+.tray-button:hover { background: var(--surface-strong); }
+.tray-button:active { transform: scale(0.96); }
+.tray-button:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.tray-button .fill { fill: currentColor; stroke: none; }
+
+.clock {
+  padding: 0 6px 0 8px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ─── Desktop ──────────────────────────────────────────────────────────── */
+
+.desktop {
+  height: 100%;
+  padding: var(--menubar-h) 48px 72px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7vh;
+}
+
+.hero { text-align: center; }
+
+.focused-today {
+  margin-bottom: 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.hero-time {
+  font-size: clamp(96px, 13vw, 164px);
+  font-weight: 300;
+  letter-spacing: -0.045em;
+  line-height: 1;
+  margin: 0 0 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.hero-greeting {
+  font-size: clamp(30px, 3.6vw, 46px);
+  font-weight: 500;
+  letter-spacing: -0.025em;
+}
+
+/* ─── Composer ─────────────────────────────────────────────────────────── */
+
+.composer {
+  position: relative;
+  width: min(680px, 100%);
+}
+
+.composer-box {
+  padding: 14px 12px 10px 18px;
+  border-radius: 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 12px 32px rgb(0 0 0 / 0.06);
+  transition: border-color 180ms var(--ease-out);
+}
+
+.composer-box:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+}
+
+.composer-project {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  padding: 3px 4px 3px 8px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 500;
+  animation: pop-in 220ms var(--ease-out) both;
+}
+
+.composer-project[hidden] { display: none; }
+.composer-project .icon { width: 14px; height: 14px; }
+
+.composer-project-clear {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: inherit;
+}
+
+.composer-project-clear:hover { background: color-mix(in srgb, var(--accent) 16%, transparent); }
+.composer-project-clear .icon { width: 12px; height: 12px; }
+
+#composer-input {
+  display: block;
+  width: 100%;
+  max-height: 160px;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  resize: none;
+  background: transparent;
+  color: var(--text);
+  font: 17px/1.5 var(--sans);
+  user-select: text;
+}
+
+#composer-input::placeholder { color: var(--muted); }
+
+.composer-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.composer-hint {
+  flex: 1;
+  font-size: 12.5px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.composer-hint[data-tone="error"] { color: var(--danger); }
+
+kbd {
+  display: inline-block;
+  min-width: 18px;
+  padding: 0 4px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--bg);
+  font: 11px/16px var(--mono);
+  text-align: center;
+}
+
+.icon-button,
+.send-button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 10px;
+  font: inherit;
+  transition: transform 160ms var(--ease-out), background-color 160ms var(--ease-out), color 160ms var(--ease-out);
+}
+
+/* 44px hit area around 34px buttons */
+.icon-button::before,
+.send-button::before {
+  content: "";
+  position: absolute;
+  inset: -5px;
+}
+
+.icon-button { background: transparent; color: var(--text); }
+.icon-button:hover { background: var(--surface-strong); }
+
+.send-button { background: var(--accent); color: var(--white); }
+.send-button:disabled { background: var(--surface-strong); color: var(--faint); }
+
+.icon-button:active,
+.send-button:not(:disabled):active { transform: scale(0.96); }
+
+.icon-button:focus-visible,
+.send-button:focus-visible,
+.mention-item:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.icon-button .icon,
+.send-button .icon { width: 18px; height: 18px; }
+
+/* ─── @ project picker ─────────────────────────────────────────────────── */
+
+.mention {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 380px;
+  max-height: 252px;
+  overflow-y: auto;
+  padding: 6px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: 0 16px 40px rgb(0 0 0 / 0.14);
+  transform-origin: 24px top;
+  animation: pop-in 200ms var(--ease-out) both;
+  z-index: 5;
+}
+
+.mention[hidden] { display: none; }
+
+.mention-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text);
+  font: 14px var(--sans);
+  text-align: left;
+}
+
+.mention-item[aria-selected="true"] { background: var(--surface-strong); }
+.mention-item .icon { color: var(--muted); }
+
+.mention-name { flex: none; font-weight: 500; }
+
+.mention-path {
+  flex: 1;
+  min-width: 0;
+  font: 11.5px var(--mono);
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  direction: rtl;
+  text-align: right;
+}
+
+.mention-empty {
+  padding: 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+@keyframes pop-in {
+  from { transform: translateY(-4px) scale(0.96); filter: blur(4px); }
+  to   { transform: none; filter: none; }
+}
+
+/* ─── Weather ────────────────────────────────────────────────────────────── */
+
+.wx { display: block; stroke-width: 2; }
+
+.weather {
+  position: fixed;
+  top: calc(var(--menubar-h) + 18px);
+  right: 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  transition: transform 160ms var(--ease-out), background-color 160ms var(--ease-out);
+  animation: enter 620ms var(--ease-out) 120ms both;
+}
+
+.weather[hidden] { display: none; }
+.weather:active { transform: scale(0.96); }
+.weather:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+@media (hover: hover) and (pointer: fine) {
+  .weather:hover { background: color-mix(in srgb, var(--surface) 70%, transparent); }
+}
+
+.weather-now {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.weather-now .wx { width: 26px; height: 26px; stroke-width: 1.8; }
+
+.weather-temp {
+  font-size: 30px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.weather-city { font-size: 14px; color: var(--muted); }
+
+.weather-card {
+  position: fixed;
+  top: calc(var(--menubar-h) + 96px);
+  right: 16px;
+  width: 380px;
+  padding: 20px 22px 16px;
+  border-radius: 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: 0 20px 48px rgb(0 0 0 / 0.18);
+  transform-origin: calc(100% - 50px) top;
+  animation: pop-in 220ms var(--ease-out) both;
+  z-index: 20;
+}
+
+.weather-card[hidden] { display: none; }
+.weather-card.is-closing { animation: pop-out 150ms var(--ease-out) both; }
+
+@keyframes pop-out {
+  to { transform: translateY(-4px) scale(0.96); filter: blur(4px); }
+}
+
+.wc-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.wc-head .wx { width: 22px; height: 22px; }
+
+.wc-cond {
+  margin: 14px 0 6px;
+  font-size: 16px;
+  color: var(--muted);
+}
+
+.wc-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.wc-big {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.wx-big { width: 52px; height: 52px; stroke-width: 1.6; }
+
+.wc-temp {
+  font-size: 64px;
+  font-weight: 300;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.wc-facts {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 4px 10px;
+  font-size: 14px;
+}
+
+.wc-facts dt { color: var(--muted); }
+.wc-facts dd {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.wc-arrow { width: 14px; height: 14px; }
+
+.wc-foot {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ─── Corners ──────────────────────────────────────────────────────────── */
+
+.corner {
+  position: fixed;
+  bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.corner-left { left: 18px; max-width: 40vw; }
+.corner-right { right: 24px; }
+.corner .status { padding-left: 0; }
+
+.corner-task {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Entrance: blur + scale + position, no opacity. */
+.hero, .composer, .corner {
+  animation: enter 620ms var(--ease-out) both;
+}
+.composer { animation-delay: 60ms; }
+.corner { animation-delay: 120ms; }
+
+@keyframes enter {
+  from { transform: translateY(10px) scale(0.96); filter: blur(6px); }
+  to   { transform: none; filter: none; }
+}
+
+.sample-badge {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--faint);
+  transition: transform 200ms var(--ease-out), filter 200ms var(--ease-out), visibility 0s;
+}
+
+.sample-badge[hidden] { display: none; }
+
+/* The dock sits right on top of this when revealed; dissolve it out of the
+   way rather than let it show through/behind the dock. */
+.sample-badge.is-hidden {
+  transform: translate(-50%, 6px) scale(0.97);
+  filter: blur(6px);
+  visibility: hidden;
+  transition: transform 200ms var(--ease-out), filter 200ms var(--ease-out), visibility 0s 200ms;
+}
+
+/* ─── Theme reveal ─────────────────────────────────────────────────────── */
+
+/* The new theme grows as a circle from the toggle. Runs in CSS so it starts
+   on the same frame as the transition, with no script gap. */
+::view-transition-old(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-new(root) {
+  animation: reveal 600ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  mix-blend-mode: normal;
+}
+
+@keyframes reveal {
+  from { clip-path: circle(0 at var(--reveal-x) var(--reveal-y)); }
+  to   { clip-path: circle(var(--reveal-r) at var(--reveal-x) var(--reveal-y)); }
+}
+
+/* While the reveal runs, the live page underneath must stay cheap to paint:
+   drop blur (nothing sits behind it yet) and hold looping animations. */
+.theme-switching * {
+  backdrop-filter: none !important;
+  animation-play-state: paused !important;
+}
+
+.theme-switching .dock,
+.theme-switching .dock-edge {
+  pointer-events: none;
+}
+
+/* ─── Dock ─────────────────────────────────────────────────────────────── */
+
+.dock-edge {
+  position: fixed;
+  inset: auto 0 0 0;
+  height: 8px;
+  z-index: 25;
+}
+
+/* Floating, detached from the screen edge — not a tray welded to the bottom. */
+.dock {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  z-index: 26;
+  display: flex;
+  align-items: flex-end;
+  gap: 7px;
+  padding: 9px 9px;
+  border-radius: 22px;
+  corner-shape: squircle; /* continuous iOS/macOS-style corner, not a plain circular arc */
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  backdrop-filter: blur(24px) saturate(1.4);
+  border: 1px solid var(--line);
+  /* Hidden below the viewport edge; the dock's own height + bottom offset
+     + a little extra covers the shadow so nothing peeks. */
+  transform: translate(-50%, calc(100% + 32px));
+  transition: transform 260ms var(--ease-out);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.2);
+}
+
+.dock.is-visible {
+  transform: translate(-50%, 0);
+}
+
+.dock-item {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border: 0;
+  border-radius: 13px;
+  corner-shape: squircle;
+  background: var(--surface-strong);
+  color: var(--text);
+  transform-origin: bottom center;
+  transition: transform 120ms var(--ease-out), background-color 160ms var(--ease-out);
+}
+
+.dock-item:hover { background: color-mix(in srgb, var(--accent) 14%, var(--surface-strong)); }
+.dock-item:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.dock-item .icon { width: 24px; height: 24px; }
+
+.dock-error {
+  position: fixed;
+  left: 50%;
+  bottom: 104px;
+  z-index: 27;
+  padding: 7px 14px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 0.16);
+  color: var(--danger);
+  font-size: 13px;
+  transform: translate(-50%, 4px) scale(0.97);
+  filter: blur(4px);
+  transition: transform 180ms var(--ease-out), filter 180ms var(--ease-out), visibility 0s 180ms;
+  visibility: hidden;
+}
+
+.dock-error.is-visible {
+  transform: translate(-50%, 0) scale(1);
+  filter: none;
+  visibility: visible;
+  transition: transform 180ms var(--ease-out), filter 180ms var(--ease-out), visibility 0s;
+}
+
+/* Name label above the hovered icon — a fixed dark chrome bubble, like the
+   real dock's, not themed to light/dark since it's system-level chrome. */
+.dock-tooltip {
+  position: fixed;
+  z-index: 28;
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: #262624;
+  color: #faf9f7;
+  font-size: 12.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: 0 6px 16px rgb(0 0 0 / 0.28);
+  /* left/bottom are set inline in JS to track the hovered icon exactly. */
+  transform: translate(-50%, 4px) scale(0.9);
+  filter: blur(3px);
+  visibility: hidden;
+  transition: transform 130ms var(--ease-out), filter 130ms var(--ease-out), visibility 0s 130ms;
+}
+
+.dock-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: 7px;
+  height: 7px;
+  background: inherit;
+  transform: translate(-50%, -55%) rotate(45deg);
+  border-radius: 0 0 2px 0;
+}
+
+.dock-tooltip.is-visible {
+  transform: translate(-50%, 0) scale(1);
+  filter: none;
+  visibility: visible;
+  transition: transform 130ms var(--ease-out), filter 130ms var(--ease-out), visibility 0s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+.sprite { position: absolute; width: 0; height: 0; }

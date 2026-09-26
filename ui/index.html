@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'" />
+  <title>HushOS</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="theme.js"></script>
+</head>
+<body>
+  <!-- Claude symbol, from assets/brand/claude-symbol.svg -->
+  <svg class="sprite" aria-hidden="true">
+    <symbol id="claude-spark" viewBox="0 0 100 100"><path d="m19.6 66.5 19.7-11 .3-1-.3-.5h-1l-3.3-.2-11.2-.3L14 53l-9.5-.5-2.4-.5L0 49l.2-1.5 2-1.3 2.9.2 6.3.5 9.5.6 6.9.4L38 49.1h1.6l.2-.7-.5-.4-.4-.4L29 41l-10.6-7-5.6-4.1-3-2-1.5-2-.6-4.2 2.7-3 3.7.3.9.2 3.7 2.9 8 6.1L37 36l1.5 1.2.6-.4.1-.3-.7-1.1L33 25l-6-10.4-2.7-4.3-.7-2.6c-.3-1-.4-2-.4-3l3-4.2L28 0l4.2.6L33.8 2l2.6 6 4.1 9.3L47 29.9l2 3.8 1 3.4.3 1h.7v-.5l.5-7.2 1-8.7 1-11.2.3-3.2 1.6-3.8 3-2L61 2.6l2 2.9-.3 1.8-1.1 7.7L59 27.1l-1.5 8.2h.9l1-1.1 4.1-5.4 6.9-8.6 3-3.5L77 13l2.3-1.8h4.3l3.1 4.7-1.4 4.9-4.4 5.6-3.7 4.7-5.3 7.1-3.2 5.7.3.4h.7l12-2.6 6.4-1.1 7.6-1.3 3.5 1.6.4 1.6-1.4 3.4-8.2 2-9.6 2-14.3 3.3-.2.1.2.3 6.4.6 2.8.2h6.8l12.6 1 3.3 2 1.9 2.7-.3 2-5.1 2.6-6.8-1.6-16-3.8-5.4-1.3h-.8v.4l4.6 4.5 8.3 7.5L89 80.1l.5 2.4-1.3 2-1.4-.2-9.2-7-3.6-3-8-6.8h-.5v.7l1.8 2.7 9.8 14.7.5 4.5-.7 1.4-2.6 1-2.7-.6-5.8-8-6-9-4.7-8.2-.5.4-2.9 30.2-1.3 1.5-3 1.2-2.5-2-1.4-3 1.4-6.2 1.6-8 1.3-6.4 1.2-7.9.7-2.6v-.2H49L43 72l-9 12.3-7.2 7.6-1.7.7-3-1.5.3-2.8L24 86l10-12.8 6-7.9 4-4.6-.1-.5h-.3L17.2 77.4l-4.7.6-2-2 .2-3 1-1 8-5.5Z" /></symbol>
+    <!-- Weather glyphs: Feather icons (assets/icons/feather), MIT licensed -->
+    <symbol id="wx-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" /><path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" /></symbol>
+    <symbol id="wx-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></symbol>
+    <symbol id="wx-cloud" viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" /></symbol>
+    <symbol id="wx-partly" viewBox="0 0 24 24">
+      <g transform="translate(-4 -4) scale(0.62)"><circle cx="12" cy="12" r="4" /><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.5 5.5l1.4 1.4M17.1 17.1l1.4 1.4M5.5 18.5l1.4-1.4M17.1 6.9l1.4-1.4" /></g>
+      <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
+    </symbol>
+    <symbol id="wx-partly-night" viewBox="0 0 24 24">
+      <g transform="translate(-6 -6) scale(0.5)"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></g>
+      <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
+    </symbol>
+    <symbol id="wx-fog" viewBox="0 0 24 24"><path d="M4 8h16M2.5 12h19M5 16h14M8 20h8" /></symbol>
+    <symbol id="wx-rain" viewBox="0 0 24 24"><line x1="16" y1="13" x2="16" y2="21" /><line x1="8" y1="13" x2="8" y2="21" /><line x1="12" y1="15" x2="12" y2="23" /><path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25" /></symbol>
+    <symbol id="wx-snow" viewBox="0 0 24 24"><path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25" /><line x1="8" y1="16" x2="8.01" y2="16" /><line x1="8" y1="20" x2="8.01" y2="20" /><line x1="12" y1="18" x2="12.01" y2="18" /><line x1="12" y1="22" x2="12.01" y2="22" /><line x1="16" y1="16" x2="16.01" y2="16" /><line x1="16" y1="20" x2="16.01" y2="20" /></symbol>
+    <symbol id="wx-storm" viewBox="0 0 24 24"><path d="M19 16.9A5 5 0 0 0 18 7h-1.26a8 8 0 1 0-11.62 9" /><polyline points="13 11 9 17 15 17 11 23" /></symbol>
+    <symbol id="wx-arrow" viewBox="0 0 24 24"><path d="M12 4v15M6.5 13.5 12 19l5.5-5.5" /></symbol>
+    <!-- UI glyphs: Feather icons -->
+    <symbol id="ic-wifi" viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0" /><path d="M1.42 9a16 16 0 0 1 21.16 0" /><path d="M8.53 16.11a6 6 0 0 1 6.95 0" /><line x1="12" y1="20" x2="12.01" y2="20" /></symbol>
+    <symbol id="ic-battery" viewBox="0 0 24 24"><rect x="1" y="6" width="18" height="12" rx="2" ry="2" /><line x1="23" y1="13" x2="23" y2="11" /></symbol>
+    <symbol id="ic-folder" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /></symbol>
+    <symbol id="ic-x" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></symbol>
+    <symbol id="ic-plus" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></symbol>
+    <symbol id="ic-send" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></symbol>
+    <symbol id="ic-terminal" viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5" /><line x1="12" y1="19" x2="20" y2="19" /></symbol>
+    <symbol id="ic-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></symbol>
+    <symbol id="ic-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></symbol>
+  </svg>
+
+  <header class="menubar">
+    <div class="menubar-side">
+      <span class="brand">
+        <svg class="spark brand-spark" aria-hidden="true"><use href="#claude-spark" /></svg>
+        HushOS
+      </span>
+    </div>
+
+    <div class="menubar-side">
+      <span class="tray" id="wifi" title="Wi-Fi">
+        <svg class="icon" aria-hidden="true"><use href="#ic-wifi" /></svg>
+      </span>
+      <span class="tray" id="battery" title="Battery">
+        <svg class="icon battery-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <use href="#ic-battery" />
+          <rect class="battery-fill" x="3" y="8" width="14" height="8" rx="1" />
+        </svg>
+        <span class="battery-label"></span>
+      </span>
+      <button class="tray tray-button" id="theme-toggle" aria-label="Switch light and dark">
+        <svg class="icon" viewBox="0 0 16 16" aria-hidden="true">
+          <circle cx="8" cy="8" r="5.8" /><path class="fill" d="M8 2.2a5.8 5.8 0 0 1 0 11.6z" />
+        </svg>
+      </button>
+      <span class="clock" id="menubar-clock"></span>
+    </div>
+  </header>
+
+  <main class="desktop">
+    <section class="hero">
+      <p class="focused-today" id="focused-today"></p>
+      <h1 class="hero-time" id="hero-time"></h1>
+      <p class="hero-greeting" id="hero-greeting"></p>
+    </section>
+
+    <form class="composer" id="composer" autocomplete="off">
+      <div class="composer-box">
+        <div class="composer-project" id="composer-project" hidden>
+          <svg class="icon" aria-hidden="true"><use href="#ic-folder" /></svg>
+          <span class="composer-project-name"></span>
+          <button type="button" class="composer-project-clear" id="composer-project-clear" aria-label="Remove project">
+            <svg class="icon" aria-hidden="true"><use href="#ic-x" /></svg>
+          </button>
+        </div>
+        <textarea id="composer-input" rows="1" placeholder="What do you want to cook?" spellcheck="false"></textarea>
+        <div class="composer-row">
+          <button type="button" class="icon-button" id="composer-add" aria-label="Pick a project">
+            <svg class="icon" aria-hidden="true"><use href="#ic-plus" /></svg>
+          </button>
+          <span class="composer-hint" id="composer-hint">Type <kbd>@</kbd> to pick a project</span>
+          <button type="submit" class="send-button" id="composer-send" aria-label="Start" disabled>
+            <svg class="icon" aria-hidden="true"><use href="#ic-send" /></svg>
+          </button>
+        </div>
+      </div>
+      <div class="mention" id="mention" role="listbox" aria-label="Projects" hidden></div>
+    </form>
+  </main>
+
+  <button class="weather" id="weather" type="button" aria-haspopup="dialog" aria-expanded="false" hidden>
+    <span class="weather-now">
+      <svg class="icon wx"><use class="wx-use" href="#wx-sun" /></svg>
+      <span class="weather-temp"></span>
+    </span>
+    <span class="weather-city"></span>
+  </button>
+
+  <section class="weather-card" id="weather-card" role="dialog" aria-label="Weather" hidden>
+    <header class="wc-head">
+      <svg class="icon wx"><use class="wx-use" href="#wx-sun" /></svg>
+      <span class="wc-title"></span>
+    </header>
+    <p class="wc-cond"></p>
+    <div class="wc-main">
+      <div class="wc-big">
+        <svg class="icon wx wx-big"><use class="wx-use" href="#wx-sun" /></svg>
+        <span class="wc-temp"></span>
+      </div>
+      <dl class="wc-facts">
+        <dt>Feels like</dt><dd class="wc-feels"></dd>
+        <dt>Recent rain</dt><dd class="wc-rain"></dd>
+        <dt>Wind</dt><dd><svg class="icon wx wc-arrow"><use href="#wx-arrow" /></svg><span class="wc-wind"></span></dd>
+      </dl>
+    </div>
+    <footer class="wc-foot">Weather data by Open-Meteo</footer>
+  </section>
+
+  <footer class="corner corner-left">
+    <span class="status" id="corner-agent" data-state="idle">
+      <span class="dot"></span>
+      <span class="corner-label"></span>
+    </span>
+    <span class="corner-task" id="corner-task"></span>
+  </footer>
+  <footer class="corner corner-right" id="corner-system"></footer>
+
+  <p class="sample-badge" id="sample-badge" hidden>Sample data · HushOS isn't set up on this machine</p>
+
+  <!-- Hovering this bottom sliver reveals the dock, like the real macOS one. -->
+  <div class="dock-edge" id="dock-edge"></div>
+  <p class="dock-error" id="dock-error" hidden></p>
+  <span class="dock-tooltip" id="dock-tooltip"></span>
+  <nav class="dock" id="dock" aria-label="Dock">
+    <button class="dock-item" type="button" data-app="terminal" title="Terminal">
+      <svg class="icon" aria-hidden="true"><use href="#ic-terminal" /></svg>
+    </button>
+    <button class="dock-item" type="button" data-app="files" title="Files">
+      <svg class="icon" aria-hidden="true"><use href="#ic-folder" /></svg>
+    </button>
+    <button class="dock-item" type="button" data-app="browser" title="Browser">
+      <svg class="icon" aria-hidden="true"><use href="#ic-globe" /></svg>
+    </button>
+    <button class="dock-item" type="button" data-app="settings" title="Settings">
+      <svg class="icon" aria-hidden="true"><use href="#ic-settings" /></svg>
+    </button>
+  </nav>
+
+  <script src="app.js"></script>
+</body>
+</html>
