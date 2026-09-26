@@ -16,14 +16,14 @@
   ];
 
   const PLUGINS = [
-    { id: 'linear', name: 'Linear', by: 'Linear', desc: 'Create and triage issues from a prompt.', hue: 235, isNew: true, featured: true },
-    { id: 'slack', name: 'Slack', by: 'Slack', desc: 'Read channels, draft replies, post summaries.', hue: 320, isNew: true },
-    { id: 'notion', name: 'Notion', by: 'Notion', desc: 'Search pages and turn notes into tasks.', hue: 0, mono: true },
-    { id: 'figma', name: 'Figma', by: 'Figma', desc: 'Pull frames and design tokens into code.', hue: 12, isNew: true },
-    { id: 'spotify', name: 'Spotify', by: 'Spotify', desc: 'Focus playlists and now-playing controls.', hue: 145 },
-    { id: 'gdrive', name: 'Google Drive', by: 'Google', desc: 'Find, read and attach Drive files.', hue: 50 },
-    { id: 'docker', name: 'Docker', by: 'Docker', desc: 'List, start and tail logs of containers.', hue: 205, isNew: true },
-    { id: 'homeassistant', name: 'Home Assistant', by: 'Open Home', desc: 'Lights, climate and scenes by voice.', hue: 195 },
+    { id: 'linear', brand: '#5E6AD2', name: 'Linear', by: 'Linear', desc: 'Create and triage issues from a prompt.', hue: 235, isNew: true, featured: true },
+    { id: 'slack', brand: '#4A154B', name: 'Slack', by: 'Slack', desc: 'Read channels, draft replies, post summaries.', hue: 320, isNew: true },
+    { id: 'notion', brand: '#000000', name: 'Notion', by: 'Notion', desc: 'Search pages and turn notes into tasks.', hue: 0, mono: true },
+    { id: 'figma', brand: '#F24E1E', name: 'Figma', by: 'Figma', desc: 'Pull frames and design tokens into code.', hue: 12, isNew: true },
+    { id: 'spotify', brand: '#1DB954', name: 'Spotify', by: 'Spotify', desc: 'Focus playlists and now-playing controls.', hue: 145 },
+    { id: 'gdrive', brand: '#4285F4', name: 'Google Drive', by: 'Google', desc: 'Find, read and attach Drive files.', hue: 50 },
+    { id: 'docker', brand: '#2496ED', name: 'Docker', by: 'Docker', desc: 'List, start and tail logs of containers.', hue: 205, isNew: true },
+    { id: 'homeassistant', brand: '#18BCF2', name: 'Home Assistant', by: 'Open Home', desc: 'Lights, climate and scenes by voice.', hue: 195 },
   ];
 
   const installed = new Set(['pdf', 'slack']);
@@ -116,7 +116,20 @@
     const t = el('span', `bz-tile ${size}`);
     t.style.setProperty('--hue', item.hue);
     if (item.mono) t.classList.add('is-mono');
-    // 3D icon (Fluent Emoji, bundled); the first letter shows if it's missing.
+    // Plugins: the real brand mark (Simple Icons, bundled), white on the
+    // brand colour. Skills: a 3D icon (Fluent Emoji, bundled).
+    if (item.brand) {
+      t.classList.add('has-logo');
+      t.style.setProperty('--brand', item.brand);
+      const logo = el('span', 'bz-tile-logo');
+      logo.style.setProperty('--logo', `url("assets/icons/brands/${item.id}.svg")`);
+      t.append(logo);
+      const badge = el('span', 'bz-tile-kind');
+      badge.append(icon(kind === 'skill' ? 'ic-zap' : 'ic-package'));
+      t.append(badge);
+      return t;
+    }
+    // The first letter shows if the 3D icon is missing.
     const img = el('img', 'bz-tile-img');
     img.src = `assets/icons/fluent-3d/${item.id}.png`;
     img.alt = '';
