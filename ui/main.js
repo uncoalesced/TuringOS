@@ -265,6 +265,23 @@ function createWindow() {
     }
   });
 
+  // Dev only: reload the page whenever the renderer files change, so edits
+  // show up in the open window without a manual relaunch. On by default;
+  // off in KIOSK mode (the real demo) or with NO_WATCH=1. Only covers the
+  // renderer (html/css/js) — main.js/preload.js need a real restart, since
+  // that code is already loaded into this process.
+  if (!KIOSK && process.env.NO_WATCH !== '1') {
+    const RELOAD_FILES = new Set(['index.html', 'styles.css', 'app.js', 'theme.js']);
+    let reloadTimer = null;
+    fs.watch(__dirname, (_event, filename) => {
+      if (!filename || !RELOAD_FILES.has(filename)) return;
+      clearTimeout(reloadTimer);
+      reloadTimer = setTimeout(() => {
+        if (win && !win.isDestroyed()) win.webContents.reload();
+      }, 120);
+    });
+  }
+
   // Dev only: UI_SHELL_SHOT=/path/out.png captures the window after it settles.
   if (process.env.UI_SHELL_SHOT) {
     win.webContents.once('did-finish-load', () => {

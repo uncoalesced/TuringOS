@@ -257,29 +257,6 @@ body {
   letter-spacing: -0.025em;
 }
 
-.quote {
-  margin-top: 4px;
-  max-width: 480px;
-  font-family: var(--serif);
-  font-style: italic;
-  font-size: 16px;
-  color: var(--muted);
-  text-align: center;
-  animation: enter 620ms var(--ease-out) 160ms both;
-  transition: transform 180ms var(--ease-out), filter 180ms var(--ease-out), visibility 0s;
-}
-
-/* The @ picker opens right over this; dissolve it out of the way rather
-   than let the text show through or behind the list. Visibility only
-   flips once the dissolve finishes, so nothing sharp ever overlaps. */
-.quote.is-hidden {
-  transform: translateY(6px) scale(0.97);
-  filter: blur(6px);
-  visibility: hidden;
-  pointer-events: none;
-  transition: transform 180ms var(--ease-out), filter 180ms var(--ease-out), visibility 0s 180ms;
-}
-
 /* ─── Composer ─────────────────────────────────────────────────────────── */
 
 .composer {

@@ -91,23 +91,6 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && weatherOpen) setWeatherOpen(false);
 });
 
-// ─── Quote of the day ───────────────────────────────────────────────────────
-// No backend for this yet: a fixed list, picked deterministically by date so
-// it's stable across reloads and doesn't flicker between renders.
-
-const QUOTES = [
-  'Life shrinks or expands in proportion with one\u2019s courage.',
-  'The only way to do great work is to love what you do.',
-  'Simplicity is the ultimate sophistication.',
-  'What we think, we become.',
-  'The obstacle is the way.',
-  'Done is better than perfect.',
-];
-
-function dayNumber() {
-  return Math.floor(Date.now() / 86400000);
-}
-
 // ─── Clock ──────────────────────────────────────────────────────────────────
 
 function greeting(hour) {
@@ -123,12 +106,6 @@ function tickClock() {
   $('#menubar-clock').textContent = `${shortDate}  ${time}`;
   $('#hero-time').textContent = time;
   $('#hero-greeting').textContent = greeting(now.getHours());
-}
-
-function tickDay() {
-  $('#quote').textContent = `\u201C${QUOTES[dayNumber() % QUOTES.length]}\u201D`;
-  // Placeholder: no real focus-session tracking exists yet.
-  $('#focused-today').textContent = '0m focused today';
 }
 
 // ─── State ──────────────────────────────────────────────────────────────────
@@ -295,9 +272,6 @@ function drawMention() {
   }
   mention.replaceChildren(...items);
   mention.hidden = false;
-  // The list drops down over where the quote sits; hide it rather than
-  // let text show through/behind an open picker.
-  $('#quote').classList.add('is-hidden');
 }
 
 function setActive(i) {
@@ -310,7 +284,6 @@ function closeMention() {
   mentionMode = null;
   trigger = null;
   mention.hidden = true;
-  $('#quote').classList.remove('is-hidden');
 }
 
 function setProject(p) {
@@ -547,7 +520,8 @@ dockItems.forEach((el) => {
 
 tickClock();
 setInterval(tickClock, 1000);
-tickDay();
+// Placeholder: no real focus-session tracking exists yet.
+$('#focused-today').textContent = '0m focused today';
 
 if (window.shell) {
   window.shell.getState().then(render);
