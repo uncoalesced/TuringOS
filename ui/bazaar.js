@@ -116,7 +116,15 @@
     const t = el('span', `bz-tile ${size}`);
     t.style.setProperty('--hue', item.hue);
     if (item.mono) t.classList.add('is-mono');
-    t.append(el('span', 'bz-tile-letter', item.name[0]));
+    // 3D icon (Fluent Emoji, bundled); the first letter shows if it's missing.
+    const img = el('img', 'bz-tile-img');
+    img.src = `assets/icons/fluent-3d/${item.id}.png`;
+    img.alt = '';
+    img.draggable = false;
+    img.addEventListener('error', () => img.replaceWith(el('span', 'bz-tile-letter', item.name[0])), { once: true });
+    t.classList.add('has-img');
+    img.addEventListener('error', () => t.classList.remove('has-img'), { once: true });
+    t.append(img);
     const badge = el('span', 'bz-tile-kind');
     badge.append(icon(kind === 'skill' ? 'ic-zap' : 'ic-package'));
     t.append(badge);
