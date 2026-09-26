@@ -11,6 +11,10 @@ const SAMPLE = {
   gameMode: false,
   system: { host: 'claudeos', cpu: 18, mem: 42, battery: { level: 82, charging: false }, wifi: { ssid: 'Studio' } },
   weather: { city: 'Bengaluru', temp: 26, feels: 30, rain: 0, wind: 8, windDir: 200, code: 2, day: true },
+  github: {
+    mine: [{ number: 127, title: 'Handle an interrupted pacman install', url: '#' }],
+    reviews: [{ number: 89, title: 'Add Btrfs snapshot rollback', repository: { name: 'claudeos' }, url: '#' }],
+  },
   user: { name: null },
 };
 
@@ -67,6 +71,41 @@ function renderWeather(w) {
   $('.wc-rain').textContent = `${w.rain} mm`;
   $('.wc-wind').textContent = `${w.wind} km/h`;
   $('.wc-arrow').style.transform = `rotate(${(w.windDir ?? 0) + 180}deg)`;
+}
+
+function githubRow(pr, subtext) {
+  const a = document.createElement('a');
+  a.className = 'widget-row';
+  a.href = pr.url;
+  a.target = '_blank';
+  a.rel = 'noopener';
+  const title = document.createElement('span');
+  title.className = 'widget-row-title';
+  title.textContent = `#${pr.number} ${pr.title}`;
+  const sub = document.createElement('span');
+  sub.className = 'widget-row-sub';
+  sub.textContent = subtext;
+  a.append(title, sub);
+  return a;
+}
+
+function renderGithub(gh) {
+  const body = $('#github-body');
+  if (!gh) {
+    body.replaceChildren();
+    const empty = document.createElement('p');
+    empty.className = 'widget-empty';
+    empty.textContent = "Not connected — run `gh auth login` on this machine.";
+    body.append(empty);
+    return;
+  }
+  const rows = [
+    ...gh.mine.map((pr) => githubRow(pr, pr.headRefName || 'My PR')),
+    ...gh.reviews.map((pr) => githubRow(pr, pr.repository?.name ? `Review · ${pr.repository.name}` : 'Review requested')),
+  ];
+  body.replaceChildren(...rows.length
+    ? rows
+    : [Object.assign(document.createElement('p'), { className: 'widget-empty', textContent: 'No open PRs or review requests.' })]);
 }
 
 let weatherOpen = false;
@@ -176,6 +215,7 @@ function render(snap) {
   ].filter(Boolean).join('  ·  ');
   $('#corner-system').title = host;
   renderWeather(s.weather);
+  renderGithub(s.github);
 }
 
 function pickDefined(obj) {

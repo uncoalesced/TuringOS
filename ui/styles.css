@@ -746,6 +746,7 @@ kbd {
   border-radius: 9px;
   color: var(--text);
   font-size: 13px;
+  text-decoration: none;
 }
 
 .widget-row:hover { background: var(--surface-strong); }

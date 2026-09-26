@@ -188,6 +188,38 @@ async function refreshWeather() {
   }
 }
 
+// ─── GitHub widget ──────────────────────────────────────────────────────────
+// No new credentials — assumes `gh auth login` is already done on the
+// machine, same as the rest of ClaudeOS's GitHub flows (see
+// ui-docs/UI_SHELL.md's GitHub integration section for the exact commands).
+
+const GITHUB_MS = 5 * 60 * 1000;
+let github = null;
+
+function gh(args) {
+  return new Promise((resolve) => {
+    execFile('gh', args, { timeout: 10000 }, (err, stdout) => {
+      if (err) return resolve(null);
+      try {
+        resolve(JSON.parse(stdout));
+      } catch {
+        resolve(null);
+      }
+    });
+  });
+}
+
+async function refreshGithub() {
+  const [mine, reviews] = await Promise.all([
+    gh(['pr', 'list', '--author', '@me', '--json', 'number,title,headRefName,additions,deletions,statusCheckRollup,reviewDecision,url']),
+    gh(['search', 'prs', '--review-requested=@me', '--state', 'open', '--json', 'number,title,repository,url']),
+  ]);
+  // gh missing/unauthenticated: leave github as whatever it last was (null
+  // on first run), same "keep the last good reading" shape as weather.
+  if (mine || reviews) github = { mine: mine || [], reviews: reviews || [] };
+  push();
+}
+
 function snapshot() {
   const state = readJSON(STATE_FILE);
   return {
@@ -208,6 +240,7 @@ function snapshot() {
       wifi,
     },
     weather,
+    github,
   };
 }
 
@@ -367,6 +400,8 @@ app.whenReady().then(() => {
   refreshWifi();
   refreshWeather();
   setInterval(refreshWeather, WEATHER_MS);
+  refreshGithub();
+  setInterval(refreshGithub, GITHUB_MS);
   watchData();
   setInterval(() => {
     watchData();
