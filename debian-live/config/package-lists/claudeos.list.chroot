@@ -49,6 +49,10 @@ nitrogen
 lxappearance
 x11-utils
 x11-xserver-utils
+xterm
+lightdm
+# A file manager so judges can browse the filesystem
+thunar
 
 # ── Terminal (for judges who want to poke around) ─────────────────────────────
 rxvt-unicode
