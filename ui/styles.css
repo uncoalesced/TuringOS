@@ -800,7 +800,11 @@ kbd {
   background: var(--surface-strong);
   color: var(--text);
   transform-origin: bottom center;
-  transition: transform 120ms var(--ease-out), background-color 160ms var(--ease-out);
+  /* No transform transition: a JS spring (see app.js) owns transform every
+     frame. A CSS transition retargeting against a value that's already
+     changing 60x/second would fight the spring instead of smoothing it. */
+  transition: background-color 160ms var(--ease-out);
+  will-change: transform;
 }
 
 .dock-item:hover { background: color-mix(in srgb, var(--accent) 14%, var(--surface-strong)); }
