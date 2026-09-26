@@ -455,6 +455,186 @@ function sync() {
   send.disabled = !input.value.trim();
 }
 
+// ─── Model picker ───────────────────────────────────────────────────────────
+// Which model/effort the next agent run uses. Persisted locally; passed
+// through to the backend as env vars on start (CLAUDEOS_AGENT_MODEL/EFFORT) —
+// additive only, agent/claude.sh doesn't read them yet, so this is inert
+// until that's wired up, not a silent no-op pretending to work today.
+
+const MODELS = [
+  { id: 'claude-fable-5-1', label: 'Fable 5.1', desc: 'For your toughest challenges' },
+  { id: 'claude-opus-5-5', label: 'Opus 5.5', desc: 'Most capable for ambitious work' },
+  { id: 'claude-sonnet-5', label: 'Sonnet 5', desc: 'Most efficient for everyday tasks' },
+  { id: 'claude-haiku-4-5', label: 'Haiku 4.5', desc: 'Fastest for quick answers' },
+];
+const EFFORTS = [
+  { id: 'low', label: 'Low' },
+  { id: 'medium', label: 'Medium', isDefault: true },
+  { id: 'high', label: 'High' },
+  { id: 'xhigh', label: 'Extra' },
+  { id: 'max', label: 'Max' },
+];
+
+let modelChoice = localStorage.getItem('model') || 'claude-sonnet-5';
+let effortChoice = localStorage.getItem('effort') || 'medium';
+if (!MODELS.some((m) => m.id === modelChoice)) modelChoice = 'claude-sonnet-5';
+if (!EFFORTS.some((e) => e.id === effortChoice)) effortChoice = 'medium';
+
+const modelMenu = $('#model-menu');
+const modelPickerButton = $('#model-picker-button');
+let modelMenuOpen = false;
+
+function renderModelPickerButton() {
+  $('#model-picker-label').textContent = MODELS.find((m) => m.id === modelChoice)?.label || modelChoice;
+  $('#model-picker-effort-label').textContent = EFFORTS.find((e) => e.id === effortChoice)?.label || effortChoice;
+}
+
+function renderModelMenu() {
+  const modelsPage = $('#model-menu-page-models');
+  modelsPage.replaceChildren(...MODELS.map((m) => {
+    const el = document.createElement('button');
+    el.type = 'button';
+    el.className = 'model-option';
+    el.setAttribute('role', 'menuitemradio');
+    el.setAttribute('aria-checked', String(m.id === modelChoice));
+    el.innerHTML = `
+      <span class="model-option-text">
+        <span class="model-option-name">${m.label}</span>
+        <span class="model-option-desc">${m.desc}</span>
+      </span>
+      ${m.id === modelChoice ? '<svg class="icon" aria-hidden="true"><use href="#ic-check" /></svg>' : ''}
+    `;
+    el.addEventListener('click', () => {
+      modelChoice = m.id;
+      localStorage.setItem('model', modelChoice);
+      renderModelPickerButton();
+      renderModelMenu();
+      closeModelMenu();
+    });
+    return el;
+  }));
+
+  const divider = document.createElement('hr');
+  divider.className = 'model-menu-divider';
+  const effortRow = document.createElement('button');
+  effortRow.type = 'button';
+  effortRow.className = 'model-menu-more';
+  effortRow.innerHTML = `<span>Effort</span><span class="model-menu-more-value">${EFFORTS.find((e) => e.id === effortChoice)?.label}<svg class="icon" aria-hidden="true"><use href="#ic-chevron-right" /></svg></span>`;
+  effortRow.addEventListener('click', () => showModelMenuPage('effort'));
+
+  const moreDivider = document.createElement('hr');
+  moreDivider.className = 'model-menu-divider';
+  const moreRow = document.createElement('button');
+  moreRow.type = 'button';
+  moreRow.className = 'model-menu-more';
+  moreRow.innerHTML = '<span>More models</span><svg class="icon" aria-hidden="true"><use href="#ic-chevron-right" /></svg>';
+  moreRow.addEventListener('click', () => setHint('More models coming soon'));
+
+  modelsPage.append(divider, effortRow, moreDivider, moreRow);
+
+  const effortPage = $('#model-menu-page-effort');
+  const existingOptions = effortPage.querySelectorAll('.effort-option');
+  existingOptions.forEach((el) => el.remove());
+  effortPage.append(...EFFORTS.map((eff) => {
+    const el = document.createElement('button');
+    el.type = 'button';
+    el.className = 'effort-option';
+    el.setAttribute('role', 'menuitemradio');
+    el.setAttribute('aria-checked', String(eff.id === effortChoice));
+    el.innerHTML = `
+      <span class="model-option-text">${eff.label}</span>
+      ${eff.isDefault ? '<span class="effort-default-tag">Default</span>' : ''}
+      ${eff.id === effortChoice ? '<svg class="icon" aria-hidden="true"><use href="#ic-check" /></svg>' : ''}
+    `;
+    el.addEventListener('click', () => {
+      effortChoice = eff.id;
+      localStorage.setItem('effort', effortChoice);
+      renderModelPickerButton();
+      renderModelMenu();
+      showModelMenuPage('models');
+      closeModelMenu();
+    });
+    return el;
+  }));
+}
+
+function showModelMenuPage(page) {
+  $('#model-menu-page-models').hidden = page !== 'models';
+  $('#model-menu-page-effort').hidden = page !== 'effort';
+}
+
+function openModelMenu() {
+  renderModelMenu();
+  showModelMenuPage('models');
+  modelMenu.hidden = false;
+  modelMenuOpen = true;
+  modelPickerButton.setAttribute('aria-expanded', 'true');
+}
+
+function closeModelMenu() {
+  modelMenu.hidden = true;
+  modelMenuOpen = false;
+  modelPickerButton.setAttribute('aria-expanded', 'false');
+}
+
+modelPickerButton.addEventListener('click', () => (modelMenuOpen ? closeModelMenu() : openModelMenu()));
+$('#model-menu-back').addEventListener('click', () => showModelMenuPage('models'));
+document.addEventListener('click', (e) => {
+  if (modelMenuOpen && !e.target.closest('.model-picker')) closeModelMenu();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && modelMenuOpen) closeModelMenu();
+});
+
+renderModelPickerButton();
+
+// ─── Voice input (mic button) ───────────────────────────────────────────────
+// Chromium's built-in Web Speech API — no new dependency, no new
+// credentials. Depends on Chromium's own speech backend being reachable;
+// unverified on the offline/VM target, so it fails soft with a clear
+// message rather than pretending to work.
+
+const micButton = $('#composer-mic');
+const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognizer = null;
+let micListening = false;
+
+function setMicListening(on) {
+  micListening = on;
+  micButton.setAttribute('aria-pressed', String(on));
+  micButton.querySelector('use').setAttribute('href', on ? '#ic-mic-off' : '#ic-mic');
+  micButton.setAttribute('aria-label', on ? 'Stop dictation' : 'Dictate');
+}
+
+if (!SpeechRecognitionCtor) {
+  micButton.disabled = true;
+  micButton.title = 'Voice input is not available in this build';
+} else {
+  micButton.addEventListener('click', () => {
+    if (micListening) {
+      recognizer?.stop();
+      return;
+    }
+    recognizer = new SpeechRecognitionCtor();
+    recognizer.continuous = true;
+    recognizer.interimResults = false;
+    recognizer.lang = navigator.language || 'en-US';
+    const baseText = input.value ? `${input.value.trim()} ` : '';
+    recognizer.onstart = () => setMicListening(true);
+    recognizer.onresult = (e) => {
+      let transcript = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) transcript += e.results[i][0].transcript;
+      input.value = baseText + transcript;
+      sync();
+    };
+    recognizer.onerror = (e) => {
+      setHint(e.error === 'not-allowed' ? 'Microphone access was denied' : 'Voice input isn’t working right now', 'error');
+    };
+    recognizer.onend = () => setMicListening(false);
+    recognizer.start();
+  });
+}
+
 async function submit() {
   const task = input.value.trim();
   if (!task) return;
@@ -466,7 +646,7 @@ async function submit() {
     setHint('Sample mode: nothing was started', 'error');
     return;
   }
-  const res = await window.shell.startAgent(project.path, task);
+  const res = await window.shell.startAgent(project.path, task, { model: modelChoice, effort: effortChoice });
   if (!res.ok) {
     setHint(res.error, 'error');
     return;

@@ -3,7 +3,7 @@
 // snapshot to the page whenever something changes. The page never touches
 // the system directly.
 
-const { app, BrowserWindow, ipcMain, nativeTheme } = require('electron');
+const { app, BrowserWindow, ipcMain, nativeTheme, session } = require('electron');
 const { execFile, execFileSync, spawn } = require('child_process');
 const { OAuth2Client } = require('google-auth-library');
 const fs = require('fs');
@@ -615,14 +615,20 @@ ipcMain.handle('projects:list', () => findProjects());
 
 // Start the agent on a task. The UI never builds shell strings: arguments go
 // straight to the claudeos script, which creates the sandbox first.
-ipcMain.handle('agent:start', (_e, { project, task }) => {
+ipcMain.handle('agent:start', (_e, { project, task, model, effort }) => {
   if (!fs.existsSync(DATA_DIR)) return { ok: false, error: 'HushOS is not set up. Run ./claudeos init first.' };
   if (typeof project !== 'string' || !fs.existsSync(project)) return { ok: false, error: 'That project folder no longer exists.' };
   if (typeof task !== 'string' || !task.trim()) return { ok: false, error: 'Describe the task first.' };
+  // Passed through as env vars, not yet read by agent/claude.sh — additive
+  // and inert until the backend opts in, not a silent no-op.
+  const env = { ...process.env };
+  if (typeof model === 'string') env.CLAUDEOS_AGENT_MODEL = model;
+  if (typeof effort === 'string') env.CLAUDEOS_AGENT_EFFORT = effort;
   const child = spawn(CLAUDEOS_BIN, ['agent', 'start', project, task.trim()], {
     cwd: REPO_ROOT,
     detached: true,
     stdio: 'ignore',
+    env,
   });
   child.unref();
   return { ok: true };
@@ -630,6 +636,11 @@ ipcMain.handle('agent:start', (_e, { project, task }) => {
 
 app.whenReady().then(() => {
   if (process.platform === 'darwin') app.dock?.setIcon(path.join(__dirname, 'assets/brand/app-icon.png'));
+  // Electron denies every permission by default. The mic button is the
+  // only thing here that needs one — grant just that, deny the rest.
+  session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
+    callback(permission === 'media');
+  });
   createWindow();
   refreshWifi();
   refreshWeather();
