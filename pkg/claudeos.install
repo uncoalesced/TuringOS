@@ -1,0 +1,40 @@
+post_install() {
+    echo ""
+    echo "  ╔═══════════════════════════════════════════╗"
+    echo "  ║           ClaudeOS Installed              ║"
+    echo "  ║     Agentic Substrate · CachyOS           ║"
+    echo "  ╚═══════════════════════════════════════════╝"
+    echo ""
+    echo "  Run first-time setup:"
+    echo ""
+    echo "    claudeos init"
+    echo ""
+    echo "  Then start your first agent task:"
+    echo ""
+    echo "    claudeos agent start /path/to/project \"Your task\""
+    echo ""
+    echo "  Full workflow guide:"
+    echo ""
+    echo "    cat /usr/share/doc/claudeos/WORKFLOW.md"
+    echo "    claudeos help"
+    echo ""
+    echo "  Optional dependencies for the best experience:"
+    echo ""
+    echo "    sudo pacman -S gum fzf nodejs npm"
+    echo ""
+}
+
+post_upgrade() {
+    echo ""
+    echo "  ClaudeOS upgraded."
+    echo "  Your ~/.claudeos/ data and config are untouched."
+    echo ""
+}
+
+pre_remove() {
+    echo ""
+    echo "  ClaudeOS will be removed."
+    echo "  Your ~/.claudeos/ data directory is NOT deleted."
+    echo "  Remove it manually if needed: rm -rf ~/.claudeos"
+    echo ""
+}

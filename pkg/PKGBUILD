@@ -1,0 +1,118 @@
+# Maintainer: ClaudeOS Contributors
+# PKGBUILD for claudeos — Agentic Substrate for CachyOS
+
+pkgname=claudeos
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Agentic OS substrate — safe Claude agent execution with Btrfs sandboxing, MCP Bazaar, and Game Mode"
+arch=('any')
+url="https://github.com/yourusername/claudeos"
+license=('MIT')
+
+# ─── Runtime Dependencies ─────────────────────────────────────────────────────
+# These must be present for claudeos to function.
+
+depends=(
+    'bash'          # shell runtime (>=4.0 for assoc arrays — CachyOS ships 5.x)
+    'git'           # sandbox merge/diff, bazaar git clone
+    'jq'            # state.json, MCP config injection, registry parsing
+    'rsync'         # sandbox copy backend fallback
+    'btrfs-progs'   # btrfs subvolume snapshot/delete
+    'util-linux'    # ionice (part of util-linux)
+    'procps-ng'     # ps, pgrep, renice
+    'libnotify'     # notify-send for agent completion notifications
+)
+
+# ─── Optional Dependencies ────────────────────────────────────────────────────
+
+optdepends=(
+    'gum: interactive terminal UI (browse, confirm, choose prompts)'
+    'fzf: fuzzy finder for Bazaar browser and sandbox picker'
+    'nodejs: required for npx-based MCP tool installs'
+    'npm: required for npx-based MCP tool installs'
+    'nvidia-utils: GPU monitoring in system HUD (nvidia-smi)'
+    'rocm-smi-lib: GPU monitoring for AMD GPUs'
+    'delta: enhanced git diff rendering in sandbox diff view'
+    'diff-so-fancy: alternative enhanced git diff renderer'
+)
+
+# ─── Build ────────────────────────────────────────────────────────────────────
+# No compilation needed — pure Bash. We just copy sources.
+
+options=('!strip')   # nothing to strip in a Bash package
+
+# When building from a local checkout (hackathon mode), source is the repo root.
+# When publishing to AUR, replace with a real source= pointing to a tarball/tag.
+#
+# AUR example:
+#   source=("${pkgname}-${pkgver}.tar.gz::https://github.com/yourusername/claudeos/archive/v${pkgver}.tar.gz")
+#   sha256sums=('SKIP')
+
+build() {
+    # Nothing to build
+    :
+}
+
+# ─── Package ──────────────────────────────────────────────────────────────────
+
+package() {
+    # Resolve repo root — one level up from pkg/
+    local _srcdir
+    _srcdir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+    # ── Main executable ───────────────────────────────────────────────────────
+    install -Dm755 "${_srcdir}/claudeos" \
+        "${pkgdir}/usr/local/bin/claudeos"
+
+    # ── Core library ──────────────────────────────────────────────────────────
+    install -Dm644 "${_srcdir}/core/config.sh"  \
+        "${pkgdir}/usr/lib/claudeos/core/config.sh"
+    install -Dm644 "${_srcdir}/core/ui.sh"      \
+        "${pkgdir}/usr/lib/claudeos/core/ui.sh"
+    install -Dm644 "${_srcdir}/core/logging.sh" \
+        "${pkgdir}/usr/lib/claudeos/core/logging.sh"
+
+    # ── Agent ─────────────────────────────────────────────────────────────────
+    install -Dm644 "${_srcdir}/agent/claude.sh" \
+        "${pkgdir}/usr/lib/claudeos/agent/claude.sh"
+
+    # ── Sandbox ───────────────────────────────────────────────────────────────
+    install -Dm644 "${_srcdir}/sandbox/btrfs.sh" \
+        "${pkgdir}/usr/lib/claudeos/sandbox/btrfs.sh"
+    install -Dm644 "${_srcdir}/sandbox/diff.sh"  \
+        "${pkgdir}/usr/lib/claudeos/sandbox/diff.sh"
+
+    # ── Bazaar ────────────────────────────────────────────────────────────────
+    install -Dm644 "${_srcdir}/bazaar/registry.sh"   \
+        "${pkgdir}/usr/lib/claudeos/bazaar/registry.sh"
+    install -Dm644 "${_srcdir}/bazaar/install.sh"    \
+        "${pkgdir}/usr/lib/claudeos/bazaar/install.sh"
+    install -Dm644 "${_srcdir}/bazaar/registry.json" \
+        "${pkgdir}/usr/lib/claudeos/bazaar/registry.json"
+
+    # ── Game Mode ─────────────────────────────────────────────────────────────
+    install -Dm644 "${_srcdir}/game/gamemode.sh" \
+        "${pkgdir}/usr/lib/claudeos/game/gamemode.sh"
+
+    # ── Monitor ───────────────────────────────────────────────────────────────
+    install -Dm644 "${_srcdir}/monitor/system.sh" \
+        "${pkgdir}/usr/lib/claudeos/monitor/system.sh"
+
+    # ── Docs ──────────────────────────────────────────────────────────────────
+    install -Dm644 "${_srcdir}/WORKFLOW.md" \
+        "${pkgdir}/usr/share/doc/claudeos/WORKFLOW.md"
+    install -Dm644 "${_srcdir}/plan.md" \
+        "${pkgdir}/usr/share/doc/claudeos/plan.md"
+
+    # ── First-run hook ────────────────────────────────────────────────────────
+    # Placed in /etc/profile.d/ so it runs on first interactive login
+    install -Dm755 "${_srcdir}/pkg/claudeos-first-run.sh" \
+        "${pkgdir}/etc/profile.d/claudeos-first-run.sh"
+
+    # ── install hook ──────────────────────────────────────────────────────────
+    install -Dm644 "${_srcdir}/pkg/claudeos.install" \
+        "${pkgdir}/usr/share/claudeos/claudeos.install"
+}
+
+# Attach the .install file so pacman shows post-install messages
+install=claudeos.install

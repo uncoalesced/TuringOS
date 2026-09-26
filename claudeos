@@ -36,25 +36,33 @@ set -euo pipefail
 
 CLAUDEOS_VERSION="0.1.0"
 
-# ─── Resolve Script Location ──────────────────────────────────────────────────
+# ─── Resolve Library Path ─────────────────────────────────────────────────────
+# When installed via PKGBUILD: modules live in /usr/lib/claudeos/
+# When running from a local checkout: modules are next to this script.
 
 _SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+if [[ -d "/usr/lib/claudeos" ]]; then
+    _LIB_DIR="/usr/lib/claudeos"
+else
+    _LIB_DIR="${_SCRIPT_DIR}"
+fi
+
 # ─── Source Core (must come first) ───────────────────────────────────────────
 
-source "${_SCRIPT_DIR}/core/config.sh"
-source "${_SCRIPT_DIR}/core/ui.sh"
-source "${_SCRIPT_DIR}/core/logging.sh"
+source "${_LIB_DIR}/core/config.sh"
+source "${_LIB_DIR}/core/ui.sh"
+source "${_LIB_DIR}/core/logging.sh"
 
 # ─── Source Modules ───────────────────────────────────────────────────────────
 
-source "${_SCRIPT_DIR}/sandbox/btrfs.sh"
-source "${_SCRIPT_DIR}/sandbox/diff.sh"
-source "${_SCRIPT_DIR}/agent/claude.sh"
-source "${_SCRIPT_DIR}/bazaar/registry.sh"
-source "${_SCRIPT_DIR}/bazaar/install.sh"
-source "${_SCRIPT_DIR}/game/gamemode.sh"
-source "${_SCRIPT_DIR}/monitor/system.sh"
+source "${_LIB_DIR}/sandbox/btrfs.sh"
+source "${_LIB_DIR}/sandbox/diff.sh"
+source "${_LIB_DIR}/agent/claude.sh"
+source "${_LIB_DIR}/bazaar/registry.sh"
+source "${_LIB_DIR}/bazaar/install.sh"
+source "${_LIB_DIR}/game/gamemode.sh"
+source "${_LIB_DIR}/monitor/system.sh"
 
 # ─── Init ─────────────────────────────────────────────────────────────────────
 

@@ -6,17 +6,27 @@ How to use the scripts end-to-end, from first install to running an agent and re
 
 ## Prerequisites
 
-Install these on your CachyOS machine before anything else:
-
+**macOS**
 ```bash
 # Required
-sudo pacman -S git jq
+brew install git jq
 
 # Strongly recommended (UI quality depends on these)
-sudo pacman -S gum fzf
+brew install gum fzf
 
 # Optional but useful
-sudo pacman -S rsync nodejs npm
+brew install node
+```
+
+**Arch / CachyOS**
+```bash
+sudo pacman -S git jq gum fzf rsync nodejs npm
+```
+
+**Ubuntu / Debian**
+```bash
+sudo apt install git jq fzf rsync nodejs npm
+# gum: https://github.com/charmbracelet/gum#installation
 ```
 
 ---
@@ -434,15 +444,15 @@ tail -f ~/.claudeos/logs/audit.log
 Set `CLAUDEOS_AGENT_BINARY` in `~/.claudeos/config.env` to the full path of your Claude Code CLI binary.
 
 **Sandbox creation fails with "not a btrfs subvolume"**
-Set `CLAUDEOS_SANDBOX_BACKEND=copy` in `~/.claudeos/config.env`. The rsync copy fallback works on any filesystem.
+Set `CLAUDEOS_SANDBOX_BACKEND=copy` in `~/.claudeos/config.env`. The rsync copy fallback works on any filesystem — including macOS APFS.
 
 **`jq: command not found`**
 `jq` is required for the Bazaar and state management. Install it: `sudo pacman -S jq`
 
 **MCP tool installed but not appearing in Claude Desktop**
 Claude Desktop must be restarted after any MCP config change. The config file is at:
-- Linux: `~/.config/Claude/claude_desktop_config.json`
 - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Linux: `~/.config/Claude/claude_desktop_config.json`
 
 **Agent completed but diff shows no changes**
 The agent may have worked on untracked files. If the sandbox has no `.git`, the diff falls back to rsync dry-run. Check `~/.claudeos/logs/agent-session-*.log` for what the agent actually did.

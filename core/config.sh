@@ -12,7 +12,14 @@ _CLAUDEOS_CONFIG_LOADED=1
 
 # Resolve the real directory of this script so paths work regardless of $PWD
 _CORE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-export CLAUDEOS_ROOT="$(cd "${_CORE_DIR}/.." && pwd)"
+
+# When installed via PKGBUILD, libs are at /usr/lib/claudeos
+# When running from a local checkout, root is one level up from core/
+if [[ -d "/usr/lib/claudeos" ]]; then
+    export CLAUDEOS_ROOT="/usr/lib/claudeos"
+else
+    export CLAUDEOS_ROOT="$(cd "${_CORE_DIR}/.." && pwd)"
+fi
 
 # ─── Runtime Directories ──────────────────────────────────────────────────────
 
