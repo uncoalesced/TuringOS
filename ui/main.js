@@ -5,7 +5,9 @@
 
 const { app, BrowserWindow, ipcMain, nativeTheme } = require('electron');
 const { execFile, execFileSync, spawn } = require('child_process');
+const { OAuth2Client } = require('google-auth-library');
 const fs = require('fs');
+const http = require('http');
 const os = require('os');
 const path = require('path');
 
@@ -220,6 +222,203 @@ async function refreshGithub() {
   push();
 }
 
+// ─── Config file (for values that need to survive `claudeos ui`'s exec) ────
+// `./claudeos ui` execs into ui/run.sh, which does NOT inherit non-exported
+// shell variables. core/config.sh's config::load() does a plain `source`
+// (no `export`/`set -a`), and config::set() writes plain KEY=VALUE with no
+// `export` keyword — so a key a user puts in ~/.claudeos/config.env never
+// reaches this process's `process.env`. Parse the file ourselves; a real
+// exported env var still wins if one happens to be set.
+
+let configEnvCache = null;
+
+function readConfigEnv() {
+  if (configEnvCache) return configEnvCache;
+  configEnvCache = {};
+  try {
+    const text = fs.readFileSync(path.join(DATA_DIR, 'config.env'), 'utf8');
+    for (const line of text.split('\n')) {
+      const t = line.trim();
+      if (!t || t.startsWith('#')) continue;
+      const i = t.indexOf('=');
+      if (i === -1) continue;
+      configEnvCache[t.slice(0, i)] = t.slice(i + 1);
+    }
+  } catch {
+    // No config.env yet — fine, callers fall back to "not configured".
+  }
+  return configEnvCache;
+}
+
+function getConfigValue(key) {
+  return process.env[key] || readConfigEnv()[key] || null;
+}
+
+// ─── Gmail/Calendar widget (Google OAuth) ───────────────────────────────────
+// The first feature that touches real third-party personal data — a bigger
+// trust surface than anything else here. Needs the project owner to
+// register a Google Cloud "Desktop app" OAuth client and put
+// GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET in ~/.claudeos/config.env. The
+// resulting refresh token lives in its own file, mode 0600, and never
+// crosses the IPC bridge — only derived display fields (event title/time) do.
+
+const GOOGLE_TOKENS_FILE = path.join(DATA_DIR, 'google-tokens.json');
+const GOOGLE_SCOPES = ['https://www.googleapis.com/auth/calendar.events.readonly'];
+const GOOGLE_MS = 5 * 60 * 1000;
+
+let googleCalendar = { connected: false, nextEvent: null };
+let googleOAuthInFlight = false;
+
+function googleCreds() {
+  const clientId = getConfigValue('GOOGLE_CLIENT_ID');
+  const clientSecret = getConfigValue('GOOGLE_CLIENT_SECRET');
+  return clientId && clientSecret ? { clientId, clientSecret } : null;
+}
+
+function loadGoogleTokens() {
+  try {
+    return JSON.parse(fs.readFileSync(GOOGLE_TOKENS_FILE, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+function saveGoogleTokens(tokens) {
+  fs.writeFileSync(GOOGLE_TOKENS_FILE, JSON.stringify(tokens), { mode: 0o600 });
+}
+
+// Opens the OS's real default browser — never an in-app BrowserWindow.
+// Google actively rejects/flags OAuth run inside embedded webviews for this
+// client type. Same fallback-chain shape as the dock's own Browser launcher.
+function openInBrowser(url) {
+  const candidates = [['xdg-open', [url]], ['x-www-browser', [url]], ['open', [url]]];
+  const found = candidates.find(([cmd]) => commandExists(cmd));
+  if (!found) return false;
+  const [cmd, args] = found;
+  try {
+    spawn(cmd, args, { detached: true, stdio: 'ignore' }).unref();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function connectGoogle() {
+  if (googleOAuthInFlight) return { ok: false, error: 'Already connecting — check your browser.' };
+  const creds = googleCreds();
+  if (!creds) {
+    return {
+      ok: false,
+      error: 'Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in ~/.claudeos/config.env first (a Google Cloud "Desktop app" OAuth client).',
+    };
+  }
+
+  googleOAuthInFlight = true;
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      googleOAuthInFlight = false;
+      resolve(result);
+    };
+
+    // A closed/ignored consent tab shouldn't leave the loopback server (or
+    // the "connecting" state) hanging forever.
+    const giveUp = setTimeout(() => {
+      server.close(() => {});
+      finish({ ok: false, error: 'Timed out waiting for Google sign-in.' });
+    }, 5 * 60 * 1000);
+
+    const server = http.createServer(async (req, res) => {
+      const url = new URL(req.url, 'http://127.0.0.1');
+      if (url.pathname !== '/oauth2callback') {
+        res.writeHead(404);
+        res.end();
+        return;
+      }
+      const code = url.searchParams.get('code');
+      const authError = url.searchParams.get('error');
+      res.writeHead(200, { 'content-type': 'text/html' });
+      res.end(authError
+        ? '<html><body>Could not connect Google Calendar. You can close this tab.</body></html>'
+        : '<html><body>Google Calendar connected — you can close this tab and go back to HushOS.</body></html>');
+      server.close();
+      clearTimeout(giveUp);
+
+      if (authError) {
+        finish({ ok: false, error: 'Google sign-in was cancelled or denied.' });
+        return;
+      }
+      try {
+        const port = server.address().port;
+        const client = new OAuth2Client(creds.clientId, creds.clientSecret, `http://127.0.0.1:${port}/oauth2callback`);
+        const { tokens } = await client.getToken(code);
+        saveGoogleTokens(tokens);
+        await refreshGoogleCalendar();
+        finish({ ok: true });
+      } catch {
+        finish({ ok: false, error: 'Could not finish connecting Google Calendar.' });
+      }
+    });
+
+    server.listen(0, '127.0.0.1', () => {
+      const port = server.address().port;
+      const client = new OAuth2Client(creds.clientId, creds.clientSecret, `http://127.0.0.1:${port}/oauth2callback`);
+      const authUrl = client.generateAuthUrl({ access_type: 'offline', scope: GOOGLE_SCOPES, prompt: 'consent' });
+      if (!openInBrowser(authUrl)) {
+        clearTimeout(giveUp);
+        server.close();
+        finish({ ok: false, error: "Couldn't open a browser on this machine." });
+      }
+    });
+  });
+}
+
+async function refreshGoogleCalendar() {
+  const tokens = loadGoogleTokens();
+  const creds = googleCreds();
+  if (!tokens || !creds) {
+    googleCalendar = { connected: false, nextEvent: null };
+    return;
+  }
+  try {
+    const client = new OAuth2Client(creds.clientId, creds.clientSecret);
+    client.setCredentials(tokens);
+    client.on('tokens', (fresh) => saveGoogleTokens({ ...tokens, ...fresh }));
+    const { token } = await client.getAccessToken();
+    if (!token) {
+      googleCalendar = { connected: true, nextEvent: null };
+      return;
+    }
+    const q = new URLSearchParams({
+      timeMin: new Date().toISOString(),
+      maxResults: '1',
+      singleEvents: 'true',
+      orderBy: 'startTime',
+    });
+    const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?${q}`, {
+      headers: { authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) {
+      googleCalendar = { connected: true, nextEvent: null };
+      return;
+    }
+    const data = await res.json();
+    const ev = data.items?.[0];
+    googleCalendar = {
+      connected: true,
+      nextEvent: ev ? { title: ev.summary || '(no title)', start: ev.start?.dateTime || ev.start?.date || null } : null,
+    };
+  } catch {
+    // Offline, expired refresh token, etc.: stay "connected" (a token file
+    // exists) but drop the stale event rather than guess.
+    googleCalendar = { connected: true, nextEvent: null };
+  }
+  push();
+}
+
 function snapshot() {
   const state = readJSON(STATE_FILE);
   return {
@@ -241,6 +440,7 @@ function snapshot() {
     },
     weather,
     github,
+    calendar: googleCalendar,
   };
 }
 
@@ -376,6 +576,8 @@ ipcMain.handle('dock:launch', (_e, id) => {
   }
 });
 
+ipcMain.handle('google:connect', () => connectGoogle());
+
 ipcMain.handle('state:get', () => snapshot());
 ipcMain.handle('projects:list', () => findProjects());
 
@@ -402,6 +604,8 @@ app.whenReady().then(() => {
   setInterval(refreshWeather, WEATHER_MS);
   refreshGithub();
   setInterval(refreshGithub, GITHUB_MS);
+  refreshGoogleCalendar();
+  setInterval(refreshGoogleCalendar, GOOGLE_MS);
   watchData();
   setInterval(() => {
     watchData();

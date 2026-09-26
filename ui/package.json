@@ -9,5 +9,8 @@
   },
   "devDependencies": {
     "electron": "^44.4.5"
+  },
+  "dependencies": {
+    "google-auth-library": "^11.1.0"
   }
 }

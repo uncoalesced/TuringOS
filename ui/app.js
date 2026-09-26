@@ -15,6 +15,11 @@ const SAMPLE = {
     mine: [{ number: 127, title: 'Handle an interrupted pacman install', url: '#' }],
     reviews: [{ number: 89, title: 'Add Btrfs snapshot rollback', repository: { name: 'claudeos' }, url: '#' }],
   },
+  // Real personal data, not made up — unlike weather/agent sample data
+  // (meant to make the desktop read as intended), a fake meeting here could
+  // mislead someone watching a demo who asks if it's real. Always show the
+  // honest disconnected state until a real Google account is connected.
+  calendar: { connected: false, nextEvent: null },
   user: { name: null },
 };
 
@@ -106,6 +111,74 @@ function renderGithub(gh) {
   body.replaceChildren(...rows.length
     ? rows
     : [Object.assign(document.createElement('p'), { className: 'widget-empty', textContent: 'No open PRs or review requests.' })]);
+}
+
+function formatEventTime(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const today = new Date();
+  const sameDay = d.toDateString() === today.toDateString();
+  const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return sameDay ? `Today, ${time}` : `${d.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })}, ${time}`;
+}
+
+async function connectGoogle() {
+  const btn = $('#calendar-connect');
+  if (!window.shell) {
+    renderCalendarMessage('Not available in this preview.', true);
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = 'Connecting… check your browser';
+  const res = await window.shell.connectGoogle();
+  btn.disabled = false;
+  btn.textContent = 'Connect Google Calendar';
+  if (!res.ok) renderCalendarMessage(res.error, true);
+}
+
+function renderCalendarMessage(text, isError) {
+  const body = $('#calendar-body');
+  const p = document.createElement('p');
+  p.className = 'widget-empty';
+  if (isError) p.style.color = 'var(--danger)';
+  p.textContent = text;
+  body.append(p);
+}
+
+function renderCalendar(cal) {
+  const body = $('#calendar-body');
+  body.replaceChildren();
+  if (!cal.connected) {
+    const empty = document.createElement('p');
+    empty.className = 'widget-empty';
+    empty.textContent = 'Connect Google Calendar to see your next meeting.';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = 'calendar-connect';
+    btn.className = 'widget-connect';
+    btn.textContent = 'Connect Google Calendar';
+    btn.addEventListener('click', connectGoogle);
+    body.append(empty, btn);
+    return;
+  }
+  if (!cal.nextEvent) {
+    const empty = document.createElement('p');
+    empty.className = 'widget-empty';
+    empty.textContent = 'No upcoming events.';
+    body.append(empty);
+    return;
+  }
+  const row = document.createElement('div');
+  row.className = 'widget-row';
+  const title = document.createElement('span');
+  title.className = 'widget-row-title';
+  title.textContent = cal.nextEvent.title;
+  const sub = document.createElement('span');
+  sub.className = 'widget-row-sub';
+  sub.textContent = formatEventTime(cal.nextEvent.start);
+  row.append(title, sub);
+  body.append(row);
 }
 
 let weatherOpen = false;
@@ -216,6 +289,7 @@ function render(snap) {
   $('#corner-system').title = host;
   renderWeather(s.weather);
   renderGithub(s.github);
+  renderCalendar(s.calendar);
 }
 
 function pickDefined(obj) {
@@ -495,10 +569,27 @@ const DOCK_MAX_SCALE = 1.6;
 const DOCK_SPREAD = 55; // px — how far the magnification falloff reaches; tight, so the peak is under the cursor and it drops off within a couple of icons, not the whole row
 const DOCK_HIDE_DELAY = 250; // ms grace period before hiding, so crossing the gap between edge and dock doesn't flicker it shut
 
+// A real mass-spring-damper per icon, not a CSS transition retargeting a
+// JS-computed value. The difference matters here specifically: a transition
+// restarts its easing curve from scratch every time the target changes
+// (every mousemove), which looks steppy under fast mouse movement — a
+// spring integrates continuously, keeps its velocity across target changes,
+// and settles the same way whether it's interrupted once or a hundred
+// times a second. This is the "spring engine" ui-docs/UI_SHELL.md's Motion
+// section describes as not-built-yet; the dock is its first real use.
+const DOCK_SPRING_STIFFNESS = 380;
+const DOCK_SPRING_DAMPING = 24;
+const DOCK_SPRING_EPSILON = 0.001; // close enough to target + slow enough to call it settled
+
 let dockHideTimer = null;
 let dockRaf = null;
+let dockLastFrameTime = 0;
 let pressedDockItem = null;
 let dockErrorTimer = null;
+let mouseOverDock = false;
+let lastMouseX = 0;
+const dockScale = dockItems.map(() => 1);
+const dockVelocity = dockItems.map(() => 0);
 
 function setDockVisible(visible) {
   clearTimeout(dockHideTimer);
@@ -515,34 +606,85 @@ function setDockVisible(visible) {
 }
 
 function resetDockScale() {
-  dockItems.forEach((el) => { el.style.transform = ''; });
+  if (dockRaf) cancelAnimationFrame(dockRaf);
+  dockRaf = null;
+  dockLastFrameTime = 0;
+  mouseOverDock = false;
+  dockItems.forEach((el, i) => {
+    dockScale[i] = 1;
+    dockVelocity[i] = 0;
+    el.style.transform = '';
+  });
 }
 
-function magnifyDock(clientX) {
-  if (reducedMotion.matches) return;
-  dockItems.forEach((el) => {
-    const box = el.getBoundingClientRect();
-    const center = box.left + box.width / 2;
-    const dist = Math.abs(clientX - center);
-    const falloff = Math.exp(-(dist * dist) / (2 * DOCK_SPREAD * DOCK_SPREAD));
-    const scale = 1 + (DOCK_MAX_SCALE - 1) * falloff;
-    const pressed = el === pressedDockItem ? 0.93 : 1;
-    el.style.transform = `scale(${(scale * pressed).toFixed(3)})`;
+function dockTargetFor(el) {
+  if (!mouseOverDock) return 1;
+  const box = el.getBoundingClientRect();
+  const center = box.left + box.width / 2;
+  const dist = Math.abs(lastMouseX - center);
+  const falloff = Math.exp(-(dist * dist) / (2 * DOCK_SPREAD * DOCK_SPREAD));
+  const scale = 1 + (DOCK_MAX_SCALE - 1) * falloff;
+  return el === pressedDockItem ? scale * 0.93 : scale;
+}
+
+function stepDockSpring(dtSeconds) {
+  let settled = true;
+  dockItems.forEach((el, i) => {
+    const target = dockTargetFor(el);
+    const displacement = dockScale[i] - target;
+    const accel = -DOCK_SPRING_STIFFNESS * displacement - DOCK_SPRING_DAMPING * dockVelocity[i];
+    dockVelocity[i] += accel * dtSeconds;
+    dockScale[i] += dockVelocity[i] * dtSeconds;
+    if (Math.abs(displacement) > DOCK_SPRING_EPSILON || Math.abs(dockVelocity[i]) > DOCK_SPRING_EPSILON) settled = false;
+    el.style.transform = `scale(${dockScale[i].toFixed(4)})`;
   });
+  return settled;
+}
+
+function dockSpringLoop(now) {
+  const dt = dockLastFrameTime ? Math.min((now - dockLastFrameTime) / 1000, 1 / 30) : 0;
+  dockLastFrameTime = now;
+  const settled = stepDockSpring(dt);
+  if (!settled || mouseOverDock) {
+    dockRaf = requestAnimationFrame(dockSpringLoop);
+  } else {
+    dockRaf = null;
+    dockLastFrameTime = 0;
+  }
+}
+
+function updateDock() {
+  if (reducedMotion.matches) {
+    dockItems.forEach((el, i) => {
+      const target = dockTargetFor(el);
+      dockScale[i] = target;
+      dockVelocity[i] = 0;
+      el.style.transform = target === 1 ? '' : `scale(${target.toFixed(3)})`;
+    });
+    return;
+  }
+  if (!dockRaf) {
+    dockLastFrameTime = 0;
+    dockRaf = requestAnimationFrame(dockSpringLoop);
+  }
 }
 
 $('#dock-edge').addEventListener('mouseenter', () => setDockVisible(true));
-dock.addEventListener('mouseenter', () => setDockVisible(true));
+dock.addEventListener('mouseenter', () => {
+  setDockVisible(true);
+  mouseOverDock = true;
+  updateDock();
+});
 $('#dock-edge').addEventListener('mouseleave', () => setDockVisible(false));
-dock.addEventListener('mouseleave', () => setDockVisible(false));
+dock.addEventListener('mouseleave', () => {
+  setDockVisible(false);
+  mouseOverDock = false;
+  updateDock();
+});
 
 dock.addEventListener('mousemove', (e) => {
-  if (dockRaf) return;
-  const x = e.clientX;
-  dockRaf = requestAnimationFrame(() => {
-    magnifyDock(x);
-    dockRaf = null;
-  });
+  lastMouseX = e.clientX;
+  updateDock();
 });
 
 const dockTooltip = $('#dock-tooltip');
@@ -564,9 +706,9 @@ dockItems.forEach((el) => {
   el.addEventListener('mousedown', () => {
     pressedDockItem = el;
     hideDockTooltip();
-    magnifyDock(el.getBoundingClientRect().left + el.getBoundingClientRect().width / 2);
+    updateDock();
   });
-  el.addEventListener('mouseup', () => { pressedDockItem = null; });
+  el.addEventListener('mouseup', () => { pressedDockItem = null; updateDock(); });
   el.addEventListener('mouseleave', () => { pressedDockItem = null; hideDockTooltip(); });
 });
 
