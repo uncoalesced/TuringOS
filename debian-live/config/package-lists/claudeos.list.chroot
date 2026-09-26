@@ -1,0 +1,134 @@
+# claudeos.list.chroot
+# Explicit package list for ClaudeOS live image.
+#
+# Philosophy: install only what the demo needs. Everything else is dead weight.
+# The trim hooks (0200/0300) clean up whatever the base profile drags in.
+# Hooks (0400/0500) install gum, Claude CLI, and ClaudeOS scripts at build time.
+#
+# live-build will also install packages from any other *.list.chroot files
+# in this directory, including the default 'live' list if present.
+# If you want this to be the ONLY list, remove or empty the others.
+
+# ── Core system ───────────────────────────────────────────────────────────────
+bash
+bash-completion
+coreutils
+util-linux
+procps
+psmisc
+less
+grep
+sed
+gawk
+findutils
+diffutils
+rsync
+curl
+wget
+ca-certificates
+gnupg
+lsb-release
+
+# ── Filesystem ────────────────────────────────────────────────────────────────
+btrfs-progs
+e2fsprogs
+dosfstools
+parted
+
+# ── Networking ────────────────────────────────────────────────────────────────
+network-manager
+network-manager-gnome
+iproute2
+iputils-ping
+dnsutils
+openssh-client
+
+# ── Display / Desktop (minimal — just enough for a terminal + browser demo) ──
+xorg
+openbox
+obconf
+tint2
+nitrogen
+picom
+lxappearance
+xterm
+rxvt-unicode
+# A file manager so judges can browse the filesystem
+thunar
+
+# ── Terminal tooling ──────────────────────────────────────────────────────────
+git
+jq
+fzf
+tmux
+vim
+nano
+htop
+tree
+file
+zip
+unzip
+xclip
+xsel
+notify-send
+libnotify-bin
+
+# ── Node.js (needed as fallback for claude CLI npm install) ───────────────────
+# NOTE: If the native claude installer works in hook 0500, Node is still
+# useful to have for MCP tool npx calls. Pin to a version >= 18.
+# We install via NodeSource hook (0500) for the latest LTS, but list
+# the Debian package here as a fallback base.
+nodejs
+npm
+
+# ── Python (lightweight — many MCP tools use it) ─────────────────────────────
+python3
+python3-pip
+python3-venv
+
+# ── Fonts (minimal — prevents rendering issues in terminal/browser) ───────────
+fonts-dejavu-core
+fonts-liberation
+fonts-noto-core
+
+# ── Browser (for demo — judges will want to see console.anthropic.com) ────────
+chromium
+
+# ── Live system plumbing (required by live-boot) ──────────────────────────────
+live-boot
+live-boot-initramfs-tools
+live-config
+live-config-systemd
+systemd
+systemd-sysv
+dbus
+udev
+acpid
+
+# ── Persistence support ───────────────────────────────────────────────────────
+# live-boot handles persistence natively when a persistence.conf is present.
+# These packages ensure the persistence partition can be read/written.
+cryptsetup
+lvm2
+
+# ── Hardware support (VM-focused) ─────────────────────────────────────────────
+# Keep only what's needed for QEMU/VMware/VirtualBox
+xserver-xorg-video-vmware
+xserver-xorg-video-qxl
+open-vm-tools
+open-vm-tools-desktop
+virtualbox-guest-utils
+virtualbox-guest-x11
+spice-vdagent
+
+# ── Audio (minimal — notification sounds) ─────────────────────────────────────
+pulseaudio
+pavucontrol
+
+# ── Misc utilities ────────────────────────────────────────────────────────────
+sudo
+policykit-1
+gvfs
+shared-mime-info
+xdg-utils
+desktop-file-utils

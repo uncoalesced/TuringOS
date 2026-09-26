@@ -1,0 +1,209 @@
+#!/bin/bash
+# 0200-trim.hook.chroot
+# Purge known-bloat packages after the chroot is assembled.
+# Runs inside the chroot as root. Target: VM/demo image only.
+#
+# ORDER NOTE: this runs BEFORE the claudeos install hooks (0400/0500)
+# so do NOT remove anything that curl, npm, git, or nodejs depend on.
+# Specifically: do not touch libssl, libcurl, ca-certificates, libc6.
+#
+# Expected savings: 800MB–1.4GB depending on what the base profile pulled in.
+
+set -euo pipefail
+
+echo "==> [0200-trim] Starting package bloat removal..."
+
+# ─── Silence interactive prompts ─────────────────────────────────────────────
+export DEBIAN_FRONTEND=noninteractive
+
+# ─── Office / productivity suites ────────────────────────────────────────────
+# LibreOffice is ~400MB alone
+PURGE_OFFICE=(
+    libreoffice
+    libreoffice-core
+    libreoffice-common
+    libreoffice-writer
+    libreoffice-calc
+    libreoffice-impress
+    libreoffice-draw
+    libreoffice-base
+    libreoffice-math
+    libreoffice-base-core
+    abiword
+    gnumeric
+)
+
+# ─── Games ────────────────────────────────────────────────────────────────────
+PURGE_GAMES=(
+    gnome-games
+    gnome-mahjongg
+    gnome-mines
+    gnome-sudoku
+    aisleriot
+    solitaire
+    frozen-bubble
+    supertuxkart
+    chromium-bsu
+)
+
+# ─── Printing stack ───────────────────────────────────────────────────────────
+# Not needed in a VM — ~60MB
+PURGE_PRINT=(
+    cups
+    cups-browsed
+    cups-client
+    cups-common
+    cups-core-drivers
+    cups-daemon
+    cups-filters
+    cups-ppdc
+    cups-server-common
+    printer-driver-gutenprint
+    printer-driver-postscript-hp
+    hplip
+    foomatic-db-compressed-ppds
+    ghostscript
+    libgs10
+)
+
+# ─── Bluetooth ────────────────────────────────────────────────────────────────
+PURGE_BT=(
+    bluetooth
+    bluez
+    bluez-cups
+    blueman
+    pulseaudio-module-bluetooth
+    gnome-bluetooth
+)
+
+# ─── Modem / mobile broadband ────────────────────────────────────────────────
+PURGE_MODEM=(
+    modemmanager
+    mobile-broadband-provider-info
+    usb-modeswitch
+    usb-modeswitch-data
+)
+
+# ─── GPU drivers we don't need in a VM ───────────────────────────────────────
+# Keep: xserver-xorg-video-vesa, xserver-xorg-video-modesetting,
+#        xserver-xorg-video-qxl, xserver-xorg-video-vmware
+# Drop: everything else
+PURGE_GPU=(
+    xserver-xorg-video-intel
+    xserver-xorg-video-amdgpu
+    xserver-xorg-video-nouveau
+    xserver-xorg-video-radeon
+    xserver-xorg-video-ati
+    xserver-xorg-video-r128
+    xserver-xorg-video-mach64
+    xserver-xorg-video-savage
+    xserver-xorg-video-siliconmotion
+    xserver-xorg-video-trident
+    xserver-xorg-video-tdfx
+    xserver-xorg-video-s3
+    xserver-xorg-video-openchrome
+    xserver-xorg-video-nv
+)
+
+# ─── Firmware blobs not needed in VM ─────────────────────────────────────────
+# Keep: firmware-linux (core), firmware-linux-free, firmware-linux-nonfree
+# Drop: hardware-specific blobs that are dead weight in a VM
+PURGE_FIRMWARE=(
+    firmware-amd-graphics
+    firmware-nvidia-graphics
+    firmware-realtek
+    firmware-atheros
+    firmware-brcm80211
+    firmware-b43-installer
+    firmware-b43legacy-installer
+    firmware-intel-sound
+    firmware-ipw2x00
+    firmware-iwlwifi
+    firmware-libertas
+    firmware-misc-nonfree
+    firmware-myricom
+    firmware-netronome
+    firmware-qlogic
+    firmware-siano
+    firmware-ti-connectivity
+    firmware-tomu
+    firmware-zd1211
+)
+
+# ─── Unnecessary accessibility / AT ──────────────────────────────────────────
+PURGE_A11Y=(
+    brltty
+    espeakup
+    speech-dispatcher
+    orca
+    at-spi2-core
+    caribou
+)
+
+# ─── Email clients ────────────────────────────────────────────────────────────
+PURGE_MAIL=(
+    thunderbird
+    evolution
+    evolution-common
+    evolution-data-server
+    geary
+    mutt
+    claws-mail
+)
+
+# ─── Other desktop apps we don't need ────────────────────────────────────────
+PURGE_MISC=(
+    transmission-gtk
+    transmission-common
+    rhythmbox
+    totem
+    totem-common
+    cheese
+    shotwell
+    simple-scan
+    xsane
+    gimp
+    inkscape
+    scribus
+    brasero
+    xburn
+    gnome-maps
+    gnome-weather
+    gnome-clocks
+    gnome-contacts
+    gnome-calendar
+    gnome-photos
+    pitivi
+    kdenlive
+)
+
+# ─── Build the full purge list ────────────────────────────────────────────────
+ALL_PURGE=(
+    "${PURGE_OFFICE[@]}"
+    "${PURGE_GAMES[@]}"
+    "${PURGE_PRINT[@]}"
+    "${PURGE_BT[@]}"
+    "${PURGE_MODEM[@]}"
+    "${PURGE_GPU[@]}"
+    "${PURGE_FIRMWARE[@]}"
+    "${PURGE_A11Y[@]}"
+    "${PURGE_MAIL[@]}"
+    "${PURGE_MISC[@]}"
+)
+
+# ─── Purge (ignore packages not installed — they may not be in every profile) ─
+echo "==> [0200-trim] Purging $(echo "${ALL_PURGE[@]}" | wc -w) package targets..."
+
+apt-get purge -y --auto-remove "${ALL_PURGE[@]}" 2>/dev/null || {
+    # Purge each individually so one missing package doesn't abort the whole run
+    echo "==> [0200-trim] Bulk purge hit an error — retrying individually..."
+    for pkg in "${ALL_PURGE[@]}"; do
+        apt-get purge -y "$pkg" 2>/dev/null || true
+    done
+    apt-get autoremove -y --purge 2>/dev/null || true
+}
+
+apt-get autoremove -y --purge
+apt-get clean
+
+echo "==> [0200-trim] Done. Chroot size: $(du -sh / --exclude=/proc --exclude=/sys 2>/dev/null | cut -f1)"

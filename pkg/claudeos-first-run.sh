@@ -1,9 +1,8 @@
-#!/usr/bin/env bash
 # /etc/profile.d/claudeos-first-run.sh
 #
-# Runs once on first interactive login after ClaudeOS is installed.
-# Shows a welcome message and prompts the user to run claudeos init.
-# Self-disables after first run by writing a marker file.
+# Sourced on every interactive login via /etc/profile.d/.
+# Shows a welcome message once, then self-disables via a marker file.
+# NOTE: no shebang — this file is sourced, not executed.
 
 # Only run in interactive shells
 [[ $- == *i* ]] || return 0
