@@ -139,6 +139,17 @@ function createWindow() {
     },
   });
   win.loadFile(path.join(__dirname, 'index.html'));
+
+  // Dev only: ASTER_SHOT=/path/out.png captures the window after it settles.
+  if (process.env.ASTER_SHOT) {
+    win.webContents.once('did-finish-load', () => {
+      setTimeout(async () => {
+        const img = await win.webContents.capturePage();
+        fs.writeFileSync(process.env.ASTER_SHOT, img.toPNG());
+        if (process.env.ASTER_SHOT_QUIT === '1') app.quit();
+      }, 1200);
+    });
+  }
   win.on('closed', () => {
     win = null;
   });
