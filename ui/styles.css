@@ -87,6 +87,7 @@ body {
 }
 
 .icon {
+  display: block;
   width: 16px;
   height: 16px;
   fill: none;
@@ -138,7 +139,7 @@ body {
   margin-right: 10px;
 }
 
-.spark { fill: currentColor; flex: none; }
+.spark { display: block; fill: currentColor; flex: none; }
 .brand-spark { width: 17px; height: 17px; color: var(--accent); }
 
 .status {
@@ -477,7 +478,7 @@ kbd {
 
 /* ─── Weather ────────────────────────────────────────────────────────────── */
 
-.wx { stroke-width: 2; }
+.wx { display: block; stroke-width: 2; }
 
 .weather {
   position: fixed;
