@@ -878,38 +878,175 @@ kbd {
   visibility: hidden;
 }
 
+/* The weather readout sits where the panel's first header lands. */
+.panel-open .weather,
+.panel-open .weather-card { visibility: hidden; }
+
 /* ─── Side panel ───────────────────────────────────────────────────────── */
 
 .side-panel {
   position: fixed;
-  top: var(--menubar-h);
-  right: 0;
-  bottom: 0;
+  top: calc(var(--menubar-h) + 10px);
+  right: 10px;
+  bottom: 10px;
   z-index: 22;
-  width: min(340px, 88vw);
-  padding: 20px 18px;
+  width: min(360px, calc(100vw - 20px));
+  padding: 4px 4px 16px;
   overflow-y: auto;
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
-  backdrop-filter: blur(24px) saturate(1.4);
-  border-left: 1px solid var(--line);
-  transform: translateX(100%);
-  transition: transform 260ms var(--ease-out);
+  scrollbar-width: none;
+  /* Detached cards, no sheet of its own — the panel is just a column. */
+  transform: translateX(calc(100% + 24px));
+  transition: transform 300ms var(--ease-out);
 }
 
 .side-panel.is-visible { transform: translateX(0); }
 
-.widget + .widget { margin-top: 24px; }
+.panel-group + .panel-group { margin-top: 22px; }
 
-.widget-head {
+.panel-group-head {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
-  margin-bottom: 10px;
-  color: var(--muted);
+  min-height: 28px;
+  margin: 0 4px 10px 6px;
 }
 
-.widget-head .icon { width: 16px; height: 16px; }
-.widget-head h2 { font-size: 13px; font-weight: 600; }
+.panel-group-head h2 {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.panel-group-head > .icon { width: 16px; height: 16px; color: var(--muted); }
+
+.panel-clear {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  backdrop-filter: blur(20px);
+  transition: transform 160ms var(--ease-out);
+}
+.panel-clear .icon { width: 13px; height: 13px; }
+.panel-clear:active { transform: scale(0.9); }
+.panel-clear[hidden] { display: none; }
+
+.panel-stack { display: grid; gap: 10px; }
+
+/* Every notification and widget is its own frosted card. */
+.panel-card,
+.notif {
+  border-radius: 22px;
+  corner-shape: squircle;
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(28px) saturate(1.5);
+  box-shadow: 0 8px 24px -12px rgb(0 0 0 / 0.25);
+}
+
+.panel-card { padding: 8px; }
+
+/* Cards slide in a beat behind the column, staggered. */
+.side-panel .panel-card,
+.side-panel .notif {
+  transform: translateX(28px);
+  filter: blur(4px);
+  transition: transform 360ms var(--ease-out), filter 360ms var(--ease-out);
+  transition-delay: calc(var(--i, 0) * 35ms);
+}
+.side-panel.is-visible .panel-card,
+.side-panel.is-visible .notif {
+  transform: none;
+  filter: none;
+}
+
+.notif {
+  display: grid;
+  grid-template-columns: 38px 1fr;
+  gap: 12px;
+  align-items: start;
+  padding: 13px 14px;
+}
+
+.notif-app {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 26%;
+  corner-shape: squircle;
+  background: var(--surface-strong);
+  color: var(--text);
+}
+.notif-app .icon, .notif-app .spark { width: 20px; height: 20px; }
+.notif-app[data-app="claude"] { background: var(--accent); color: var(--white); }
+.notif-app[data-app="terminal"] { background: #1d1c1a; color: #7ee07e; }
+
+.notif-top { display: flex; align-items: baseline; gap: 8px; }
+.notif-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.notif-time { flex: none; color: var(--muted); font-size: 12px; }
+.notif-body {
+  margin-top: 2px;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.notif-empty {
+  padding: 4px 6px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* Meeting card inside the calendar group. */
+.meeting { padding: 6px 8px 8px; }
+.meeting-when {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.meeting-title { margin-top: 4px; font-size: 15px; font-weight: 600; }
+.meeting-meta { margin-top: 2px; color: var(--muted); font-size: 13px; }
+.meeting-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 12px;
+}
+.meeting-join {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--white);
+  font-size: 13px;
+  font-weight: 500;
+  transition: transform 160ms var(--ease-out);
+}
+.meeting-join:active { transform: scale(0.96); }
+.meeting-link {
+  color: var(--muted);
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 
 .widget-empty {
   padding: 14px;

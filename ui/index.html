@@ -6,6 +6,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'" />
   <title>TuringOS</title>
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="palette.css" />
   <script src="theme.js"></script>
 </head>
 <body>
@@ -204,21 +205,31 @@
     </button>
   </nav>
 
-  <aside class="side-panel" id="side-panel" aria-label="Widgets">
-    <section class="widget" id="widget-calendar">
-      <header class="widget-head">
-        <svg class="icon" aria-hidden="true"><use href="#ic-calendar" /></svg>
-        <h2>Calendar</h2>
+  <aside class="side-panel" id="side-panel" aria-label="Notification Center">
+    <section class="panel-group" aria-labelledby="notif-title">
+      <header class="panel-group-head">
+        <h2 id="notif-title">Notifications</h2>
+        <button class="panel-clear" id="notif-clear" type="button" aria-label="Clear notifications">
+          <svg class="icon" aria-hidden="true"><use href="#ic-x" /></svg>
+        </button>
       </header>
-      <div class="widget-body" id="calendar-body"></div>
+      <div class="panel-stack" id="notif-list"></div>
     </section>
 
-    <section class="widget" id="widget-github">
-      <header class="widget-head">
-        <svg class="icon" aria-hidden="true"><use href="#ic-github" /></svg>
-        <h2>GitHub</h2>
+    <section class="panel-group" aria-labelledby="calendar-title">
+      <header class="panel-group-head">
+        <h2 id="calendar-title">Google Calendar</h2>
+        <svg class="icon" aria-hidden="true"><use href="#ic-calendar" /></svg>
       </header>
-      <div class="widget-body" id="github-body"></div>
+      <div class="panel-card" id="calendar-body"></div>
+    </section>
+
+    <section class="panel-group" aria-labelledby="github-title">
+      <header class="panel-group-head">
+        <h2 id="github-title">GitHub</h2>
+        <svg class="icon" aria-hidden="true"><use href="#ic-github" /></svg>
+      </header>
+      <div class="panel-card" id="github-body"></div>
     </section>
   </aside>
 
@@ -248,5 +259,6 @@
   </section>
 
   <script src="app.js"></script>
+  <script src="palette.js" defer></script>
 </body>
 </html>

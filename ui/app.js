@@ -33,6 +33,8 @@ let lastSnap = null;
 let userName = null;
 let pendingStart = false;
 let pendingStartTimer = null;
+let lastAgentRunning = false;
+let lastAgentTask = '';
 
 // ─── Weather ────────────────────────────────────────────────────────────────
 // WMO weather codes (Open-Meteo): https://open-meteo.com/en/docs
@@ -146,40 +148,122 @@ function renderCalendarMessage(text, isError) {
   body.append(p);
 }
 
-function renderCalendar(cal) {
-  const body = $('#calendar-body');
-  body.replaceChildren();
-  if (!cal.connected) {
-    const empty = document.createElement('p');
-    empty.className = 'widget-empty';
-    empty.textContent = 'Connect Google Calendar to see your next meeting.';
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.id = 'calendar-connect';
-    btn.className = 'widget-connect';
-    btn.textContent = 'Connect Google Calendar';
-    btn.addEventListener('click', connectGoogle);
-    body.append(empty, btn);
-    return;
+// Shown until a real calendar is connected (and when it has nothing coming
+// up), so the demo always has a meeting to look at.
+const DEMO_MEETING = {
+  title: 'Design sync — TuringOS demo',
+  start: (() => { const d = new Date(); d.setHours(16, 30, 0, 0); return d.toISOString(); })(),
+  meta: '30 min · Google Meet',
+};
+
+function meetingCard(ev, { demo }) {
+  const wrap = document.createElement('div');
+  wrap.className = 'meeting';
+  const when = document.createElement('p');
+  when.className = 'meeting-when';
+  when.textContent = formatEventTime(ev.start) || 'Upcoming';
+  const title = document.createElement('p');
+  title.className = 'meeting-title';
+  title.textContent = ev.title;
+  const meta = document.createElement('p');
+  meta.className = 'meeting-meta';
+  meta.textContent = ev.meta || 'Next on your calendar';
+  const foot = document.createElement('div');
+  foot.className = 'meeting-foot';
+  const join = document.createElement('button');
+  join.type = 'button';
+  join.className = 'meeting-join';
+  join.textContent = 'Join';
+  foot.append(join);
+  if (demo) {
+    const link = document.createElement('button');
+    link.type = 'button';
+    link.id = 'calendar-connect';
+    link.className = 'meeting-link';
+    link.textContent = 'Connect Google Calendar';
+    link.addEventListener('click', connectGoogle);
+    foot.append(link);
   }
-  if (!cal.nextEvent) {
-    const empty = document.createElement('p');
-    empty.className = 'widget-empty';
-    empty.textContent = 'No upcoming events.';
-    body.append(empty);
-    return;
-  }
-  const row = document.createElement('div');
-  row.className = 'widget-row';
-  const title = document.createElement('span');
-  title.className = 'widget-row-title';
-  title.textContent = cal.nextEvent.title;
-  const sub = document.createElement('span');
-  sub.className = 'widget-row-sub';
-  sub.textContent = formatEventTime(cal.nextEvent.start);
-  row.append(title, sub);
-  body.append(row);
+  wrap.append(when, title, meta, foot);
+  return wrap;
 }
+
+let calendarKey = '';
+function renderCalendar(cal) {
+  const ev = cal.connected && cal.nextEvent;
+  const key = ev ? `${ev.title}|${ev.start}` : 'demo';
+  if (key === calendarKey) return; // state pushes every few seconds; don't rebuild
+  calendarKey = key;
+  $('#calendar-body').replaceChildren(ev ? meetingCard(ev, { demo: false }) : meetingCard(DEMO_MEETING, { demo: !cal.connected }));
+}
+
+// ─── Notifications ──────────────────────────────────────────────────────────
+// Seeded with a few demo items; real agent task completions are added on top.
+
+const MIN = 60_000;
+let notifications = [
+  { app: 'claude', title: 'Completed reviewing the PR on claudeos', body: '#42 ui-fixes — left 3 comments, approved with suggestions', at: Date.now() - 4 * MIN },
+  { app: 'terminal', title: 'Task finished in turing-web', body: 'Tests pass · 5 files changed · ready for review', at: Date.now() - 18 * MIN },
+  { app: 'github', title: 'Review requested', body: 'anthropic/claudeos #51 — Debian packaging for ui/', at: Date.now() - 62 * MIN },
+];
+
+const NOTIF_ICON = { claude: 'claude-spark', terminal: 'ic-terminal', github: 'ic-github' };
+
+function timeAgo(t) {
+  const m = Math.round((Date.now() - t) / MIN);
+  if (m < 1) return 'now';
+  if (m < 60) return `${m}m ago`;
+  return `${Math.round(m / 60)}h ago`;
+}
+
+function renderNotifications() {
+  const list = $('#notif-list');
+  $('#notif-clear').hidden = notifications.length === 0;
+  if (!notifications.length) {
+    list.replaceChildren(Object.assign(document.createElement('p'), { className: 'notif-empty', textContent: 'No new notifications' }));
+    return;
+  }
+  list.replaceChildren(...notifications.map((n, i) => {
+    const card = document.createElement('article');
+    card.className = 'notif';
+    card.style.setProperty('--i', i);
+    const app = document.createElement('span');
+    app.className = 'notif-app';
+    app.dataset.app = n.app;
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(svgNS, 'svg');
+    svg.setAttribute('class', n.app === 'claude' ? 'spark' : 'icon');
+    svg.setAttribute('aria-hidden', 'true');
+    const use = document.createElementNS(svgNS, 'use');
+    use.setAttribute('href', `#${NOTIF_ICON[n.app] || 'ic-check'}`);
+    svg.append(use);
+    app.append(svg);
+    const text = document.createElement('div');
+    const top = document.createElement('div');
+    top.className = 'notif-top';
+    top.append(
+      Object.assign(document.createElement('p'), { className: 'notif-title', textContent: n.title }),
+      Object.assign(document.createElement('time'), { className: 'notif-time', textContent: timeAgo(n.at) }),
+    );
+    text.append(top, Object.assign(document.createElement('p'), { className: 'notif-body', textContent: n.body }));
+    card.append(app, text);
+    return card;
+  }));
+  // Widgets follow the notifications in the stagger.
+  document.querySelectorAll('.side-panel .panel-card').forEach((el, j) => el.style.setProperty('--i', notifications.length + j));
+}
+
+function notify(n) {
+  notifications.unshift({ at: Date.now(), ...n });
+  renderNotifications();
+}
+
+$('#notif-clear').addEventListener('click', () => {
+  notifications = [];
+  renderNotifications();
+});
+
+renderNotifications();
 
 let weatherOpen = false;
 function setWeatherOpen(open) {
@@ -213,6 +297,8 @@ let panelOpen = false;
 function setPanelOpen(open) {
   panelOpen = open;
   $('#side-panel').classList.toggle('is-visible', open);
+  document.documentElement.classList.toggle('panel-open', open);
+  if (open) renderNotifications();
 }
 
 $('#menubar-clock').addEventListener('click', () => setPanelOpen(!panelOpen));
@@ -277,6 +363,11 @@ function render(snap) {
     clearTimeout(pendingStartTimer);
   }
   const state = pendingStart ? 'working' : s.agent.running ? 'agentic' : 'idle';
+  if (lastAgentRunning && !s.agent.running) {
+    notify({ app: 'terminal', title: 'Agent task finished', body: lastAgentTask || 'The sandboxed agent is done.' });
+  }
+  lastAgentRunning = s.agent.running;
+  if (s.agent.task) lastAgentTask = s.agent.task;
   const label = { idle: 'Agent idle', working: 'Starting…', agentic: 'Agentic' }[state];
 
   const corner = $('#corner-agent');
@@ -998,6 +1089,12 @@ let clawdShakeSamples = []; // { x, t }
 
 document.addEventListener('mousemove', (e) => {
   if (clawdOpen) { clawdShakeSamples = []; return; }
+  // Sweeping back and forth across the dock (or the bottom strip that
+  // reveals it) is browsing apps, not a shake.
+  if (e.target.closest?.('#dock, .dock-edge') || e.clientY > innerHeight - 120) {
+    clawdShakeSamples = [];
+    return;
+  }
   const now = performance.now();
   clawdShakeSamples.push({ x: e.clientX, t: now });
   clawdShakeSamples = clawdShakeSamples.filter((s) => now - s.t <= CLAWD_SHAKE_WINDOW_MS);
