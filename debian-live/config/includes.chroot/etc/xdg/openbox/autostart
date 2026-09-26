@@ -1,0 +1,19 @@
+# /etc/xdg/openbox/autostart
+# Runs when Openbox starts — launches the ClaudeOS UI in kiosk mode.
+
+# ── System tray / compositor (lightweight, fast) ──────────────────────────────
+tint2 &
+picom --config /dev/null --backend xrender -b &
+
+# ── Wallpaper ─────────────────────────────────────────────────────────────────
+# Solid dark background — the Electron UI covers the whole screen in kiosk mode
+xsetroot -solid "#0a0a0f" &
+
+# ── ClaudeOS Electron UI ──────────────────────────────────────────────────────
+# KIOSK=1  → fullscreen, no window chrome
+# LITE=1   → auto-set by run.sh when no 3D GPU is detected (VM safe)
+# --no-sandbox is added by run.sh automatically if kernel restricts userns
+(
+    sleep 1  # let the compositor settle before launching
+    KIOSK=1 /usr/local/bin/claudeos-ui
+) &

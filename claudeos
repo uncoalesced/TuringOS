@@ -82,7 +82,7 @@ cmd::init() {
     echo ""
 
     local deps_required=("git" "jq")
-    local deps_optional=("gum" "fzf" "btrfs" "nvidia-smi" "notify-send" "rsync" "npx")
+    local deps_optional=("gum" "fzf" "btrfs" "nvidia-smi" "notify-send" "rsync")
 
     local all_ok=true
     for dep in "${deps_required[@]}"; do
@@ -103,6 +103,66 @@ cmd::init() {
         fi
     done
 
+    # ── Claude Code CLI check ─────────────────────────────────────────────────
+    echo ""
+    ui::divider
+    echo ""
+    if command -v claude &>/dev/null; then
+        local claude_ver
+        claude_ver=$(claude --version 2>/dev/null || echo "installed")
+        ui::status_row "Claude Code CLI" "$claude_ver" "ok"
+    else
+        ui::status_row "Claude Code CLI" "NOT FOUND" "fail"
+        echo ""
+        ui::warn "Claude Code CLI is required to run agents."
+        echo ""
+        if ui::confirm "Install Claude Code CLI now?"; then
+            echo ""
+            # Locate the install script
+            local install_script=""
+            for candidate in \
+                "${_LIB_DIR}/../pkg/claudeos-install-claude-cli.sh" \
+                "/usr/lib/claudeos/pkg/claudeos-install-claude-cli.sh" \
+                "${_SCRIPT_DIR}/pkg/claudeos-install-claude-cli.sh"; do
+                if [[ -f "$candidate" ]]; then
+                    install_script="$candidate"
+                    break
+                fi
+            done
+
+            if [[ -n "$install_script" ]]; then
+                bash "$install_script"
+            else
+                ui::info "Run manually: curl -fsSL https://claude.ai/install.sh | sh"
+                ui::info "Or:           brew install claude-code"
+                ui::info "Or:           npm install -g @anthropic-ai/claude-code"
+            fi
+        else
+            ui::info "Skip for now. Install later:"
+            ui::info "  curl -fsSL https://claude.ai/install.sh | sh   (native)"
+            ui::info "  brew install claude-code                        (Homebrew)"
+            ui::info "  npm install -g @anthropic-ai/claude-code        (npm)"
+        fi
+    fi
+
+    # ── API key check ─────────────────────────────────────────────────────────
+    echo ""
+    if [[ -n "${ANTHROPIC_API_KEY:-}" ]]; then
+        ui::status_row "ANTHROPIC_API_KEY" "set" "ok"
+    else
+        # Check config.env
+        local key_in_config
+        key_in_config=$(grep '^ANTHROPIC_API_KEY=' "${CLAUDEOS_CONFIG_FILE}" 2>/dev/null | cut -d= -f2-)
+        if [[ -n "$key_in_config" ]]; then
+            ui::status_row "ANTHROPIC_API_KEY" "set (in config.env)" "ok"
+        else
+            ui::status_row "ANTHROPIC_API_KEY" "not set" "warn"
+            ui::info "Set it: echo 'export ANTHROPIC_API_KEY=sk-ant-...' >> ~/.bashrc"
+        fi
+    fi
+
+    echo ""
+    ui::divider
     echo ""
 
     if $all_ok; then

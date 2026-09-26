@@ -1,0 +1,211 @@
+#!/bin/bash
+# 0500-install-claude-cli.hook.chroot
+#
+# Installs the Claude Code CLI into the live image.
+# Runs AFTER claudeos scripts are installed (0400).
+#
+# Strategy:
+#   1. Try Anthropic native installer (curl | sh) — official binary, no Node needed
+#   2. Fall back to npm install if native fails
+#
+# API key: CANNOT be set at build time (it's per-user).
+# Instead, we wire a first-boot prompt into /etc/profile.d/claudeos-apikey.sh
+# that fires once and saves the key to ~/.claudeos/config.env.
+#
+# NOTE: This hook requires internet access during lb build.
+# If building offline, set CLAUDEOS_SKIP_CLAUDE_CLI=1 to skip gracefully.
+
+set -euo pipefail
+
+export DEBIAN_FRONTEND=noninteractive
+
+echo "==> [0500-install-claude-cli] Installing Claude Code CLI..."
+
+# ─── Skip flag for offline builds ────────────────────────────────────────────
+if [[ "${CLAUDEOS_SKIP_CLAUDE_CLI:-0}" == "1" ]]; then
+    echo "==> [0500-install-claude-cli] CLAUDEOS_SKIP_CLAUDE_CLI=1 — skipping."
+    echo "    Users will be prompted to install on first boot."
+    # Still write the first-boot prompt so users aren't left hanging
+    _write_firstboot_prompt
+    exit 0
+fi
+
+# ─── Node.js: install if not present (needed for npm fallback) ───────────────
+_ensure_node() {
+    if command -v node &>/dev/null; then
+        local ver
+        ver=$(node --version | tr -d 'v' | cut -d. -f1)
+        if (( ver >= 18 )); then
+            echo "==> Node.js $(node --version) already present"
+            return 0
+        fi
+    fi
+
+    echo "==> Installing Node.js 20 LTS via NodeSource..."
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    apt-get install -y nodejs
+}
+
+# ─── Method 1: Anthropic native installer ────────────────────────────────────
+_install_native() {
+    echo "==> Trying Anthropic native installer..."
+    curl -fsSL https://claude.ai/install.sh | sh
+
+    # The native installer puts claude in /usr/local/bin or ~/.local/bin
+    # Make sure it's system-wide
+    for candidate in \
+        /usr/local/bin/claude \
+        /root/.local/bin/claude \
+        /root/.npm-global/bin/claude; do
+        if [[ -x "$candidate" ]]; then
+            if [[ "$candidate" != /usr/local/bin/claude ]]; then
+                cp "$candidate" /usr/local/bin/claude
+                chmod 755 /usr/local/bin/claude
+            fi
+            echo "==> Native install succeeded: $candidate"
+            return 0
+        fi
+    done
+
+    # Check PATH
+    if command -v claude &>/dev/null; then
+        local bin
+        bin=$(command -v claude)
+        # Ensure it's in /usr/local/bin for all users
+        [[ "$bin" != /usr/local/bin/claude ]] && \
+            cp "$bin" /usr/local/bin/claude && chmod 755 /usr/local/bin/claude
+        echo "==> Native install succeeded: $bin"
+        return 0
+    fi
+
+    return 1
+}
+
+# ─── Method 2: npm global install ────────────────────────────────────────────
+_install_npm() {
+    echo "==> Falling back to npm install..."
+    _ensure_node
+
+    # Install to a system-wide prefix so all users get it
+    npm install -g @anthropic-ai/claude-code \
+        --prefix /usr/local \
+        --unsafe-perm
+
+    if command -v claude &>/dev/null; then
+        echo "==> npm install succeeded: $(command -v claude)"
+        return 0
+    fi
+    return 1
+}
+
+# ─── Run install ──────────────────────────────────────────────────────────────
+INSTALL_OK=false
+
+if _install_native; then
+    INSTALL_OK=true
+else
+    echo "==> Native installer failed — trying npm..."
+    if _install_npm; then
+        INSTALL_OK=true
+    fi
+fi
+
+if ! $INSTALL_OK; then
+    echo "==> WARNING: Could not install Claude Code CLI automatically."
+    echo "    Users will be prompted to install on first boot via:"
+    echo "    claudeos init  OR  /usr/lib/claudeos/pkg/claudeos-install-claude-cli.sh"
+fi
+
+# ─── Verify and report ────────────────────────────────────────────────────────
+if command -v claude &>/dev/null; then
+    CLAUDE_VER=$(claude --version 2>/dev/null || echo "installed")
+    echo "==> Claude Code CLI: ${CLAUDE_VER}"
+
+    # Make absolutely sure it's accessible system-wide
+    CLAUDE_BIN=$(command -v claude)
+    if [[ "$CLAUDE_BIN" != /usr/local/bin/claude && \
+          "$CLAUDE_BIN" != /usr/bin/claude ]]; then
+        ln -sf "$CLAUDE_BIN" /usr/local/bin/claude 2>/dev/null || true
+    fi
+fi
+
+# ─── Write first-boot API key prompt ─────────────────────────────────────────
+# This fires ONCE on first interactive login, after claudeos-first-run.sh.
+# Saves key to ~/.claudeos/config.env and ~/.bashrc.
+
+_write_firstboot_prompt() {
+    cat > /etc/profile.d/claudeos-apikey.sh <<'APIKEY_HOOK'
+# /etc/profile.d/claudeos-apikey.sh
+# Prompts for ANTHROPIC_API_KEY once on first interactive login.
+# Sourced — no shebang, no set -e.
+
+[[ $- == *i* ]] || return 0
+command -v claude &>/dev/null || return 0
+
+_APIKEY_MARKER="${HOME}/.claudeos/.apikey-configured"
+[[ -f "$_APIKEY_MARKER" ]] && return 0
+
+# Already set in environment or config
+if [[ -n "${ANTHROPIC_API_KEY:-}" ]]; then
+    mkdir -p "${HOME}/.claudeos"
+    touch "$_APIKEY_MARKER"
+    return 0
+fi
+
+if grep -q '^ANTHROPIC_API_KEY=' "${HOME}/.claudeos/config.env" 2>/dev/null; then
+    mkdir -p "${HOME}/.claudeos"
+    touch "$_APIKEY_MARKER"
+    return 0
+fi
+
+echo ""
+echo "  ╔═══════════════════════════════════════════╗"
+echo "  ║   ClaudeOS — API Key Required             ║"
+echo "  ╠═══════════════════════════════════════════╣"
+echo "  ║                                           ║"
+echo "  ║  Claude Code needs an Anthropic API key.  ║"
+echo "  ║  Get one free at:                         ║"
+echo "  ║    https://console.anthropic.com          ║"
+echo "  ║                                           ║"
+echo "  ╚═══════════════════════════════════════════╝"
+echo ""
+echo -n "  Enter API key (sk-ant-...) or press Enter to skip: "
+read -rs _apikey
+echo ""
+
+if [[ -n "$_apikey" ]]; then
+    mkdir -p "${HOME}/.claudeos"
+    # Remove any existing key line
+    if [[ -f "${HOME}/.claudeos/config.env" ]]; then
+        grep -v '^ANTHROPIC_API_KEY=' "${HOME}/.claudeos/config.env" \
+            > "${HOME}/.claudeos/config.env.tmp" 2>/dev/null || true
+        mv "${HOME}/.claudeos/config.env.tmp" "${HOME}/.claudeos/config.env"
+    fi
+    echo "ANTHROPIC_API_KEY=${_apikey}" >> "${HOME}/.claudeos/config.env"
+
+    # Also export for this session
+    export ANTHROPIC_API_KEY="$_apikey"
+
+    echo "  ✓  API key saved to ~/.claudeos/config.env"
+else
+    echo "  →  Skipped. Run 'claudeos init' later to configure."
+fi
+
+mkdir -p "${HOME}/.claudeos"
+touch "$_APIKEY_MARKER"
+unset _apikey _APIKEY_MARKER
+APIKEY_HOOK
+
+    chmod 644 /etc/profile.d/claudeos-apikey.sh
+    echo "==> [0500-install-claude-cli] API key prompt installed → /etc/profile.d/claudeos-apikey.sh"
+}
+
+_write_firstboot_prompt
+
+# ─── Clean up npm/nodesource apt lists to save space ────────────────────────
+apt-get clean
+rm -f /etc/apt/sources.list.d/nodesource.list 2>/dev/null || true
+
+echo ""
+echo "==> [0500-install-claude-cli] Done."
+echo "==> Chroot size: $(du -sh / --exclude=/proc --exclude=/sys 2>/dev/null | cut -f1)"
