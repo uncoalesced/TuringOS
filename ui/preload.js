@@ -8,4 +8,5 @@ contextBridge.exposeInMainWorld('shell', {
   startAgent: (project, task) => ipcRenderer.invoke('agent:start', { project, task }),
   launchApp: (id) => ipcRenderer.invoke('dock:launch', id),
   connectGoogle: () => ipcRenderer.invoke('google:connect'),
+  askClawd: (message) => ipcRenderer.invoke('clawd:ask', { message }),
 });

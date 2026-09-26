@@ -188,6 +188,31 @@
     </section>
   </aside>
 
+  <!-- Clawd: a small pixel mascot that patrols a corner near the dock and
+       answers one-off questions via Haiku. -->
+  <button class="clawd" id="clawd" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Ask Clawd">
+    <span class="clawd-body">
+      <span class="clawd-eye clawd-eye-l"></span>
+      <span class="clawd-eye clawd-eye-r"></span>
+      <span class="clawd-leg clawd-leg-l"></span>
+      <span class="clawd-leg clawd-leg-r"></span>
+    </span>
+  </button>
+
+  <section class="clawd-chat" id="clawd-chat" hidden role="dialog" aria-label="Ask Clawd">
+    <header class="clawd-chat-head">
+      <svg class="spark" aria-hidden="true"><use href="#claude-spark" /></svg>
+      <span>Clawd</span>
+    </header>
+    <form id="clawd-form" autocomplete="off">
+      <textarea id="clawd-input" rows="1" placeholder="Ask Clawd anything" spellcheck="false"></textarea>
+      <button type="submit" class="send-button" id="clawd-send" aria-label="Ask">
+        <svg class="icon" aria-hidden="true"><use href="#ic-send" /></svg>
+      </button>
+    </form>
+    <div class="clawd-answer" id="clawd-answer"></div>
+  </section>
+
   <script src="app.js"></script>
 </body>
 </html>

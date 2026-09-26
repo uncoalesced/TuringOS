@@ -753,6 +753,137 @@ kbd {
 .widget-row-title { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .widget-row-sub { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; }
 
+/* ─── Clawd ────────────────────────────────────────────────────────────── */
+/* Patrols a lane in the corner opposite the dock. JS drives the walk via
+   translateX + scaleX(facing) on .clawd itself (a CSS transition smooths
+   each move, so prefers-reduced-motion's global transition:none makes every
+   move instant for free — no raw requestAnimationFrame tween to gate). Legs
+   are the only thing that loop-animates, and only while .is-walking. */
+
+.clawd {
+  position: fixed;
+  right: 36px;
+  bottom: 44px;
+  z-index: 24;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  transform: translateX(0) scaleX(1);
+  transition: transform 900ms linear;
+}
+
+.clawd:active .clawd-body { transform: scale(0.94); }
+
+.clawd-body {
+  position: relative;
+  width: 34px;
+  height: 22px;
+  background: var(--accent);
+  border-radius: 8px;
+  corner-shape: squircle;
+  transition: transform 160ms var(--ease-out);
+}
+
+.clawd-eye {
+  position: absolute;
+  top: 7px;
+  width: 5px;
+  height: 5px;
+  background: var(--bg);
+  border-radius: 1px;
+}
+
+.clawd-eye-l { left: 7px; }
+.clawd-eye-r { right: 7px; }
+
+.clawd-leg {
+  position: absolute;
+  bottom: -9px;
+  width: 6px;
+  height: 11px;
+  background: var(--accent);
+  border-radius: 0 0 3px 3px;
+  transform-origin: top center;
+}
+
+.clawd-leg-l { left: 7px; }
+.clawd-leg-r { right: 7px; }
+
+.clawd.is-walking .clawd-leg-l { animation: clawd-step 480ms ease-in-out infinite; }
+.clawd.is-walking .clawd-leg-r { animation: clawd-step 480ms ease-in-out infinite reverse; }
+
+@keyframes clawd-step {
+  0%, 100% { transform: rotate(-18deg); }
+  50%      { transform: rotate(18deg); }
+}
+
+.clawd-chat {
+  position: fixed;
+  right: 24px;
+  bottom: 100px;
+  z-index: 21;
+  width: 300px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: 0 20px 48px rgb(0 0 0 / 0.18);
+  transform-origin: calc(100% - 32px) bottom;
+  animation: pop-in 220ms var(--ease-out) both;
+}
+
+.clawd-chat[hidden] { display: none; }
+.clawd-chat.is-closing { animation: pop-out 150ms var(--ease-out) both; }
+
+.clawd-chat-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.clawd-chat-head .spark { width: 16px; height: 16px; color: var(--accent); }
+
+#clawd-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+#clawd-input {
+  flex: 1;
+  max-height: 100px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  resize: none;
+  background: var(--bg);
+  color: var(--text);
+  font: 13px var(--sans);
+}
+
+#clawd-form .send-button { width: 32px; height: 32px; }
+#clawd-form .send-button .icon { width: 16px; height: 16px; }
+
+.clawd-answer {
+  margin-top: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text);
+  white-space: pre-wrap;
+}
+
+.clawd-answer:empty { display: none; }
+.clawd-answer.is-pending { color: var(--muted); font-style: italic; }
+.clawd-answer.is-error { color: var(--danger); }
+
 /* ─── Dock ─────────────────────────────────────────────────────────────── */
 
 .dock-edge {

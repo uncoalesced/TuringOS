@@ -578,6 +578,38 @@ ipcMain.handle('dock:launch', (_e, id) => {
 
 ipcMain.handle('google:connect', () => connectGoogle());
 
+// ─── Clawd ──────────────────────────────────────────────────────────────────
+// Single-shot Q&A, no conversation history anywhere — each request is one
+// question, one answer.
+
+const CLAWD_SYSTEM_PROMPT = 'You are Clawd, a small, friendly pixel mascot that lives on the HushOS desktop. Answer questions briefly and helpfully, in a couple of sentences unless more detail is clearly needed.';
+
+ipcMain.handle('clawd:ask', async (_e, { message }) => {
+  if (typeof message !== 'string' || !message.trim()) return { ok: false, error: 'Say something first.' };
+  const key = getConfigValue('ANTHROPIC_API_KEY');
+  if (!key) return { ok: false, error: 'Clawd needs an API key — set ANTHROPIC_API_KEY in ~/.claudeos/config.env.' };
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5',
+        max_tokens: 512,
+        system: CLAWD_SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: message.trim() }],
+      }),
+      signal: AbortSignal.timeout(15000),
+    });
+    if (res.status === 401) return { ok: false, error: "Clawd's API key looks wrong." };
+    if (res.status === 429) return { ok: false, error: 'Clawd is popular right now — try again shortly.' };
+    if (!res.ok) return { ok: false, error: `Clawd hit an error (${res.status}).` };
+    const data = await res.json();
+    return { ok: true, text: data.content?.find((b) => b.type === 'text')?.text || '' };
+  } catch {
+    return { ok: false, error: 'Clawd is offline right now.' };
+  }
+});
+
 ipcMain.handle('state:get', () => snapshot());
 ipcMain.handle('projects:list', () => findProjects());
 
