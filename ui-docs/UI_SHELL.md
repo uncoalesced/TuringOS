@@ -1,6 +1,6 @@
 # ui-shell
 
-**HushOS** is the on-screen name; the codebase is still called ClaudeOS/ui-shell (CLI, data dir, branch, package name — unchanged). The assistant layer for our Claude-powered Linux OS (Debian base, KDE). It is the part people see: a menu bar, a Raycast-style command bar, a permission sheet, notifications with Undo, and a side panel of widgets.
+**TuringOS** is the on-screen name; the codebase is still called ClaudeOS/ui-shell (CLI, data dir, branch, package name — unchanged). The assistant layer for our Claude-powered Linux OS (Debian base, KDE). It is the part people see: a menu bar, a Raycast-style command bar, a permission sheet, notifications with Undo, and a side panel of widgets.
 
 
 ## Status
@@ -8,7 +8,7 @@
 | Built | Not built yet |
 |---|---|
 | Electron app in `ui/`, launched with `./claudeos ui` | Command bar, PR views, Actions menu (Ctrl/⌘+K focuses the composer for now) |
-| Menu bar: Claude spark + "HushOS" brand, Wi-Fi, battery, light/dark toggle, clock (click to open the side panel) | Task view, permission sheet |
+| Menu bar: Claude spark + "TuringOS" brand, Wi-Fi, battery, light/dark toggle, clock (click to open the side panel) | Task view, permission sheet |
 | Desktop, vertically centred: clock, greeting with the user's first name, "What do you want to cook?" composer | Notifications with Undo |
 | @ (or +) project picker listing git repos; Enter runs `claudeos agent start <project> <task>` | |
 | Weather in the top-right corner (Open-Meteo, geolocated by IP), click for the full card | |
@@ -17,7 +17,11 @@
 | Light/dark in Claude brand colours, circular reveal | Spring engine, progressive blur |
 | macOS-style app icon (`assets/brand/app-icon.png`, squircle) | |
 | "Focused today", centred above the composer (placeholder — no focus-tracking backend yet) | |
-| Dock: hidden until the cursor hits the bottom edge, floating (detached, all corners rounded, iOS-style continuous curvature via CSS `corner-shape: squircle`), tight resting spacing, macOS-style magnification toward the cursor with a name-label tooltip above the hovered icon. Fixed set: Terminal, Files (wide fallback chain: xdg-open/dolphin/nautilus/pcmanfm/nemo/thunar), Browser, Settings — all launching real system commands via the main process | Auto-discovered/configurable icon list |
+| Dock: hidden until the cursor hits the bottom edge, floating (detached, all corners rounded, iOS-style continuous curvature via CSS `corner-shape: squircle`), tight resting spacing, macOS-style magnification toward the cursor with a name-label tooltip above the hovered icon, driven by a real spring (mass-spring-damper, not a CSS transition retargeting a JS value). Fixed set: Terminal, Files (wide fallback chain: xdg-open/dolphin/nautilus/pcmanfm/nemo/thunar), Browser, Settings — all launching real system commands via the main process | Auto-discovered/configurable icon list |
+| Model picker in the composer (Fable 5.1 / Opus 5.5 / Sonnet 5 / Haiku 4.5, Effort submenu Low–Max), defaults to Sonnet 5 / Medium, persisted locally. Selection is passed to the agent as `CLAUDEOS_AGENT_MODEL`/`CLAUDEOS_AGENT_EFFORT` env vars | `agent/claude.sh` doesn't read those env vars yet — the picker is fully wired on the UI side, inert on the backend side until that's added |
+| Composer without a @project attached is a plain question, answered inline with one Claude call (the chosen model/effort) — no sandbox, no agent. Attaching a project is what turns it into a real Claude Code task. This is the actual Claude-chat vs. Claude-Code distinction, not a separate mode |
+| Mic button next to send, dictation via Chromium's built-in Web Speech API | Unverified on the real (offline-capable) Debian target — this API depends on Chromium's own speech backend being reachable, which is a known soft spot in Electron builds |
+| Clawd: patrols near the dock (slides only, no flip), shake the cursor anywhere to open its chat (a real shake — several quick reversals — not just fast motion), Ctrl/Cmd+Enter to send |
 | Side panel (Ctrl/⌘+J or click the clock): a right-edge slide-in shell | Calendar/"Your day"/Ask widgets beyond what's listed below |
 | GitHub widget in the side panel — My PRs + Review Requests via `gh` (assumes `gh auth login` already done), refreshed every 5 min, verified against a real authenticated account | |
 | Calendar widget in the side panel — real Google OAuth (system-browser consent + loopback redirect, `google-auth-library`), shows the next event once connected; honest "Connect Google Calendar" empty state otherwise, not fake data | Needs a real Google Cloud OAuth "Desktop app" client — see §9 below |

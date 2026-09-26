@@ -3,7 +3,7 @@
 // snapshot to the page whenever something changes. The page never touches
 // the system directly.
 
-const { app, BrowserWindow, ipcMain, nativeTheme } = require('electron');
+const { app, BrowserWindow, ipcMain, nativeTheme, session } = require('electron');
 const { execFile, execFileSync, spawn } = require('child_process');
 const { OAuth2Client } = require('google-auth-library');
 const fs = require('fs');
@@ -342,7 +342,7 @@ async function connectGoogle() {
       res.writeHead(200, { 'content-type': 'text/html' });
       res.end(authError
         ? '<html><body>Could not connect Google Calendar. You can close this tab.</body></html>'
-        : '<html><body>Google Calendar connected — you can close this tab and go back to HushOS.</body></html>');
+        : '<html><body>Google Calendar connected — you can close this tab and go back to TuringOS.</body></html>');
       server.close();
       clearTimeout(giveUp);
 
@@ -479,7 +479,7 @@ function createWindow() {
     kiosk: KIOSK,
     fullscreen: KIOSK,
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#262624' : '#F4F3EE',
-    title: 'HushOS',
+    title: 'TuringOS',
     icon: path.join(__dirname, 'assets/brand/app-icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -504,10 +504,12 @@ function createWindow() {
   // renderer (html/css/js) — main.js/preload.js need a real restart, since
   // that code is already loaded into this process.
   if (!KIOSK && process.env.NO_WATCH !== '1') {
-    const RELOAD_FILES = new Set(['index.html', 'styles.css', 'app.js', 'theme.js']);
+    // Any renderer file (incl. new ones like palette.js / bazaar.js), but not
+    // main.js / preload.js, which need a real restart.
+    const isRendererFile = (f) => /\.(html|css|js)$/.test(f) && !['main.js', 'preload.js'].includes(f);
     let reloadTimer = null;
     fs.watch(__dirname, (_event, filename) => {
-      if (!filename || !RELOAD_FILES.has(filename)) return;
+      if (!filename || !isRendererFile(filename)) return;
       clearTimeout(reloadTimer);
       reloadTimer = setTimeout(() => {
         if (win && !win.isDestroyed()) win.webContents.reload();
@@ -578,51 +580,74 @@ ipcMain.handle('dock:launch', (_e, id) => {
 
 ipcMain.handle('google:connect', () => connectGoogle());
 
-// ─── Clawd ──────────────────────────────────────────────────────────────────
+// ─── One-shot Claude calls ──────────────────────────────────────────────────
+// Shared by Clawd and the composer's plain-chat path (no @project attached).
 // Single-shot Q&A, no conversation history anywhere — each request is one
-// question, one answer.
+// question, one answer, always through the main process (the renderer has
+// no network access at all — see index.html's CSP).
 
-const CLAWD_SYSTEM_PROMPT = 'You are Clawd, a small, friendly pixel mascot that lives on the HushOS desktop. Answer questions briefly and helpfully, in a couple of sentences unless more detail is clearly needed.';
+const EFFORT_MODELS = new Set(['claude-sonnet-5', 'claude-opus-5-5', 'claude-fable-5-1']); // haiku doesn't take effort
 
-ipcMain.handle('clawd:ask', async (_e, { message }) => {
+async function askAnthropic({ message, model, effort, systemPrompt, maxTokens, whoLabel }) {
   if (typeof message !== 'string' || !message.trim()) return { ok: false, error: 'Say something first.' };
   const key = getConfigValue('ANTHROPIC_API_KEY');
-  if (!key) return { ok: false, error: 'Clawd needs an API key — set ANTHROPIC_API_KEY in ~/.claudeos/config.env.' };
+  if (!key) return { ok: false, error: `${whoLabel} needs an API key — set ANTHROPIC_API_KEY in ~/.claudeos/config.env.` };
+  const useModel = model || 'claude-haiku-4-5';
   try {
+    const body = {
+      model: useModel,
+      max_tokens: maxTokens,
+      messages: [{ role: 'user', content: message.trim() }],
+    };
+    if (systemPrompt) body.system = systemPrompt;
+    if (effort && EFFORT_MODELS.has(useModel)) body.output_config = { effort };
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5',
-        max_tokens: 512,
-        system: CLAWD_SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: message.trim() }],
-      }),
-      signal: AbortSignal.timeout(15000),
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(30000),
     });
-    if (res.status === 401) return { ok: false, error: "Clawd's API key looks wrong." };
-    if (res.status === 429) return { ok: false, error: 'Clawd is popular right now — try again shortly.' };
-    if (!res.ok) return { ok: false, error: `Clawd hit an error (${res.status}).` };
+    if (res.status === 401) return { ok: false, error: `${whoLabel}'s API key looks wrong.` };
+    if (res.status === 429) return { ok: false, error: `${whoLabel} is popular right now — try again shortly.` };
+    if (!res.ok) return { ok: false, error: `${whoLabel} hit an error (${res.status}).` };
     const data = await res.json();
     return { ok: true, text: data.content?.find((b) => b.type === 'text')?.text || '' };
   } catch {
-    return { ok: false, error: 'Clawd is offline right now.' };
+    return { ok: false, error: `${whoLabel} is offline right now.` };
   }
-});
+}
+
+const CLAWD_SYSTEM_PROMPT = 'You are Clawd, a small, friendly pixel mascot that lives on the TuringOS desktop. Answer questions briefly and helpfully, in a couple of sentences unless more detail is clearly needed.';
+
+ipcMain.handle('clawd:ask', (_e, { message }) => askAnthropic({
+  message, model: 'claude-haiku-4-5', systemPrompt: CLAWD_SYSTEM_PROMPT, maxTokens: 512, whoLabel: 'Clawd',
+}));
+
+// The composer without a @project attached is a plain question, not a
+// coding task — answer it directly instead of starting a sandboxed agent.
+ipcMain.handle('chat:ask', (_e, { message, model, effort }) => askAnthropic({
+  message, model, effort, maxTokens: 2048, whoLabel: 'TuringOS',
+}));
 
 ipcMain.handle('state:get', () => snapshot());
 ipcMain.handle('projects:list', () => findProjects());
 
 // Start the agent on a task. The UI never builds shell strings: arguments go
 // straight to the claudeos script, which creates the sandbox first.
-ipcMain.handle('agent:start', (_e, { project, task }) => {
-  if (!fs.existsSync(DATA_DIR)) return { ok: false, error: 'HushOS is not set up. Run ./claudeos init first.' };
+ipcMain.handle('agent:start', (_e, { project, task, model, effort }) => {
+  if (!fs.existsSync(DATA_DIR)) return { ok: false, error: 'TuringOS is not set up. Run ./claudeos init first.' };
   if (typeof project !== 'string' || !fs.existsSync(project)) return { ok: false, error: 'That project folder no longer exists.' };
   if (typeof task !== 'string' || !task.trim()) return { ok: false, error: 'Describe the task first.' };
+  // Passed through as env vars, not yet read by agent/claude.sh — additive
+  // and inert until the backend opts in, not a silent no-op.
+  const env = { ...process.env };
+  if (typeof model === 'string') env.CLAUDEOS_AGENT_MODEL = model;
+  if (typeof effort === 'string') env.CLAUDEOS_AGENT_EFFORT = effort;
   const child = spawn(CLAUDEOS_BIN, ['agent', 'start', project, task.trim()], {
     cwd: REPO_ROOT,
     detached: true,
     stdio: 'ignore',
+    env,
   });
   child.unref();
   return { ok: true };
@@ -630,6 +655,11 @@ ipcMain.handle('agent:start', (_e, { project, task }) => {
 
 app.whenReady().then(() => {
   if (process.platform === 'darwin') app.dock?.setIcon(path.join(__dirname, 'assets/brand/app-icon.png'));
+  // Electron denies every permission by default. The mic button is the
+  // only thing here that needs one — grant just that, deny the rest.
+  session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
+    callback(permission === 'media');
+  });
   createWindow();
   refreshWifi();
   refreshWeather();

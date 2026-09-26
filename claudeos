@@ -304,7 +304,16 @@ main() {
 
         # ── Desktop UI ────────────────────────────────────────────────────────
         ui)
-            exec "${_SCRIPT_DIR}/ui/run.sh" ${sub:+"$sub"} "$@"
+            # Repo checkout: ui/ sits next to this script. Debian image: the
+            # UI lives in /opt/claudeos-ui behind the claudeos-ui launcher.
+            if [[ -x "${_SCRIPT_DIR}/ui/run.sh" ]]; then
+                exec "${_SCRIPT_DIR}/ui/run.sh" ${sub:+"$sub"} "$@"
+            elif command -v claudeos-ui &>/dev/null; then
+                exec claudeos-ui ${sub:+"$sub"} "$@"
+            else
+                echo "ClaudeOS UI not found (no ui/run.sh, no claudeos-ui)." >&2
+                exit 1
+            fi
             ;;
 
         # ── Init / Setup ──────────────────────────────────────────────────────
