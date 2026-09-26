@@ -73,6 +73,13 @@
 
 * { box-sizing: border-box; margin: 0; }
 
+/* Every button here sets its own fixed size + padding and centers its icon
+   via flex/grid — Chromium's default button padding (1px 6px) was never
+   meant to apply and can throw that centering off when an icon is bigger
+   than the padded content box (e.g. a 12px icon in a 20px button with 6px
+   default side padding leaves only an 8px box to center it in). */
+button { padding: 0; border: 0; background: none; font: inherit; color: inherit; }
+
 html, body { height: 100%; }
 
 body {
