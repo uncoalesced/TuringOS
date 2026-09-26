@@ -304,7 +304,17 @@ function createWindow() {
 
 const DOCK_APPS = {
   terminal: { label: 'Terminal', commands: [['x-terminal-emulator', []], ['xterm', []], ['konsole', []]] },
-  files: { label: 'Files', commands: [['xdg-open', [os.homedir()]], ['dolphin', [os.homedir()]]] },
+  files: {
+    label: 'Files',
+    commands: [
+      ['xdg-open', [os.homedir()]],
+      ['dolphin', [os.homedir()]],
+      ['nautilus', [os.homedir()]],
+      ['pcmanfm', [os.homedir()]],
+      ['nemo', [os.homedir()]],
+      ['thunar', [os.homedir()]],
+    ],
+  },
   browser: { label: 'Browser', commands: [['xdg-open', ['https://']], ['x-www-browser', []]] },
   settings: { label: 'Settings', commands: [['systemsettings', []], ['systemsettings5', []]] },
 };
