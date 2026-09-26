@@ -10,15 +10,23 @@ const SAMPLE = {
   sandbox: 'task-1727340000',
   gameMode: false,
   system: { host: 'claudeos', cpu: 18, mem: 42, battery: { level: 82, charging: false }, wifi: { ssid: 'Studio' } },
+  user: { name: null },
 };
+
+const SAMPLE_PROJECTS = [
+  { name: 'claudeos', path: '~/code/claudeos' },
+  { name: 'auth-service', path: '~/code/auth-service' },
+  { name: 'dotfiles', path: '~/dotfiles' },
+];
+
+let lastSnap = null;
+let userName = null;
 
 // ─── Clock ──────────────────────────────────────────────────────────────────
 
 function greeting(hour) {
-  if (hour < 5) return 'Working late.';
-  if (hour < 12) return 'Good morning.';
-  if (hour < 18) return 'Good afternoon.';
-  return 'Good evening.';
+  const part = hour < 5 ? 'Good evening' : hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  return userName ? `${part}, ${userName}.` : `${part}.`;
 }
 
 function tickClock() {
@@ -35,19 +43,18 @@ function tickClock() {
 
 // ─── State ──────────────────────────────────────────────────────────────────
 
-function setTile(id, value, sub, tone) {
-  const tile = $(id);
-  tile.querySelector('.tile-value').textContent = value;
-  tile.querySelector('.tile-sub').textContent = sub;
-  if (tone) tile.dataset.tone = tone;
-  else delete tile.dataset.tone;
-}
-
 function render(snap) {
   // Before ClaudeOS is initialised, keep real system numbers but show
   // sample agent data so the desktop still reads as intended.
   const s = snap.live ? snap : { ...SAMPLE, system: { ...SAMPLE.system, ...pickDefined(snap.system) } };
   $('#sample-badge').hidden = snap.live;
+  lastSnap = snap;
+
+  const name = snap.user?.name || null;
+  if (name !== userName) {
+    userName = name;
+    tickClock();
+  }
 
   const status = $('#agent-status');
   status.dataset.state = s.agent.running ? 'working' : 'idle';
@@ -68,20 +75,17 @@ function render(snap) {
   $('#wifi').hidden = !wifi;
   if (wifi) $('#wifi').title = wifi.ssid ? `Wi-Fi: ${wifi.ssid}` : 'Wi-Fi: not connected';
 
-  setTile('#tile-agent',
-    s.agent.running ? 'Working' : 'Idle',
-    s.agent.task || 'Waiting for a task',
-    s.agent.running ? 'accent' : null);
-  setTile('#tile-sandbox',
-    s.sandbox ? 'Active' : 'None',
-    s.sandbox ? 'Original project protected' : 'No agent changes pending');
-  setTile('#tile-game',
-    s.gameMode ? 'On' : 'Off',
-    s.gameMode ? 'Claude runs in the background' : 'Normal priorities',
-    s.gameMode ? 'accent' : null);
-  setTile('#tile-system',
+  const corner = $('#corner-agent');
+  corner.dataset.state = s.agent.running ? 'working' : 'idle';
+  corner.querySelector('.corner-label').textContent = s.agent.running ? 'Working' : 'Agent idle';
+  $('#corner-task').textContent = s.agent.running && s.agent.task ? s.agent.task : '';
+  $('#corner-system').textContent = [
+    s.sandbox ? 'Sandbox active' : null,
+    s.gameMode ? 'Game mode' : null,
     `${cpu}% CPU`,
-    `${mem}% memory · ${host}`);
+    `${mem}% memory`,
+  ].filter(Boolean).join('  ·  ');
+  $('#corner-system').title = host;
 }
 
 function pickDefined(obj) {
@@ -122,6 +126,220 @@ matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
   if (!localStorage.getItem('theme')) setTheme(e.matches ? 'dark' : 'light', innerWidth, 0);
 });
 
+// ─── Composer ───────────────────────────────────────────────────────────────
+// Type a task, pick a project with @ (or +), press Enter: the agent starts in
+// a sandbox of that project.
+
+const input = $('#composer-input');
+const mention = $('#mention');
+const hint = $('#composer-hint');
+const send = $('#composer-send');
+const chip = $('#composer-project');
+const HINT_HTML = hint.innerHTML;
+const folderIcon = chip.querySelector('svg');
+
+let project = null;
+let projects = null;
+let matches = [];
+let active = 0;
+let mentionMode = null; // 'typed' (after @) | 'button' (after +) | null
+let trigger = null; // { start, end } of the "@query" text being typed
+let hintTimer = null;
+
+async function loadProjects({ refresh = false } = {}) {
+  if (!window.shell) return SAMPLE_PROJECTS;
+  if (!projects || refresh) projects = await window.shell.listProjects();
+  return projects;
+}
+
+function currentTrigger() {
+  const pos = input.selectionStart;
+  const m = input.value.slice(0, pos).match(/(^|\s)@([^\s@]*)$/);
+  return m ? { start: pos - m[2].length - 1, end: pos, query: m[2] } : null;
+}
+
+function shortPath(p) {
+  return p.replace(/^\/(Users|home)\/[^/]+/, '~');
+}
+
+async function showMention(query) {
+  const q = query.toLowerCase();
+  const list = await loadProjects();
+  matches = list
+    .filter((p) => p.name.toLowerCase().includes(q))
+    .sort((a, b) => b.name.toLowerCase().startsWith(q) - a.name.toLowerCase().startsWith(q))
+    .slice(0, 50);
+  active = 0;
+  drawMention();
+}
+
+function drawMention() {
+  if (!mentionMode) return;
+  const items = matches.map((p, i) => {
+    const el = document.createElement('button');
+    el.type = 'button';
+    el.className = 'mention-item';
+    el.setAttribute('role', 'option');
+    el.setAttribute('aria-selected', String(i === active));
+    const name = document.createElement('span');
+    name.className = 'mention-name';
+    name.textContent = p.name;
+    const where = document.createElement('span');
+    where.className = 'mention-path';
+    where.textContent = `\u200E${shortPath(p.path)}\u200E`; // keep slashes in place under rtl truncation
+    el.append(folderIcon.cloneNode(true), name, where);
+    el.addEventListener('mousedown', (e) => e.preventDefault());
+    el.addEventListener('click', () => pick(p));
+    el.addEventListener('mousemove', () => {
+      if (active !== i) setActive(i);
+    });
+    return el;
+  });
+  if (!items.length) {
+    const empty = document.createElement('p');
+    empty.className = 'mention-empty';
+    empty.textContent = projects && !projects.length ? 'No git projects found in your home folder' : 'No matching projects';
+    items.push(empty);
+  }
+  mention.replaceChildren(...items);
+  mention.hidden = false;
+}
+
+function setActive(i) {
+  active = (i + matches.length) % matches.length;
+  [...mention.children].forEach((el, j) => el.setAttribute('aria-selected', String(j === active)));
+  mention.children[active]?.scrollIntoView({ block: 'nearest' });
+}
+
+function closeMention() {
+  mentionMode = null;
+  trigger = null;
+  mention.hidden = true;
+}
+
+function setProject(p) {
+  project = p;
+  chip.hidden = !p;
+  if (p) {
+    chip.querySelector('.composer-project-name').textContent = p.name;
+    chip.title = shortPath(p.path);
+  }
+}
+
+function pick(p) {
+  if (trigger) input.setRangeText('', trigger.start, trigger.end, 'end');
+  setProject(p);
+  closeMention();
+  input.focus();
+  sync();
+}
+
+function setHint(text, tone) {
+  clearTimeout(hintTimer);
+  hint.textContent = text;
+  if (tone) hint.dataset.tone = tone;
+  else delete hint.dataset.tone;
+  hintTimer = setTimeout(() => {
+    hint.innerHTML = HINT_HTML;
+    delete hint.dataset.tone;
+  }, 4000);
+}
+
+function sync() {
+  input.style.height = 'auto';
+  input.style.height = `${input.scrollHeight}px`;
+  send.disabled = !input.value.trim();
+}
+
+async function submit() {
+  const task = input.value.trim();
+  if (!task) return;
+  if (!project) {
+    setHint('Pick a project with @ first', 'error');
+    return;
+  }
+  if (!window.shell || !lastSnap?.live) {
+    setHint('Sample mode: nothing was started', 'error');
+    return;
+  }
+  const res = await window.shell.startAgent(project.path, task);
+  if (!res.ok) {
+    setHint(res.error, 'error');
+    return;
+  }
+  input.value = '';
+  sync();
+  setHint(`Started in a sandbox of ${project.name}`);
+}
+
+input.addEventListener('input', () => {
+  sync();
+  const t = currentTrigger();
+  if (t) {
+    mentionMode = 'typed';
+    trigger = t;
+    showMention(t.query);
+  } else if (mentionMode === 'typed') {
+    closeMention();
+  }
+});
+
+input.addEventListener('keydown', (e) => {
+  if (mentionMode) {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (matches.length) setActive(active + (e.key === 'ArrowDown' ? 1 : -1));
+      return;
+    }
+    if ((e.key === 'Enter' || e.key === 'Tab') && matches[active]) {
+      e.preventDefault();
+      pick(matches[active]);
+      return;
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      closeMention();
+      return;
+    }
+  }
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    submit();
+  } else if (e.key === 'Backspace' && project && input.selectionStart === 0 && input.selectionEnd === 0) {
+    setProject(null);
+  }
+});
+
+input.addEventListener('blur', () => closeMention());
+
+$('#composer-add').addEventListener('mousedown', (e) => e.preventDefault());
+$('#composer-add').addEventListener('click', () => {
+  if (mentionMode) return closeMention();
+  input.focus();
+  mentionMode = 'button';
+  trigger = null;
+  showMention('');
+  loadProjects({ refresh: true }).then(() => mentionMode === 'button' && showMention(''));
+});
+
+$('#composer-project-clear').addEventListener('click', () => {
+  setProject(null);
+  input.focus();
+});
+
+$('#composer').addEventListener('submit', (e) => {
+  e.preventDefault();
+  submit();
+});
+
+// Ctrl/⌘+K jumps to the composer from anywhere.
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+    e.preventDefault();
+    input.focus();
+  }
+});
+
 // ─── Boot ───────────────────────────────────────────────────────────────────
 
 tickClock();
@@ -130,6 +348,7 @@ setInterval(tickClock, 1000);
 if (window.shell) {
   window.shell.getState().then(render);
   window.shell.onState(render);
+  loadProjects();
 } else {
   render(SAMPLE);
 }

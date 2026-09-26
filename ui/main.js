@@ -4,7 +4,7 @@
 // the system directly.
 
 const { app, BrowserWindow, ipcMain, nativeTheme } = require('electron');
-const { execFile } = require('child_process');
+const { execFile, execFileSync, spawn } = require('child_process');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -13,6 +13,8 @@ const DATA_DIR = path.join(os.homedir(), '.claudeos');
 const STATE_FILE = path.join(DATA_DIR, 'state.json');
 const KIOSK = process.env.KIOSK === '1';
 const POLL_MS = 2000;
+const REPO_ROOT = path.join(__dirname, '..');
+const CLAUDEOS_BIN = path.join(REPO_ROOT, 'claudeos');
 
 let win = null;
 
@@ -77,11 +79,65 @@ function readCpu() {
   return total > 0 ? Math.round(100 * (1 - idle / total)) : 0;
 }
 
+// First name for the greeting: the account's full name, else the login name.
+function readFirstName() {
+  let full = '';
+  try {
+    if (process.platform === 'darwin') {
+      full = execFileSync('id', ['-F'], { encoding: 'utf8' }).trim();
+    } else {
+      const line = fs.readFileSync('/etc/passwd', 'utf8').split('\n')
+        .find((l) => l.startsWith(`${os.userInfo().username}:`));
+      full = (line?.split(':')[4] || '').split(',')[0];
+    }
+  } catch {}
+  const name = (full || os.userInfo().username).split(/\s+/)[0];
+  return name ? name[0].toUpperCase() + name.slice(1) : null;
+}
+const USER_NAME = readFirstName();
+
+// ─── Projects (for the @ picker) ────────────────────────────────────────────
+// Git repos under $HOME and next to this repo, 3 levels deep. Override with
+// CLAUDEOS_PROJECT_ROOTS=/path/a:/path/b.
+
+const SKIP_DIRS = new Set(['node_modules', 'Library', 'Applications', 'Movies', 'Music', 'Pictures', 'snap', 'go', 'vendor', 'target', 'build', 'dist']);
+// On a Mac preview, reading these pops a privacy prompt; the VM has no such prompts.
+if (process.platform === 'darwin') ['Desktop', 'Documents', 'Downloads'].forEach((d) => SKIP_DIRS.add(d));
+
+async function findProjects() {
+  const roots = process.env.CLAUDEOS_PROJECT_ROOTS
+    ? process.env.CLAUDEOS_PROJECT_ROOTS.split(':')
+    : [os.homedir(), path.dirname(REPO_ROOT)];
+  const found = new Map();
+
+  async function walk(dir, depth) {
+    if (found.size >= 200) return;
+    let entries;
+    try {
+      entries = await fs.promises.readdir(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    if (entries.some((e) => e.name === '.git')) {
+      found.set(dir, { name: path.basename(dir), path: dir });
+      return;
+    }
+    if (depth === 0) return;
+    await Promise.all(entries
+      .filter((e) => e.isDirectory() && !e.name.startsWith('.') && !SKIP_DIRS.has(e.name))
+      .map((e) => walk(path.join(dir, e.name), depth - 1)));
+  }
+
+  await Promise.all([...new Set(roots)].map((r) => walk(r, 3)));
+  return [...found.values()].sort((a, b) => a.name.localeCompare(b.name));
+}
+
 function snapshot() {
   const state = readJSON(STATE_FILE);
   return {
     // "live" means ClaudeOS has been initialised on this machine.
     live: fs.existsSync(DATA_DIR),
+    user: { name: USER_NAME },
     agent: {
       running: pidAlive(state?.agent_pid),
       task: state?.agent_task || null,
@@ -167,6 +223,22 @@ function createWindow() {
 }
 
 ipcMain.handle('state:get', () => snapshot());
+ipcMain.handle('projects:list', () => findProjects());
+
+// Start the agent on a task. The UI never builds shell strings: arguments go
+// straight to the claudeos script, which creates the sandbox first.
+ipcMain.handle('agent:start', (_e, { project, task }) => {
+  if (!fs.existsSync(DATA_DIR)) return { ok: false, error: 'ClaudeOS is not set up. Run ./claudeos init first.' };
+  if (typeof project !== 'string' || !fs.existsSync(project)) return { ok: false, error: 'That project folder no longer exists.' };
+  if (typeof task !== 'string' || !task.trim()) return { ok: false, error: 'Describe the task first.' };
+  const child = spawn(CLAUDEOS_BIN, ['agent', 'start', project, task.trim()], {
+    cwd: REPO_ROOT,
+    detached: true,
+    stdio: 'ignore',
+  });
+  child.unref();
+  return { ok: true };
+});
 
 app.whenReady().then(() => {
   createWindow();

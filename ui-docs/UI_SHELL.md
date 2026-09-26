@@ -7,9 +7,11 @@ The assistant layer for our Claude-powered Linux OS (CachyOS base, KDE). It is t
 
 | Built | Not built yet |
 |---|---|
-| Electron app in `ui/`, launched with `./claudeos ui` | Command bar, PR views, Actions menu |
+| Electron app in `ui/`, launched with `./claudeos ui` | Command bar, PR views, Actions menu (Ctrl/⌘+K focuses the composer for now) |
 | Menu bar: brand, agent status, sandbox and game-mode chips, Wi-Fi, battery, light/dark toggle, clock | Task view, permission sheet |
-| Desktop: clock, greeting, Agent / Sandbox / Game mode / System cards | Notifications with Undo, widgets side panel |
+| Desktop: clock, greeting with the user's first name, "What do you want to cook?" composer |
+| @ (or +) project picker listing git repos; Enter runs `claudeos agent start <project> <task>` |
+| Bottom corners: agent status and task, sandbox / game mode / CPU / memory | Notifications with Undo, widgets side panel |
 | Live state from `~/.claudeos/state.json`, sample data fallback | Running `claudeos` commands from the UI |
 | Light/dark in Claude brand colours, circular reveal | Spring engine, progressive blur |
 

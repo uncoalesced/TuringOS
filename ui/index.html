@@ -66,29 +66,40 @@
       <p class="hero-greeting" id="hero-greeting"></p>
     </section>
 
-    <section class="tiles">
-      <article class="tile" id="tile-agent">
-        <p class="eyebrow">Agent</p>
-        <p class="tile-value"></p>
-        <p class="tile-sub"></p>
-      </article>
-      <article class="tile" id="tile-sandbox">
-        <p class="eyebrow">Sandbox</p>
-        <p class="tile-value"></p>
-        <p class="tile-sub"></p>
-      </article>
-      <article class="tile" id="tile-game">
-        <p class="eyebrow">Game mode</p>
-        <p class="tile-value"></p>
-        <p class="tile-sub"></p>
-      </article>
-      <article class="tile" id="tile-system">
-        <p class="eyebrow">System</p>
-        <p class="tile-value"></p>
-        <p class="tile-sub"></p>
-      </article>
-    </section>
+    <form class="composer" id="composer" autocomplete="off">
+      <div class="composer-box">
+        <div class="composer-project" id="composer-project" hidden>
+          <svg class="icon" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M2 4.5A1.5 1.5 0 0 1 3.5 3h2.8l1.4 1.6h4.8A1.5 1.5 0 0 1 14 6.1v5.4a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 11.5z" />
+          </svg>
+          <span class="composer-project-name"></span>
+          <button type="button" class="composer-project-clear" id="composer-project-clear" aria-label="Remove project">
+            <svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 4.5l7 7M11.5 4.5l-7 7" /></svg>
+          </button>
+        </div>
+        <textarea id="composer-input" rows="1" placeholder="What do you want to cook?" spellcheck="false"></textarea>
+        <div class="composer-row">
+          <button type="button" class="icon-button" id="composer-add" aria-label="Pick a project">
+            <svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10" /></svg>
+          </button>
+          <span class="composer-hint" id="composer-hint">Type <kbd>@</kbd> to pick a project</span>
+          <button type="submit" class="send-button" id="composer-send" aria-label="Start" disabled>
+            <svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13V3M3.8 7.2 8 3l4.2 4.2" /></svg>
+          </button>
+        </div>
+      </div>
+      <div class="mention" id="mention" role="listbox" aria-label="Projects" hidden></div>
+    </form>
   </main>
+
+  <footer class="corner corner-left">
+    <span class="status" id="corner-agent" data-state="idle">
+      <span class="dot"></span>
+      <span class="corner-label"></span>
+    </span>
+    <span class="corner-task" id="corner-task"></span>
+  </footer>
+  <footer class="corner corner-right" id="corner-system"></footer>
 
   <p class="sample-badge" id="sample-badge" hidden>Sample data · ClaudeOS isn't set up on this machine</p>
 
