@@ -764,37 +764,35 @@ document.addEventListener('keydown', (e) => {
 
 // ─── Dock ───────────────────────────────────────────────────────────────────
 // Hidden until the cursor hits the bottom edge (mirrors the real macOS dock).
-// Icons magnify toward the cursor; transform-origin is the bottom of each
-// icon so they grow upward without reflowing their neighbors.
+// Magnification follows buildui.com's "Magnified Dock" recipe: each icon's
+// distance from the cursor maps linearly to a target *size* (not a scale),
+// and a spring drives the real width/height toward it. Because the size is
+// real layout, a growing icon pushes its neighbours apart and widens the
+// tray instead of overlapping them.
 
 const dock = $('#dock');
 const dockItems = [...document.querySelectorAll('.dock-item')];
 const dockError = $('#dock-error');
+const dockTooltip = $('#dock-tooltip');
 
-const DOCK_MAX_SCALE = 1.6;
-const DOCK_SPREAD = 55; // px — how far the magnification falloff reaches; tight, so the peak is under the cursor and it drops off within a couple of icons, not the whole row
+const DOCK_BASE = 48; // px, resting tile size
+const DOCK_MAX = 84; // px, tile size directly under the cursor
+const DOCK_RANGE = 150; // px, distance at which a tile is back to resting size
 const DOCK_HIDE_DELAY = 250; // ms grace period before hiding, so crossing the gap between edge and dock doesn't flicker it shut
 
-// A real mass-spring-damper per icon, not a CSS transition retargeting a
-// JS-computed value. The difference matters here specifically: a transition
-// restarts its easing curve from scratch every time the target changes
-// (every mousemove), which looks steppy under fast mouse movement — a
-// spring integrates continuously, keeps its velocity across target changes,
-// and settles the same way whether it's interrupted once or a hundred
-// times a second. This is the "spring engine" ui-docs/UI_SHELL.md's Motion
-// section describes as not-built-yet; the dock is its first real use.
-const DOCK_SPRING_STIFFNESS = 380;
-const DOCK_SPRING_DAMPING = 24;
-const DOCK_SPRING_EPSILON = 0.001; // close enough to target + slow enough to call it settled
+// The recipe's own spring (Framer Motion: mass 0.1, stiffness 150,
+// damping 12), integrated here in plain JS since there's no Framer Motion.
+const DOCK_SPRING = { mass: 0.1, stiffness: 150, damping: 12 };
+const DOCK_SPRING_STEP = 1 / 240; // s — substep so a slow frame doesn't destabilise the spring
+const DOCK_SETTLE = 0.05; // px and px/s under which a tile counts as settled
 
 let dockHideTimer = null;
 let dockRaf = null;
 let dockLastFrameTime = 0;
-let pressedDockItem = null;
 let dockErrorTimer = null;
-let mouseOverDock = false;
-let lastMouseX = 0;
-const dockScale = dockItems.map(() => 1);
+let dockMouseX = null; // null = cursor not over the dock
+let dockHovered = null; // tile the tooltip is pointing at
+const dockSize = dockItems.map(() => DOCK_BASE);
 const dockVelocity = dockItems.map(() => 0);
 
 function setDockVisible(visible) {
@@ -805,54 +803,67 @@ function setDockVisible(visible) {
   } else {
     dockHideTimer = setTimeout(() => {
       dock.classList.remove('is-visible');
-      resetDockScale();
+      resetDock();
       $('#sample-badge').classList.remove('is-hidden');
     }, DOCK_HIDE_DELAY);
   }
 }
 
-function resetDockScale() {
+function applyDockSize(el, size) {
+  el.style.width = `${size.toFixed(2)}px`;
+  el.style.height = `${size.toFixed(2)}px`;
+}
+
+function resetDock() {
   if (dockRaf) cancelAnimationFrame(dockRaf);
   dockRaf = null;
   dockLastFrameTime = 0;
-  mouseOverDock = false;
+  dockMouseX = null;
   dockItems.forEach((el, i) => {
-    dockScale[i] = 1;
+    dockSize[i] = DOCK_BASE;
     dockVelocity[i] = 0;
-    el.style.transform = '';
+    el.style.width = '';
+    el.style.height = '';
   });
+  hideDockTooltip();
 }
 
+// Target size for one tile: linear falloff from DOCK_MAX at the cursor to
+// DOCK_BASE at DOCK_RANGE away — the recipe's useTransform([-150, 0, 150]).
 function dockTargetFor(el) {
-  if (!mouseOverDock) return 1;
+  if (dockMouseX === null) return DOCK_BASE;
   const box = el.getBoundingClientRect();
-  const center = box.left + box.width / 2;
-  const dist = Math.abs(lastMouseX - center);
-  const falloff = Math.exp(-(dist * dist) / (2 * DOCK_SPREAD * DOCK_SPREAD));
-  const scale = 1 + (DOCK_MAX_SCALE - 1) * falloff;
-  return el === pressedDockItem ? scale * 0.93 : scale;
+  const dist = Math.abs(dockMouseX - (box.left + box.width / 2));
+  const t = Math.max(0, 1 - dist / DOCK_RANGE);
+  return DOCK_BASE + (DOCK_MAX - DOCK_BASE) * t;
 }
 
-function stepDockSpring(dtSeconds) {
+function stepDock(dt) {
+  // Read every target first, then write — reading layout between writes
+  // would make each tile see its neighbours half-updated.
+  const targets = dockItems.map(dockTargetFor);
   let settled = true;
+  const { mass, stiffness, damping } = DOCK_SPRING;
   dockItems.forEach((el, i) => {
-    const target = dockTargetFor(el);
-    const displacement = dockScale[i] - target;
-    const accel = -DOCK_SPRING_STIFFNESS * displacement - DOCK_SPRING_DAMPING * dockVelocity[i];
-    dockVelocity[i] += accel * dtSeconds;
-    dockScale[i] += dockVelocity[i] * dtSeconds;
-    if (Math.abs(displacement) > DOCK_SPRING_EPSILON || Math.abs(dockVelocity[i]) > DOCK_SPRING_EPSILON) settled = false;
-    el.style.transform = `scale(${dockScale[i].toFixed(4)})`;
+    for (let t = 0; t < dt; t += DOCK_SPRING_STEP) {
+      const h = Math.min(DOCK_SPRING_STEP, dt - t);
+      const accel = (-stiffness * (dockSize[i] - targets[i]) - damping * dockVelocity[i]) / mass;
+      dockVelocity[i] += accel * h; // semi-implicit Euler: velocity first, then position
+      dockSize[i] += dockVelocity[i] * h;
+    }
+    if (Math.abs(dockSize[i] - targets[i]) > DOCK_SETTLE || Math.abs(dockVelocity[i]) > DOCK_SETTLE) settled = false;
+    applyDockSize(el, dockSize[i]);
   });
+  if (dockHovered) positionDockTooltip(dockHovered);
   return settled;
 }
 
-function dockSpringLoop(now) {
-  const dt = dockLastFrameTime ? Math.min((now - dockLastFrameTime) / 1000, 1 / 30) : 0;
+function dockLoop(now) {
+  const dt = dockLastFrameTime ? Math.min((now - dockLastFrameTime) / 1000, 1 / 30) : 1 / 60;
   dockLastFrameTime = now;
-  const settled = stepDockSpring(dt);
-  if (!settled || mouseOverDock) {
-    dockRaf = requestAnimationFrame(dockSpringLoop);
+  const settled = stepDock(dt);
+  if (!settled || dockMouseX !== null) {
+    dockRaf = requestAnimationFrame(dockLoop);
   } else {
     dockRaf = null;
     dockLastFrameTime = 0;
@@ -861,61 +872,58 @@ function dockSpringLoop(now) {
 
 function updateDock() {
   if (reducedMotion.matches) {
+    const targets = dockItems.map(dockTargetFor);
     dockItems.forEach((el, i) => {
-      const target = dockTargetFor(el);
-      dockScale[i] = target;
+      dockSize[i] = targets[i];
       dockVelocity[i] = 0;
-      el.style.transform = target === 1 ? '' : `scale(${target.toFixed(3)})`;
+      applyDockSize(el, targets[i]);
     });
+    if (dockHovered) positionDockTooltip(dockHovered);
     return;
   }
   if (!dockRaf) {
     dockLastFrameTime = 0;
-    dockRaf = requestAnimationFrame(dockSpringLoop);
+    dockRaf = requestAnimationFrame(dockLoop);
   }
 }
 
 $('#dock-edge').addEventListener('mouseenter', () => setDockVisible(true));
-dock.addEventListener('mouseenter', () => {
-  setDockVisible(true);
-  mouseOverDock = true;
+$('#dock-edge').addEventListener('mouseleave', () => setDockVisible(false));
+dock.addEventListener('mouseenter', () => setDockVisible(true));
+dock.addEventListener('mousemove', (e) => {
+  dockMouseX = e.clientX;
   updateDock();
 });
-$('#dock-edge').addEventListener('mouseleave', () => setDockVisible(false));
 dock.addEventListener('mouseleave', () => {
   setDockVisible(false);
-  mouseOverDock = false;
+  dockMouseX = null;
   updateDock();
 });
 
-dock.addEventListener('mousemove', (e) => {
-  lastMouseX = e.clientX;
-  updateDock();
-});
-
-const dockTooltip = $('#dock-tooltip');
+// Tooltip follows its tile every frame, since the tile keeps growing
+// after the cursor lands on it.
+function positionDockTooltip(el) {
+  const box = el.getBoundingClientRect();
+  dockTooltip.style.left = `${box.left + box.width / 2}px`;
+  dockTooltip.style.bottom = `${innerHeight - box.top + 10}px`;
+}
 
 function showDockTooltip(el) {
-  const box = el.getBoundingClientRect();
-  dockTooltip.textContent = el.title;
-  dockTooltip.style.left = `${box.left + box.width / 2}px`;
-  dockTooltip.style.bottom = `${innerHeight - box.top + 12}px`;
+  dockHovered = el;
+  dockTooltip.textContent = el.dataset.label;
+  positionDockTooltip(el);
   dockTooltip.classList.add('is-visible');
 }
 
 function hideDockTooltip() {
+  dockHovered = null;
   dockTooltip.classList.remove('is-visible');
 }
 
 dockItems.forEach((el) => {
   el.addEventListener('mouseenter', () => showDockTooltip(el));
-  el.addEventListener('mousedown', () => {
-    pressedDockItem = el;
-    hideDockTooltip();
-    updateDock();
-  });
-  el.addEventListener('mouseup', () => { pressedDockItem = null; updateDock(); });
-  el.addEventListener('mouseleave', () => { pressedDockItem = null; hideDockTooltip(); });
+  el.addEventListener('mouseleave', hideDockTooltip);
+  el.addEventListener('mousedown', hideDockTooltip);
 });
 
 function showDockError(text) {

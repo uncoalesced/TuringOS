@@ -1096,8 +1096,12 @@ kbd {
   z-index: 26;
   display: flex;
   align-items: flex-end;
-  gap: 7px;
-  padding: 9px 9px;
+  gap: 10px;
+  /* Fixed height with no top padding: magnified icons grow up and out of
+     the tray (like the real dock), while their growing width pushes their
+     neighbours apart and widens the tray. */
+  height: 66px;
+  padding: 0 9px 9px;
   border-radius: 22px;
   corner-shape: squircle; /* continuous iOS/macOS-style corner, not a plain circular arc */
   background: color-mix(in srgb, var(--surface) 82%, transparent);
@@ -1114,28 +1118,36 @@ kbd {
   transform: translate(-50%, 0);
 }
 
+/* Size is animated for real (width/height, set every frame by a spring in
+   app.js) rather than with transform: scale(). This is the one deliberate
+   exception to the transform-only rule — a scale doesn't take up space, so
+   magnified icons would overlap their neighbours instead of pushing them
+   apart. Everything inside is sized in % so it grows with the tile. */
 .dock-item {
   position: relative;
+  flex: none;
   display: grid;
   place-items: center;
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   border: 0;
-  border-radius: 13px;
+  border-radius: 26%;
   corner-shape: squircle;
   background: var(--surface-strong);
   color: var(--text);
-  transform-origin: bottom center;
-  /* No transform transition: a JS spring (see app.js) owns transform every
-     frame. A CSS transition retargeting against a value that's already
-     changing 60x/second would fight the spring instead of smoothing it. */
   transition: background-color 160ms var(--ease-out);
-  will-change: transform;
 }
 
 .dock-item:hover { background: color-mix(in srgb, var(--accent) 14%, var(--surface-strong)); }
 .dock-item:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-.dock-item .icon { width: 24px; height: 24px; }
+
+.dock-item .icon {
+  width: 46%;
+  height: 46%;
+  transition: transform 140ms var(--ease-out);
+}
+
+.dock-item:active .icon { transform: scale(0.88); }
 
 .dock-error {
   position: fixed;
