@@ -127,7 +127,7 @@ body {
   backdrop-filter: blur(24px) saturate(1.4);
   border-bottom: 1px solid var(--line);
   font-size: 13px;
-  z-index: 10;
+  z-index: 30;
   -webkit-app-region: drag;
 }
 
@@ -261,9 +261,19 @@ body {
 }
 
 .hero-greeting {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35em;
   font-size: clamp(30px, 3.6vw, 46px);
   font-weight: 500;
   letter-spacing: -0.025em;
+}
+
+.hero-greeting-spark {
+  width: 0.72em;
+  height: 0.72em;
+  color: var(--accent);
 }
 
 /* ─── Composer ─────────────────────────────────────────────────────────── */
@@ -685,6 +695,16 @@ kbd {
   pointer-events: none;
 }
 
+/* The reveal's clip-path masks the page root, but a few fixed, high-z
+   floating surfaces (weather, Clawd) can end up composited on their own
+   layer and briefly show through un-clipped mid-transition. Hiding them
+   for the ~600ms reveal is the reliable fix regardless of the exact cause. */
+.theme-switching .weather,
+.theme-switching .weather-card,
+.theme-switching .clawd {
+  visibility: hidden;
+}
+
 /* ─── Side panel ───────────────────────────────────────────────────────── */
 
 .side-panel {
@@ -764,7 +784,8 @@ kbd {
   position: fixed;
   right: 36px;
   bottom: 44px;
-  z-index: 24;
+  /* Below the side panel (22) — a decorative pet must never cover real UI. */
+  z-index: 16;
   width: 44px;
   height: 44px;
   border: 0;
@@ -824,7 +845,8 @@ kbd {
   position: fixed;
   right: 24px;
   bottom: 100px;
-  z-index: 21;
+  /* Above the side panel (22) — an open dialog should win over a passive panel. */
+  z-index: 23;
   width: 300px;
   padding: 16px 18px;
   border-radius: 16px;
