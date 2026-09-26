@@ -1,8 +1,8 @@
 {
-  "name": "aster-shell",
+  "name": "ui-shell",
   "version": "0.1.0",
   "private": true,
-  "description": "Aster Shell — the desktop UI for ClaudeOS",
+  "description": "ui-shell — the desktop UI for ClaudeOS",
   "main": "main.js",
   "scripts": {
     "start": "electron ."

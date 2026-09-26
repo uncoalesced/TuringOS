@@ -1,4 +1,4 @@
-// Aster Shell — renderer. Draws whatever snapshot main.js sends.
+// ui-shell — renderer. Draws whatever snapshot main.js sends.
 // Opened in a plain browser (no Electron), it falls back to sample data.
 
 const $ = (sel) => document.querySelector(sel);
@@ -122,9 +122,9 @@ matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
 tickClock();
 setInterval(tickClock, 1000);
 
-if (window.aster) {
-  window.aster.getState().then(render);
-  window.aster.onState(render);
+if (window.shell) {
+  window.shell.getState().then(render);
+  window.shell.onState(render);
 } else {
   render(SAMPLE);
 }

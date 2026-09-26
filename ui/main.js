@@ -1,4 +1,4 @@
-// Aster Shell — Electron main process.
+// ui-shell — Electron main process.
 // Reads ClaudeOS state from ~/.claudeos and the machine, and pushes one
 // snapshot to the page whenever something changes. The page never touches
 // the system directly.
@@ -130,7 +130,7 @@ function createWindow() {
     kiosk: KIOSK,
     fullscreen: KIOSK,
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#262624' : '#F4F3EE',
-    title: 'Aster Shell',
+    title: 'ui-shell',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -148,13 +148,13 @@ function createWindow() {
     }
   });
 
-  // Dev only: ASTER_SHOT=/path/out.png captures the window after it settles.
-  if (process.env.ASTER_SHOT) {
+  // Dev only: UI_SHELL_SHOT=/path/out.png captures the window after it settles.
+  if (process.env.UI_SHELL_SHOT) {
     win.webContents.once('did-finish-load', () => {
       setTimeout(async () => {
         const img = await win.webContents.capturePage();
-        fs.writeFileSync(process.env.ASTER_SHOT, img.toPNG());
-        if (process.env.ASTER_SHOT_QUIT === '1') app.quit();
+        fs.writeFileSync(process.env.UI_SHELL_SHOT, img.toPNG());
+        if (process.env.UI_SHELL_SHOT_QUIT === '1') app.quit();
       }, 1200);
     });
   }

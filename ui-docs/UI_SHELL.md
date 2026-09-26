@@ -1,8 +1,7 @@
-# Aster Shell
+# ui-shell
 
 The assistant layer for our Claude-powered Linux OS (CachyOS base, KDE). It is the part people see: a menu bar, a Raycast-style command bar, a permission sheet, notifications with Undo, and a side panel of widgets.
 
-> "Aster" is a placeholder name. Rename it in `ui/index.html`.
 
 ## Status
 
@@ -208,7 +207,7 @@ Backup: record the full run once as a video before presenting.
 - **What leaves the machine?** Only the prompt and the context needed for the task. API keys stay local.
 - **Why an OS and not an app?** Sandboxes, process priorities and a permission layer need OS-level access that an app can't enforce.
 - **What happens offline?** The shell and system status still work; tasks that need Claude show an error instead of hanging.
-- **What did you build versus what already existed?** CachyOS and KDE are the base. We built the ClaudeOS control layer, the sandbox flow, and the Aster Shell UI.
+- **What did you build versus what already existed?** CachyOS and KDE are the base. We built the ClaudeOS control layer, the sandbox flow, and the ui-shell UI.
 
 ---
 
@@ -224,4 +223,4 @@ Backup: record the full run once as a video before presenting.
 | `ui/app.js` | Renders snapshots, clock, theme toggle, sample data |
 | `ui/theme.js` | Picks the theme before first paint |
 | `ui-docs/SETUP.md` | Running it in the VM, troubleshooting |
-| `ui-docs/ASTER_SHELL.md` | This document |
+| `ui-docs/UI_SHELL.md` | This document |

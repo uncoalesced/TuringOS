@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# run.sh — launch the Aster Shell desktop UI
+# run.sh — launch the ui-shell desktop UI
 #
 # Usage:
 #   ./ui/run.sh              app window
@@ -9,7 +9,7 @@
 set -euo pipefail
 
 if [[ "${EUID}" -eq 0 ]]; then
-    echo "Aster Shell must not run as root." >&2
+    echo "ui-shell must not run as root." >&2
     exit 1
 fi
 
@@ -32,7 +32,7 @@ fi
 # ─── Install on first run (or when package.json changes) ─────────────────────
 
 if [[ ! -x node_modules/.bin/electron || package.json -nt node_modules ]]; then
-    echo "Installing Aster Shell (first run only)..."
+    echo "Installing ui-shell (first run only)..."
     npm install --no-audit --no-fund
     touch node_modules
 fi

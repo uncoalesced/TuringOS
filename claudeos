@@ -225,7 +225,7 @@ cmd::help() {
   OTHER
     init                           First-time setup + dependency check
     dashboard                      Interactive menu
-    ui                             Open the Aster Shell desktop UI
+    ui                             Open the ui-shell desktop UI
     logs [N]                       Show last N lines of ClaudeOS log
     version                        Print version
     help                           This message

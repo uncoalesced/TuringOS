@@ -1,4 +1,4 @@
-# Aster Shell — desktop UI for ClaudeOS
+# ui-shell — desktop UI for ClaudeOS
 
 ## Run it in the VM (CachyOS)
 
@@ -8,7 +8,7 @@ sudo pacman -S --needed nodejs npm git jq
 
 # 2. Get the UI branch
 git fetch
-git checkout ui/aster-shell
+git checkout ui-shell
 git pull
 
 # 3. Launch (first run downloads Electron, ~100 MB, needs internet)
