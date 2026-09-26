@@ -3,7 +3,7 @@
 #
 # Deprioritizes agent/build processes when a game is detected or manually
 # triggered. Uses renice + ionice to yield CPU/IO to interactive apps.
-# Does NOT touch the kernel scheduler — it orchestrates what CachyOS already has.
+# Does NOT touch the kernel scheduler — it orchestrates what Debian already has.
 #
 # Depends on: core/config.sh, core/logging.sh, core/ui.sh
 

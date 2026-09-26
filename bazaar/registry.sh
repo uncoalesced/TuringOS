@@ -18,7 +18,7 @@ registry::_load() {
     fi
     if ! command -v jq &>/dev/null; then
         ui::fail "jq is required for the Bazaar"
-        ui::info "Install: sudo pacman -S jq"
+        ui::info "Install: sudo apt install jq"
         return 1
     fi
     return 0

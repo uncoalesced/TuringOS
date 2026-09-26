@@ -1,0 +1,24 @@
+Source: claudeos
+Section: utils
+Priority: optional
+Maintainer: ClaudeOS Contributors <noreply@example.com>
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.6.2
+Homepage: https://github.com/uncoalesced/claudeos
+
+Package: claudeos
+Architecture: all
+Depends: ${misc:Depends},
+ bash (>= 5.0),
+ git,
+ jq,
+ rsync,
+ btrfs-progs,
+ util-linux,
+ procps,
+ libnotify-bin
+Recommends: gum, fzf, nodejs, npm
+Suggests: nvidia-utils, git-delta, diff-so-fancy
+Description: Agentic OS substrate — safe Claude agent execution
+ ClaudeOS provides Btrfs sandboxing, MCP Bazaar, and Game Mode
+ for running Claude agent tasks safely on Debian.

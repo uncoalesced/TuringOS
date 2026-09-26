@@ -1,0 +1,14 @@
+#!/bin/sh
+set -e
+
+if [ "$1" = "remove" ]; then
+    echo ""
+    echo "  ClaudeOS will be removed."
+    echo "  Your ~/.claudeos/ data directory is NOT deleted."
+    echo "  Remove it manually if needed: rm -rf ~/.claudeos"
+    echo ""
+fi
+
+#DEBHELPER#
+
+exit 0

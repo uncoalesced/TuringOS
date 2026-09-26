@@ -1,8 +1,11 @@
-post_install() {
+#!/bin/sh
+set -e
+
+if [ "$1" = "configure" ] && [ -z "$2" ]; then
     echo ""
     echo "  ╔═══════════════════════════════════════════╗"
     echo "  ║           ClaudeOS Installed              ║"
-    echo "  ║     Agentic Substrate · CachyOS           ║"
+    echo "  ║     Agentic Substrate · Debian            ║"
     echo "  ╚═══════════════════════════════════════════╝"
     echo ""
     echo "  Run first-time setup:"
@@ -20,21 +23,15 @@ post_install() {
     echo ""
     echo "  Optional dependencies for the best experience:"
     echo ""
-    echo "    sudo pacman -S gum fzf nodejs npm"
+    echo "    sudo apt install gum fzf nodejs npm"
     echo ""
-}
-
-post_upgrade() {
+elif [ "$1" = "configure" ] && [ -n "$2" ]; then
     echo ""
     echo "  ClaudeOS upgraded."
     echo "  Your ~/.claudeos/ data and config are untouched."
     echo ""
-}
+fi
 
-pre_remove() {
-    echo ""
-    echo "  ClaudeOS will be removed."
-    echo "  Your ~/.claudeos/ data directory is NOT deleted."
-    echo "  Remove it manually if needed: rm -rf ~/.claudeos"
-    echo ""
-}
+#DEBHELPER#
+
+exit 0

@@ -200,7 +200,7 @@ ui::check_deps() {
     done
     if [[ ${#missing[@]} -gt 0 ]]; then
         ui::warn "Missing optional tools: ${missing[*]}"
-        ui::info "Install with: sudo pacman -S ${missing[*]}"
+        ui::info "Install with: sudo apt install ${missing[*]}"
         return 1
     fi
     return 0
