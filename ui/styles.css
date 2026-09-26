@@ -157,15 +157,19 @@ body {
   background: var(--faint);
 }
 
-.status[data-state="working"] { color: var(--text); }
-.status[data-state="working"] .dot {
+.status[data-state="working"],
+.status[data-state="agentic"] { color: var(--text); }
+
+.status[data-state="working"] .dot,
+.status[data-state="agentic"] .dot {
   position: relative;
   background: var(--accent);
 }
 
 /* Ring expands out of the dot and fades: the one opacity animation, kept to a
-   compositor-only property on a tiny element. */
-.status[data-state="working"] .dot::after {
+   compositor-only property on a tiny element. Only while an agent is
+   actually running — "working" (queued/starting) is a plain solid dot. */
+.status[data-state="agentic"] .dot::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -261,6 +265,18 @@ body {
   color: var(--muted);
   text-align: center;
   animation: enter 620ms var(--ease-out) 160ms both;
+  transition: transform 180ms var(--ease-out), filter 180ms var(--ease-out), visibility 0s;
+}
+
+/* The @ picker opens right over this; dissolve it out of the way rather
+   than let the text show through or behind the list. Visibility only
+   flips once the dissolve finishes, so nothing sharp ever overlaps. */
+.quote.is-hidden {
+  transform: translateY(6px) scale(0.97);
+  filter: blur(6px);
+  visibility: hidden;
+  pointer-events: none;
+  transition: transform 180ms var(--ease-out), filter 180ms var(--ease-out), visibility 0s 180ms;
 }
 
 /* ─── Composer ─────────────────────────────────────────────────────────── */

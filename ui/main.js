@@ -246,7 +246,7 @@ function createWindow() {
     kiosk: KIOSK,
     fullscreen: KIOSK,
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#262624' : '#F4F3EE',
-    title: 'ui-shell',
+    title: 'HushOS',
     icon: path.join(__dirname, 'assets/brand/app-icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -286,7 +286,7 @@ ipcMain.handle('projects:list', () => findProjects());
 // Start the agent on a task. The UI never builds shell strings: arguments go
 // straight to the claudeos script, which creates the sandbox first.
 ipcMain.handle('agent:start', (_e, { project, task }) => {
-  if (!fs.existsSync(DATA_DIR)) return { ok: false, error: 'ClaudeOS is not set up. Run ./claudeos init first.' };
+  if (!fs.existsSync(DATA_DIR)) return { ok: false, error: 'HushOS is not set up. Run ./claudeos init first.' };
   if (typeof project !== 'string' || !fs.existsSync(project)) return { ok: false, error: 'That project folder no longer exists.' };
   if (typeof task !== 'string' || !task.trim()) return { ok: false, error: 'Describe the task first.' };
   const child = spawn(CLAUDEOS_BIN, ['agent', 'start', project, task.trim()], {

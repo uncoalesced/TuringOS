@@ -22,6 +22,8 @@ const SAMPLE_PROJECTS = [
 
 let lastSnap = null;
 let userName = null;
+let pendingStart = false;
+let pendingStartTimer = null;
 
 // ─── Weather ────────────────────────────────────────────────────────────────
 // WMO weather codes (Open-Meteo): https://open-meteo.com/en/docs
@@ -144,11 +146,6 @@ function render(snap) {
     tickClock();
   }
 
-  const status = $('#agent-status');
-  status.dataset.state = s.agent.running ? 'working' : 'idle';
-  status.querySelector('.status-label').textContent = s.agent.running ? 'Working' : 'Idle';
-
-
   const { battery, wifi, cpu, mem, host } = s.system;
   $('#battery').hidden = !battery;
   if (battery) {
@@ -159,9 +156,19 @@ function render(snap) {
   $('#wifi').hidden = !wifi;
   if (wifi) $('#wifi').title = wifi.ssid ? `Wi-Fi: ${wifi.ssid}` : 'Wi-Fi: not connected';
 
+  // Three states: idle (nothing running), working (task just sent, sandbox
+  // not confirmed yet — see submit()), agentic (the sandboxed agent is
+  // actually running). pendingStart clears itself once agent.running is true.
+  if (s.agent.running && pendingStart) {
+    pendingStart = false;
+    clearTimeout(pendingStartTimer);
+  }
+  const state = pendingStart ? 'working' : s.agent.running ? 'agentic' : 'idle';
+  const label = { idle: 'Agent idle', working: 'Starting…', agentic: 'Agentic' }[state];
+
   const corner = $('#corner-agent');
-  corner.dataset.state = s.agent.running ? 'working' : 'idle';
-  corner.querySelector('.corner-label').textContent = s.agent.running ? 'Working' : 'Agent idle';
+  corner.dataset.state = state;
+  corner.querySelector('.corner-label').textContent = label;
   $('#corner-task').textContent = s.agent.running && s.agent.task ? s.agent.task : '';
   $('#corner-system').textContent = [
     s.sandbox ? 'Sandbox active' : null,
@@ -288,6 +295,9 @@ function drawMention() {
   }
   mention.replaceChildren(...items);
   mention.hidden = false;
+  // The list drops down over where the quote sits; hide it rather than
+  // let text show through/behind an open picker.
+  $('#quote').classList.add('is-hidden');
 }
 
 function setActive(i) {
@@ -300,6 +310,7 @@ function closeMention() {
   mentionMode = null;
   trigger = null;
   mention.hidden = true;
+  $('#quote').classList.remove('is-hidden');
 }
 
 function setProject(p) {
@@ -355,6 +366,18 @@ async function submit() {
   input.value = '';
   sync();
   setHint(`Started in a sandbox of ${project.name}`);
+
+  // Sandbox creation can take a few seconds before agent_pid shows up in
+  // state.json; show "Starting…" right away instead of waiting for the
+  // next poll. Give up after 30s so a silent backend failure doesn't leave
+  // the corner stuck on "Starting…" forever.
+  pendingStart = true;
+  if (lastSnap) render(lastSnap);
+  clearTimeout(pendingStartTimer);
+  pendingStartTimer = setTimeout(() => {
+    pendingStart = false;
+    if (lastSnap) render(lastSnap);
+  }, 30000);
 }
 
 input.addEventListener('input', () => {

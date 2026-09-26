@@ -25,7 +25,7 @@ if ! command -v npm &>/dev/null && [[ -s "${HOME}/.nvm/nvm.sh" ]]; then
 fi
 
 if ! command -v npm &>/dev/null; then
-    echo "Node.js is required. On CachyOS: sudo pacman -S nodejs npm" >&2
+    echo "Node.js is required. On Debian: sudo apt install -y nodejs npm" >&2
     exit 1
 fi
 
@@ -48,9 +48,10 @@ if [[ "$(uname -s)" == "Linux" ]]; then
         LITE=1
     fi
 
-    # Electron's sandbox needs unprivileged user namespaces (on by default
-    # on CachyOS). If the kernel blocks them, run without it instead of
-    # asking for sudo to fix chrome-sandbox permissions.
+    # Electron's sandbox needs unprivileged user namespaces. Debian ships
+    # AppArmor enabled and, on some releases, restricts these by default.
+    # If the kernel blocks them, run without the sandbox instead of asking
+    # for sudo to fix chrome-sandbox permissions.
     if [[ "$(cat /proc/sys/kernel/unprivileged_userns_clone 2>/dev/null)" == "0" ||
           "$(cat /proc/sys/kernel/apparmor_restrict_unprivileged_userns 2>/dev/null)" == "1" ]]; then
         args+=(--no-sandbox)

@@ -1,6 +1,6 @@
 # ui-shell
 
-The assistant layer for our Claude-powered Linux OS (CachyOS base, KDE). It is the part people see: a menu bar, a Raycast-style command bar, a permission sheet, notifications with Undo, and a side panel of widgets.
+**HushOS** is the on-screen name; the codebase is still called ClaudeOS/ui-shell (CLI, data dir, branch, package name — unchanged). The assistant layer for our Claude-powered Linux OS (Debian base, KDE). It is the part people see: a menu bar, a Raycast-style command bar, a permission sheet, notifications with Undo, and a side panel of widgets.
 
 
 ## Status
@@ -8,11 +8,11 @@ The assistant layer for our Claude-powered Linux OS (CachyOS base, KDE). It is t
 | Built | Not built yet |
 |---|---|
 | Electron app in `ui/`, launched with `./claudeos ui` | Command bar, PR views, Actions menu (Ctrl/⌘+K focuses the composer for now) |
-| Menu bar: Claude spark + brand, agent status (pulsing dot when working), Wi-Fi, battery, light/dark toggle, clock | Task view, permission sheet |
+| Menu bar: Claude spark + "HushOS" brand, Wi-Fi, battery, light/dark toggle, clock | Task view, permission sheet |
 | Desktop, vertically centred: clock, greeting with the user's first name, "What do you want to cook?" composer | Notifications with Undo, widgets side panel |
 | @ (or +) project picker listing git repos; Enter runs `claudeos agent start <project> <task>` | |
 | Weather in the top-right corner (Open-Meteo, geolocated by IP), click for the full card | |
-| Bottom corners: agent status and task, sandbox / game mode / CPU / memory | |
+| Bottom-left corner: agent status (**idle** / **working** / **agentic**) and task; bottom-right: sandbox / game mode / CPU / memory | |
 | Live state from `~/.claudeos/state.json`, sample data fallback | Running other `claudeos` commands from the UI |
 | Light/dark in Claude brand colours, circular reveal | Spring engine, progressive blur |
 | macOS-style app icon (`assets/brand/app-icon.png`, squircle) | |
@@ -215,7 +215,7 @@ Backup: record the full run once as a video before presenting.
 - **What leaves the machine?** Only the prompt and the context needed for the task. API keys stay local.
 - **Why an OS and not an app?** Sandboxes, process priorities and a permission layer need OS-level access that an app can't enforce.
 - **What happens offline?** The shell and system status still work; tasks that need Claude show an error instead of hanging.
-- **What did you build versus what already existed?** CachyOS and KDE are the base. We built the ClaudeOS control layer, the sandbox flow, and the ui-shell UI.
+- **What did you build versus what already existed?** Debian and KDE are the base. We built the ClaudeOS control layer, the sandbox flow, and the ui-shell UI.
 
 ---
 
