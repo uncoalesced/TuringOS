@@ -16,6 +16,7 @@ The assistant layer for our Claude-powered Linux OS (CachyOS base, KDE). It is t
 | Live state from `~/.claudeos/state.json`, sample data fallback | Running other `claudeos` commands from the UI |
 | Light/dark in Claude brand colours, circular reveal | Spring engine, progressive blur |
 | macOS-style app icon (`assets/brand/app-icon.png`, squircle) | |
+| "Focused today" and a quote-of-the-day, centred above/below the composer (placeholders — no focus-tracking or quote backend yet) | |
 
 The spec below describes the full target. Where it differs from what's built, the **Status** table wins.
 
@@ -179,9 +180,9 @@ Light/dark follows the system. The half-circle icon in the menu bar overrides it
 
 ### Icons
 
-Hand-drawn inline SVG, 16×16, 1.6px stroke, round caps. Keep new icons in the same style (Lucide and Phosphor match it).
+[Feather](https://feathericons.com) (MIT), 24×24, 2px stroke, round caps — bundled in `ui/assets/icons/feather/` as a reference library (all 287, plus `LICENSE`). Only pull in a symbol when it's actually used; add it to the sprite in `ui/index.html` as `<symbol id="ic-name">`, shape data only (no `width`/`height`/`stroke` — those come from `.icon`/`.wx`). Weather glyphs (`wx-*`) are Feather paths too; the "partly cloudy" symbols compose a small sun/moon (scaled down, shifted top-left) with Feather's cloud so they read at both 26px (menu bar) and 52px (weather card). Lucide and Phosphor match this style if a Feather icon doesn't exist for something.
 
-**Brand:** official Claude assets live in `ui/assets/brand/`. The Claude spark is the menu bar mark and, spinning slowly, the "agent working" indicator. `app-icon.png` is the window and launcher icon. Don't use GitHub's logo.
+**Brand:** official Claude assets live in `ui/assets/brand/`. The Claude spark is the menu bar mark. `app-icon.png` is the window and launcher icon (macOS-style squircle, built from `app-icon.svg`). Don't use GitHub's logo.
 
 ### Motion
 
@@ -225,11 +226,12 @@ Backup: record the full run once as a video before presenting.
 | `ui/run.sh` | Launcher: installs Electron on first run, detects VM quirks, opens the app |
 | `ui/main.js` | Reads `~/.claudeos`, system stats and weather; pushes snapshots to the page |
 | `ui/preload.js` | The only bridge between the page and the system |
-| `ui/index.html` | Markup |
+| `ui/index.html` | Markup, plus the icon sprite (`<symbol>`s) |
 | `ui/styles.css` | Design tokens and styles |
-| `ui/app.js` | Renders snapshots, clock, theme toggle, sample data |
+| `ui/app.js` | Renders snapshots, clock, theme toggle, weather, quote of the day, sample data |
 | `ui/theme.js` | Picks the theme before first paint |
 | `ui/fonts/` | Timeless Sans and Serif (variable, bundled) |
 | `ui/assets/brand/` | Claude symbol, logo, app icon |
+| `ui/assets/icons/feather/` | Feather icon set (reference library) and its `LICENSE` |
 | `ui-docs/SETUP.md` | Running it in the VM, troubleshooting |
 | `ui-docs/UI_SHELL.md` | This document |
