@@ -7,7 +7,7 @@ override_dh_auto_build:
 	# Nothing to build — pure Bash
 
 override_dh_auto_install:
-	install -Dm755 ../claudeos                       debian/claudeos/usr/local/bin/claudeos
+	install -Dm755 ../claudeos                       debian/claudeos/usr/bin/claudeos
 	install -Dm644 ../core/config.sh                  debian/claudeos/usr/lib/claudeos/core/config.sh
 	install -Dm644 ../core/ui.sh                      debian/claudeos/usr/lib/claudeos/core/ui.sh
 	install -Dm644 ../core/logging.sh                 debian/claudeos/usr/lib/claudeos/core/logging.sh

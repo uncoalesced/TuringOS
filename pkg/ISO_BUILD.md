@@ -151,7 +151,7 @@ dpkg-scanpackages . /dev/null | gzip -9c > Packages.gz
 ## File Layout After Install
 
 ```
-/usr/local/bin/claudeos          ← main executable (in PATH)
+/usr/bin/claudeos                ← main executable (in PATH)
 /usr/lib/claudeos/
 ├── core/
 │   ├── config.sh
