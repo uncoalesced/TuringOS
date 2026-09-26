@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'" />
+  <title>Aster Shell</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="theme.js"></script>
+</head>
+<body>
+  <header class="menubar">
+    <div class="menubar-side">
+      <span class="brand">
+        <svg class="icon" viewBox="0 0 16 16" aria-hidden="true">
+          <path d="M8 2v12M2.8 5l10.4 6M2.8 11l10.4-6" />
+        </svg>
+        Aster
+      </span>
+      <span class="status" id="agent-status" data-state="idle">
+        <span class="dot"></span>
+        <span class="status-label">Idle</span>
+      </span>
+    </div>
+
+    <div class="menubar-side">
+      <span class="chip" id="chip-sandbox" hidden>
+        <svg class="icon" viewBox="0 0 16 16" aria-hidden="true">
+          <path d="M8 1.8 13.5 5v6L8 14.2 2.5 11V5z" /><path d="M2.5 5 8 8.2 13.5 5M8 8.2v6" />
+        </svg>
+        <span class="chip-label"></span>
+      </span>
+      <span class="chip chip-accent" id="chip-game" hidden>
+        <svg class="icon" viewBox="0 0 16 16" aria-hidden="true">
+          <path d="M5 5h6a3.5 3.5 0 0 1 3.4 4.3l-.5 2a1.6 1.6 0 0 1-2.7.7L9.6 10.5H6.4L4.8 12a1.6 1.6 0 0 1-2.7-.7l-.5-2A3.5 3.5 0 0 1 5 5z" /><path d="M5 7.2v1.8M4.1 8.1h1.8" />
+        </svg>
+        Game mode
+      </span>
+
+      <span class="tray" id="wifi" title="Wi-Fi">
+        <svg class="icon" viewBox="0 0 16 16" aria-hidden="true">
+          <path d="M1.8 6.2a9 9 0 0 1 12.4 0M4 8.6a5.8 5.8 0 0 1 8 0M6.2 11a2.6 2.6 0 0 1 3.6 0" /><circle cx="8" cy="13.2" r=".6" />
+        </svg>
+      </span>
+      <span class="tray" id="battery" title="Battery">
+        <svg class="icon" viewBox="0 0 20 16" aria-hidden="true">
+          <rect x="1.5" y="4" width="15" height="8" rx="2.2" />
+          <path d="M18.5 6.6v2.8" />
+          <rect class="battery-fill" x="3.2" y="5.7" width="11.6" height="4.6" rx="1" />
+        </svg>
+        <span class="battery-label"></span>
+      </span>
+      <button class="tray tray-button" id="theme-toggle" aria-label="Switch light and dark">
+        <svg class="icon" viewBox="0 0 16 16" aria-hidden="true">
+          <circle cx="8" cy="8" r="5.8" /><path class="fill" d="M8 2.2a5.8 5.8 0 0 1 0 11.6z" />
+        </svg>
+      </button>
+      <span class="clock" id="menubar-clock"></span>
+    </div>
+  </header>
+
+  <main class="desktop">
+    <section class="hero">
+      <p class="eyebrow" id="hero-date"></p>
+      <h1 class="hero-time" id="hero-time"></h1>
+      <p class="hero-greeting" id="hero-greeting"></p>
+    </section>
+
+    <section class="tiles">
+      <article class="tile" id="tile-agent">
+        <p class="eyebrow">Agent</p>
+        <p class="tile-value"></p>
+        <p class="tile-sub"></p>
+      </article>
+      <article class="tile" id="tile-sandbox">
+        <p class="eyebrow">Sandbox</p>
+        <p class="tile-value"></p>
+        <p class="tile-sub"></p>
+      </article>
+      <article class="tile" id="tile-game">
+        <p class="eyebrow">Game mode</p>
+        <p class="tile-value"></p>
+        <p class="tile-sub"></p>
+      </article>
+      <article class="tile" id="tile-system">
+        <p class="eyebrow">System</p>
+        <p class="tile-value"></p>
+        <p class="tile-sub"></p>
+      </article>
+    </section>
+  </main>
+
+  <p class="sample-badge" id="sample-badge" hidden>Sample data · ClaudeOS isn't set up on this machine</p>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -225,6 +225,7 @@ cmd::help() {
   OTHER
     init                           First-time setup + dependency check
     dashboard                      Interactive menu
+    ui                             Open the Aster Shell desktop UI
     logs [N]                       Show last N lines of ClaudeOS log
     version                        Print version
     help                           This message
@@ -240,6 +241,11 @@ main() {
     shift 2 2>/dev/null || shift "${#}" 2>/dev/null || true
 
     case "$cmd" in
+
+        # ── Desktop UI ────────────────────────────────────────────────────────
+        ui)
+            exec "${_SCRIPT_DIR}/ui/run.sh" ${sub:+"$sub"} "$@"
+            ;;
 
         # ── Init / Setup ──────────────────────────────────────────────────────
         init)
