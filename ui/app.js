@@ -748,9 +748,9 @@ let clawdWanderTimer = null;
 function clawdWalkTo(x) {
   const dist = Math.abs(x - clawdX);
   const duration = Math.max(500, Math.min(2200, dist * 14));
-  const facing = x > clawdX ? -1 : 1; // moving toward the dock (left) faces left
+  // No facing flip — just slide sideways and let the legs do the walking.
   clawd.style.transitionDuration = `${duration}ms`;
-  clawd.style.transform = `translateX(${-x}px) scaleX(${facing})`;
+  clawd.style.transform = `translateX(${-x}px)`;
   clawd.classList.add('is-walking');
   clawdX = x;
   clearTimeout(clawdWalkTimer);

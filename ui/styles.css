@@ -792,7 +792,7 @@ kbd {
   background: transparent;
   display: grid;
   place-items: center;
-  transform: translateX(0) scaleX(1);
+  transform: translateX(0);
   transition: transform 900ms linear;
 }
 
