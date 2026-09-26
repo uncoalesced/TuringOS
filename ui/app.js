@@ -1090,8 +1090,11 @@ let clawdShakeSamples = []; // { x, t }
 document.addEventListener('mousemove', (e) => {
   if (clawdOpen) { clawdShakeSamples = []; return; }
   // Sweeping back and forth across the dock (or the bottom strip that
-  // reveals it) is browsing apps, not a shake.
-  if (e.target.closest?.('#dock, .dock-edge') || e.clientY > innerHeight - 120) {
+  // reveals it) is browsing apps, not a shake. Same for scrubbing through the
+  // notification panel or the Cmd+K palette.
+  if (panelOpen || document.querySelector('.palette')?.checkVisibility()
+    || e.target.closest?.('#dock, .dock-edge, #side-panel, .palette')
+    || e.clientY > innerHeight - 120) {
     clawdShakeSamples = [];
     return;
   }
