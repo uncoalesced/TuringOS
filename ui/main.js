@@ -578,37 +578,54 @@ ipcMain.handle('dock:launch', (_e, id) => {
 
 ipcMain.handle('google:connect', () => connectGoogle());
 
-// ─── Clawd ──────────────────────────────────────────────────────────────────
+// ─── One-shot Claude calls ──────────────────────────────────────────────────
+// Shared by Clawd and the composer's plain-chat path (no @project attached).
 // Single-shot Q&A, no conversation history anywhere — each request is one
-// question, one answer.
+// question, one answer, always through the main process (the renderer has
+// no network access at all — see index.html's CSP).
 
-const CLAWD_SYSTEM_PROMPT = 'You are Clawd, a small, friendly pixel mascot that lives on the HushOS desktop. Answer questions briefly and helpfully, in a couple of sentences unless more detail is clearly needed.';
+const EFFORT_MODELS = new Set(['claude-sonnet-5', 'claude-opus-5-5', 'claude-fable-5-1']); // haiku doesn't take effort
 
-ipcMain.handle('clawd:ask', async (_e, { message }) => {
+async function askAnthropic({ message, model, effort, systemPrompt, maxTokens, whoLabel }) {
   if (typeof message !== 'string' || !message.trim()) return { ok: false, error: 'Say something first.' };
   const key = getConfigValue('ANTHROPIC_API_KEY');
-  if (!key) return { ok: false, error: 'Clawd needs an API key — set ANTHROPIC_API_KEY in ~/.claudeos/config.env.' };
+  if (!key) return { ok: false, error: `${whoLabel} needs an API key — set ANTHROPIC_API_KEY in ~/.claudeos/config.env.` };
+  const useModel = model || 'claude-haiku-4-5';
   try {
+    const body = {
+      model: useModel,
+      max_tokens: maxTokens,
+      messages: [{ role: 'user', content: message.trim() }],
+    };
+    if (systemPrompt) body.system = systemPrompt;
+    if (effort && EFFORT_MODELS.has(useModel)) body.output_config = { effort };
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5',
-        max_tokens: 512,
-        system: CLAWD_SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: message.trim() }],
-      }),
-      signal: AbortSignal.timeout(15000),
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(30000),
     });
-    if (res.status === 401) return { ok: false, error: "Clawd's API key looks wrong." };
-    if (res.status === 429) return { ok: false, error: 'Clawd is popular right now — try again shortly.' };
-    if (!res.ok) return { ok: false, error: `Clawd hit an error (${res.status}).` };
+    if (res.status === 401) return { ok: false, error: `${whoLabel}'s API key looks wrong.` };
+    if (res.status === 429) return { ok: false, error: `${whoLabel} is popular right now — try again shortly.` };
+    if (!res.ok) return { ok: false, error: `${whoLabel} hit an error (${res.status}).` };
     const data = await res.json();
     return { ok: true, text: data.content?.find((b) => b.type === 'text')?.text || '' };
   } catch {
-    return { ok: false, error: 'Clawd is offline right now.' };
+    return { ok: false, error: `${whoLabel} is offline right now.` };
   }
-});
+}
+
+const CLAWD_SYSTEM_PROMPT = 'You are Clawd, a small, friendly pixel mascot that lives on the HushOS desktop. Answer questions briefly and helpfully, in a couple of sentences unless more detail is clearly needed.';
+
+ipcMain.handle('clawd:ask', (_e, { message }) => askAnthropic({
+  message, model: 'claude-haiku-4-5', systemPrompt: CLAWD_SYSTEM_PROMPT, maxTokens: 512, whoLabel: 'Clawd',
+}));
+
+// The composer without a @project attached is a plain question, not a
+// coding task — answer it directly instead of starting a sandboxed agent.
+ipcMain.handle('chat:ask', (_e, { message, model, effort }) => askAnthropic({
+  message, model, effort, maxTokens: 2048, whoLabel: 'HushOS',
+}));
 
 ipcMain.handle('state:get', () => snapshot());
 ipcMain.handle('projects:list', () => findProjects());

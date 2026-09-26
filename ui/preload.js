@@ -9,4 +9,5 @@ contextBridge.exposeInMainWorld('shell', {
   launchApp: (id) => ipcRenderer.invoke('dock:launch', id),
   connectGoogle: () => ipcRenderer.invoke('google:connect'),
   askClawd: (message) => ipcRenderer.invoke('clawd:ask', { message }),
+  askChat: (message, model, effort) => ipcRenderer.invoke('chat:ask', { message, model, effort }),
 });

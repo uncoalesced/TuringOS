@@ -635,17 +635,7 @@ if (!SpeechRecognitionCtor) {
   });
 }
 
-async function submit() {
-  const task = input.value.trim();
-  if (!task) return;
-  if (!project) {
-    setHint('Pick a project with @ first', 'error');
-    return;
-  }
-  if (!window.shell || !lastSnap?.live) {
-    setHint('Sample mode: nothing was started', 'error');
-    return;
-  }
+async function submitTask(task) {
   const res = await window.shell.startAgent(project.path, task, { model: modelChoice, effort: effortChoice });
   if (!res.ok) {
     setHint(res.error, 'error');
@@ -666,6 +656,42 @@ async function submit() {
     pendingStart = false;
     if (lastSnap) render(lastSnap);
   }, 30000);
+}
+
+// No @project attached: this is a question, not a coding task — answer it
+// directly instead of starting a sandboxed Claude Code agent. That's the
+// actual difference between "chat with Claude" and "have Claude Code work
+// on my repo": whether a project is attached, not a separate mode to pick.
+async function submitChat(question) {
+  const answer = $('#composer-answer');
+  send.disabled = true;
+  answer.className = 'composer-answer is-pending';
+  answer.textContent = 'Thinking…';
+  const res = await window.shell.askChat(question, modelChoice, effortChoice);
+  send.disabled = !input.value.trim();
+  if (!res.ok) {
+    answer.className = 'composer-answer is-error';
+    answer.textContent = res.error;
+    return;
+  }
+  answer.className = 'composer-answer';
+  answer.textContent = res.text;
+  input.value = '';
+  sync();
+}
+
+async function submit() {
+  const task = input.value.trim();
+  if (!task) return;
+  if (!window.shell || !lastSnap?.live) {
+    setHint('Sample mode: nothing was started', 'error');
+    return;
+  }
+  if (project) {
+    await submitTask(task);
+  } else {
+    await submitChat(task);
+  }
 }
 
 input.addEventListener('input', () => {

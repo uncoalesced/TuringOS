@@ -283,6 +283,24 @@ body {
   width: min(680px, 100%);
 }
 
+.composer-answer {
+  width: min(680px, 100%);
+  margin-top: 16px;
+  padding: 0 8px;
+  max-height: 240px;
+  overflow-y: auto;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+  white-space: pre-wrap;
+  text-align: left;
+}
+
+.composer-answer:empty { display: none; }
+.composer-answer.is-pending { color: var(--muted); font-style: italic; }
+.composer-answer.is-error { color: var(--danger); }
+.composer-answer:not(:empty) { animation: enter 400ms var(--ease-out) both; }
+
 .composer-box {
   padding: 14px 12px 10px 18px;
   border-radius: 20px;
