@@ -1,0 +1,69 @@
+{
+  "tools": {
+    "github-mcp": {
+      "name": "GitHub MCP Server",
+      "description": "Manage PRs, issues, and repos via Claude",
+      "repo": "modelcontextprotocol/servers",
+      "subdir": "src/github",
+      "type": "mcp",
+      "runtime": "npx",
+      "package": "@modelcontextprotocol/server-github",
+      "env_required": ["GITHUB_PERSONAL_ACCESS_TOKEN"],
+      "mcp_command": "npx",
+      "mcp_args": ["-y", "@modelcontextprotocol/server-github"],
+      "tags": ["git", "github", "pr", "issues"]
+    },
+    "filesystem-mcp": {
+      "name": "Filesystem MCP Server",
+      "description": "Give Claude structured read/write access to local directories",
+      "repo": "modelcontextprotocol/servers",
+      "subdir": "src/filesystem",
+      "type": "mcp",
+      "runtime": "npx",
+      "package": "@modelcontextprotocol/server-filesystem",
+      "env_required": [],
+      "mcp_command": "npx",
+      "mcp_args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/allow"],
+      "tags": ["filesystem", "files", "local"]
+    },
+    "postgres-mcp": {
+      "name": "Postgres Inspector",
+      "description": "Let Claude query and inspect a Postgres database",
+      "repo": "modelcontextprotocol/servers",
+      "subdir": "src/postgres",
+      "type": "mcp",
+      "runtime": "npx",
+      "package": "@modelcontextprotocol/server-postgres",
+      "env_required": ["POSTGRES_CONNECTION_STRING"],
+      "mcp_command": "npx",
+      "mcp_args": ["-y", "@modelcontextprotocol/server-postgres"],
+      "tags": ["database", "postgres", "sql"]
+    },
+    "brave-search-mcp": {
+      "name": "Brave Search MCP",
+      "description": "Web and local search via Brave Search API",
+      "repo": "modelcontextprotocol/servers",
+      "subdir": "src/brave-search",
+      "type": "mcp",
+      "runtime": "npx",
+      "package": "@modelcontextprotocol/server-brave-search",
+      "env_required": ["BRAVE_API_KEY"],
+      "mcp_command": "npx",
+      "mcp_args": ["-y", "@modelcontextprotocol/server-brave-search"],
+      "tags": ["search", "web", "brave"]
+    },
+    "memory-mcp": {
+      "name": "Memory MCP Server",
+      "description": "Persistent knowledge graph memory for Claude across sessions",
+      "repo": "modelcontextprotocol/servers",
+      "subdir": "src/memory",
+      "type": "mcp",
+      "runtime": "npx",
+      "package": "@modelcontextprotocol/server-memory",
+      "env_required": [],
+      "mcp_command": "npx",
+      "mcp_args": ["-y", "@modelcontextprotocol/server-memory"],
+      "tags": ["memory", "persistence", "knowledge"]
+    }
+  }
+}

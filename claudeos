@@ -1,0 +1,340 @@
+#!/usr/bin/env bash
+# claudeos — ClaudeOS main entrypoint
+#
+# Usage:
+#   claudeos init
+#   claudeos dashboard
+#   claudeos agent start [PROJECT] [TASK]
+#   claudeos agent stop
+#   claudeos agent status
+#   claudeos agent logs
+#   claudeos sandbox create [PROJECT] [LABEL]
+#   claudeos sandbox diff   [SANDBOX]
+#   claudeos sandbox merge  [SANDBOX]
+#   claudeos sandbox rollback [SANDBOX]
+#   claudeos sandbox list
+#   claudeos sandbox status
+#   claudeos bazaar
+#   claudeos bazaar search <query>
+#   claudeos bazaar info <tool>
+#   claudeos bazaar install <tool>
+#   claudeos bazaar uninstall <tool>
+#   claudeos bazaar installed
+#   claudeos game on
+#   claudeos game off
+#   claudeos game status
+#   claudeos game watch
+#   claudeos status
+#   claudeos monitor
+#   claudeos monitor watch
+#   claudeos monitor spend
+#   claudeos logs [lines]
+#   claudeos version
+#   claudeos help
+
+set -euo pipefail
+
+CLAUDEOS_VERSION="0.1.0"
+
+# ─── Resolve Script Location ──────────────────────────────────────────────────
+
+_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# ─── Source Core (must come first) ───────────────────────────────────────────
+
+source "${_SCRIPT_DIR}/core/config.sh"
+source "${_SCRIPT_DIR}/core/ui.sh"
+source "${_SCRIPT_DIR}/core/logging.sh"
+
+# ─── Source Modules ───────────────────────────────────────────────────────────
+
+source "${_SCRIPT_DIR}/sandbox/btrfs.sh"
+source "${_SCRIPT_DIR}/sandbox/diff.sh"
+source "${_SCRIPT_DIR}/agent/claude.sh"
+source "${_SCRIPT_DIR}/bazaar/registry.sh"
+source "${_SCRIPT_DIR}/bazaar/install.sh"
+source "${_SCRIPT_DIR}/game/gamemode.sh"
+source "${_SCRIPT_DIR}/monitor/system.sh"
+
+# ─── Init ─────────────────────────────────────────────────────────────────────
+
+cmd::init() {
+    ui::banner
+
+    ui::info "Initializing ClaudeOS..."
+    echo ""
+
+    # Create runtime dirs
+    config::init_dirs
+    ui::ok "Runtime directories created: ${CLAUDEOS_DATA_DIR}"
+
+    # Check optional dependencies
+    echo ""
+    ui::info "Checking dependencies..."
+    echo ""
+
+    local deps_required=("git" "jq")
+    local deps_optional=("gum" "fzf" "btrfs" "nvidia-smi" "notify-send" "rsync" "npx")
+
+    local all_ok=true
+    for dep in "${deps_required[@]}"; do
+        if command -v "$dep" &>/dev/null; then
+            ui::status_row "$dep" "found" "ok"
+        else
+            ui::status_row "$dep" "MISSING (required)" "fail"
+            all_ok=false
+        fi
+    done
+
+    echo ""
+    for dep in "${deps_optional[@]}"; do
+        if command -v "$dep" &>/dev/null; then
+            ui::status_row "$dep" "found" "ok"
+        else
+            ui::status_row "$dep" "not found (optional)" "warn"
+        fi
+    done
+
+    echo ""
+
+    if $all_ok; then
+        ui::ok "ClaudeOS initialized"
+    else
+        ui::warn "Some required dependencies are missing — install them before running agents"
+    fi
+
+    echo ""
+    ui::info "Data dir:    ${CLAUDEOS_DATA_DIR}"
+    ui::info "Config:      ${CLAUDEOS_CONFIG_FILE}"
+    ui::info "Agent log:   ${CLAUDEOS_LOG_DIR}/"
+    ui::info "Sandboxes:   ${CLAUDEOS_SANDBOX_DIR}/"
+    echo ""
+    ui::info "Next steps:"
+    ui::info "  claudeos agent start   — launch Claude in a safe sandbox"
+    ui::info "  claudeos bazaar        — browse MCP tools"
+    ui::info "  claudeos dashboard     — interactive menu"
+    echo ""
+}
+
+# ─── Dashboard (interactive gum/fzf menu) ────────────────────────────────────
+
+cmd::dashboard() {
+    ui::banner
+
+    while true; do
+        local choice
+        choice=$(ui::choose "ClaudeOS Dashboard" \
+            "◈  Agent → Start"          \
+            "◈  Agent → Status"         \
+            "◈  Agent → Logs"           \
+            "⬡  Sandbox → Create"       \
+            "⬡  Sandbox → Diff"         \
+            "⬡  Sandbox → Merge"        \
+            "⬡  Sandbox → Rollback"     \
+            "⬡  Sandbox → List"         \
+            "   Bazaar → Browse"        \
+            "   Bazaar → Installed"     \
+            "🎮  Game Mode → On"         \
+            "🎮  Game Mode → Off"        \
+            "🎮  Game Mode → Status"     \
+            "   System Status"          \
+            "   Live Monitor"           \
+            "   API Spend"              \
+            "   Quit"                   \
+        )
+
+        [[ -z "$choice" || "$choice" == *"Quit"* ]] && break
+
+        case "$choice" in
+            *"Agent → Start"*)     agent::start ;;
+            *"Agent → Status"*)    agent::status ;;
+            *"Agent → Logs"*)      agent::logs ;;
+            *"Sandbox → Create"*)  sandbox::create ;;
+            *"Sandbox → Diff"*)    diff::show ;;
+            *"Sandbox → Merge"*)   sandbox::merge ;;
+            *"Sandbox → Rollback"*)sandbox::rollback ;;
+            *"Sandbox → List"*)    sandbox::list ;;
+            *"Bazaar → Browse"*)   registry::browse ;;
+            *"Bazaar → Installed"*)registry::installed ;;
+            *"Game Mode → On"*)    gamemode::on ;;
+            *"Game Mode → Off"*)   gamemode::off ;;
+            *"Game Mode → Status"*)gamemode::status ;;
+            *"System Status"*)     monitor::status ;;
+            *"Live Monitor"*)      monitor::watch ;;
+            *"API Spend"*)         monitor::spend ;;
+        esac
+
+        # Pause between actions so the user can read output
+        echo ""
+        read -rp "  Press Enter to continue..." _
+        clear
+        ui::banner
+    done
+}
+
+# ─── Help ─────────────────────────────────────────────────────────────────────
+
+cmd::help() {
+    ui::banner
+    cat <<'HELP'
+  USAGE
+    claudeos <command> [subcommand] [args...]
+
+  AGENT
+    agent start [project] [task]   Start Claude in a sandbox
+    agent stop                     Stop the running agent
+    agent status                   Show agent state + recent output
+    agent logs                     Tail agent session log
+
+  SANDBOX
+    sandbox create [project] [label]   Create Btrfs/copy sandbox
+    sandbox diff   [sandbox]           Show what the agent changed
+    sandbox merge  [sandbox]           Apply changes to original project
+    sandbox rollback [sandbox]         Discard sandbox
+    sandbox list                       List all sandboxes
+    sandbox status                     Show active sandbox
+
+  BAZAAR
+    bazaar                         Browse tools (fzf UI)
+    bazaar search <query>          Search registry
+    bazaar info <tool>             Show tool details
+    bazaar install <tool>          Install + wire into Claude Desktop
+    bazaar uninstall <tool>        Remove tool + MCP config entry
+    bazaar installed               List installed tools
+
+  GAME MODE
+    game on                        Deprioritize agents, boost interactive
+    game off                       Restore normal priorities
+    game status                    Show current state
+    game watch                     Auto-detect game launches (background)
+
+  MONITOR
+    status                         One-shot system + agent HUD
+    monitor                        Same as status
+    monitor watch                  Live refreshing dashboard
+    monitor spend                  API token usage + cost estimate
+
+  OTHER
+    init                           First-time setup + dependency check
+    dashboard                      Interactive menu
+    logs [N]                       Show last N lines of ClaudeOS log
+    version                        Print version
+    help                           This message
+
+HELP
+}
+
+# ─── Router ───────────────────────────────────────────────────────────────────
+
+main() {
+    local cmd="${1:-}"
+    local sub="${2:-}"
+    shift 2 2>/dev/null || shift "${#}" 2>/dev/null || true
+
+    case "$cmd" in
+
+        # ── Init / Setup ──────────────────────────────────────────────────────
+        init)
+            cmd::init
+            ;;
+
+        # ── Dashboard ─────────────────────────────────────────────────────────
+        dashboard)
+            cmd::dashboard
+            ;;
+
+        # ── Agent ─────────────────────────────────────────────────────────────
+        agent)
+            case "$sub" in
+                start)   agent::start "$@" ;;
+                stop)    agent::stop ;;
+                status)  agent::status ;;
+                logs)    agent::logs ;;
+                "")      agent::status ;;
+                *)       ui::fail "Unknown agent subcommand: ${sub}"; cmd::help; exit 1 ;;
+            esac
+            ;;
+
+        # ── Sandbox ───────────────────────────────────────────────────────────
+        sandbox)
+            case "$sub" in
+                create)   sandbox::create "$@" ;;
+                diff)     diff::show "$@" ;;
+                merge)    sandbox::merge "$@" ;;
+                rollback) sandbox::rollback "$@" ;;
+                list)     sandbox::list ;;
+                status)   sandbox::status ;;
+                "")       sandbox::status ;;
+                *)        ui::fail "Unknown sandbox subcommand: ${sub}"; exit 1 ;;
+            esac
+            ;;
+
+        # ── Bazaar ────────────────────────────────────────────────────────────
+        bazaar)
+            case "$sub" in
+                search)    registry::search "$@" ;;
+                info)      registry::info "$@" ;;
+                install)   bazaar::install "$@" ;;
+                uninstall) bazaar::uninstall "$@" ;;
+                installed) registry::installed ;;
+                "")        registry::browse ;;
+                *)
+                    # Treat unknown sub as a tool key to install
+                    ui::warn "Unknown bazaar subcommand '${sub}'"
+                    ui::info "Did you mean: claudeos bazaar install ${sub}?"
+                    exit 1
+                    ;;
+            esac
+            ;;
+
+        # ── Game Mode ─────────────────────────────────────────────────────────
+        game)
+            case "$sub" in
+                on)     gamemode::on ;;
+                off)    gamemode::off ;;
+                status) gamemode::status ;;
+                watch)  gamemode::watch ;;
+                "")     gamemode::status ;;
+                *)      ui::fail "Unknown game subcommand: ${sub}"; exit 1 ;;
+            esac
+            ;;
+
+        # ── Monitor / Status ──────────────────────────────────────────────────
+        status)
+            monitor::status
+            ;;
+
+        monitor)
+            case "$sub" in
+                watch)  monitor::watch "${@}" ;;
+                spend)  monitor::spend ;;
+                "")     monitor::status ;;
+                *)      ui::fail "Unknown monitor subcommand: ${sub}"; exit 1 ;;
+            esac
+            ;;
+
+        # ── Logs ──────────────────────────────────────────────────────────────
+        logs)
+            local lines="${sub:-50}"
+            log::tail "$lines"
+            ;;
+
+        # ── Meta ──────────────────────────────────────────────────────────────
+        version | --version | -v)
+            echo "  ClaudeOS v${CLAUDEOS_VERSION}"
+            ;;
+
+        help | --help | -h | "")
+            cmd::help
+            ;;
+
+        *)
+            ui::fail "Unknown command: ${cmd}"
+            echo ""
+            cmd::help
+            exit 1
+            ;;
+    esac
+}
+
+main "$@"
