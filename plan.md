@@ -1,4 +1,4 @@
-# ClaudeOS — Build Plan
+# TuringOS — Build Plan
 
 ## The Concept
 
@@ -11,7 +11,7 @@ The interesting framing for Anthropic:
 Human → Terminal → Program → Filesystem
 ```
 
-**ClaudeOS:**
+**TuringOS:**
 ```
 Human
   ↓
@@ -19,7 +19,7 @@ Intent
   ↓
 Claude Agent
   ↓
-ClaudeOS Policy Layer
+TuringOS Policy Layer
   ↓
 Ephemeral Sandbox
   ↓
@@ -38,7 +38,7 @@ Merge
 
 ```
                     ┌──────────────────────┐
-                    │       CLAUDEOS       │
+                    │       TURINGOS       │
                     │   Bash Control Plane │
                     └──────────┬───────────┘
                                │
@@ -91,7 +91,7 @@ claudeos status
 ## File Structure
 
 ```
-claudeos/
+turingos/
 ├── claudeos              # main entrypoint
 ├── core/
 │   ├── ui.sh
@@ -195,7 +195,7 @@ ionice -c 3 -p "$PID"
 Display:
 ```
 ╭────────────────────────────────────╮
-│       CLAUDEOS GAME MODE           │
+│       TURINGOS GAME MODE           │
 ├────────────────────────────────────┤
 │ Steam              ✓               │
 │ Game detected      ✓               │
@@ -249,7 +249,7 @@ claudeos agent start
 ```
 > "Refactor this authentication module and run the tests."
 
-**Scene 2 — ClaudeOS protects the machine**
+**Scene 2 — TuringOS protects the machine**
 ```
 Creating Btrfs CoW Agent Sandbox...
 
@@ -270,7 +270,7 @@ Claude Agent
 ✓ 14/14 tests passed
 ```
 
-**Scene 4 — ClaudeOS catches everything**
+**Scene 4 — TuringOS catches everything**
 ```bash
 claudeos sandbox diff
 ```
@@ -306,7 +306,7 @@ Agent continues running.
 Then notification fires:
 ```
 ╭──────────────────────────────────────╮
-│ 🟢 ClaudeOS                          │
+│ 🟢 TuringOS                          │
 │                                      │
 │ Agent task completed                 │
 │ 14/14 tests passed                   │
