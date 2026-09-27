@@ -4,7 +4,7 @@
 
 **Symptom:** ISO boots to a lightdm login screen instead of skipping straight
 to the fullscreen Electron UI. After manually logging in as `user`/`live`,
-the desktop comes up but the ClaudeOS UI still doesn't appear on its own —
+the desktop comes up but the TuringOS UI still doesn't appear on its own —
 it only launches if you manually run:
 
 ```bash
