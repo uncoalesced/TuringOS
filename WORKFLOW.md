@@ -1,4 +1,4 @@
-# ClaudeOS Workflow Guide
+# TuringOS Workflow Guide
 
 How to use the scripts end-to-end, from first install to running an agent and reviewing its work.
 
@@ -36,7 +36,7 @@ sudo apt install git jq fzf rsync nodejs npm
 Run `init` once. It creates the runtime directories and checks your environment.
 
 ```bash
-cd /path/to/claudeos
+cd /path/to/turingos
 chmod +x claudeos
 ./claudeos init
 ```
@@ -50,7 +50,7 @@ You'll see a dependency check like this:
   ✓  fzf          found
   ⚠  nvidia-smi   not found (optional)
 
-  ClaudeOS initialized
+  TuringOS initialized
 
   Data dir:    ~/.claudeos/
   Config:      ~/.claudeos/config.env
@@ -61,7 +61,7 @@ You'll see a dependency check like this:
 **Optional: add `claudeos` to your PATH**
 
 ```bash
-echo 'export PATH="$PATH:/path/to/claudeos"' >> ~/.bashrc
+echo 'export PATH="$PATH:/path/to/turingos"' >> ~/.bashrc
 source ~/.bashrc
 ```
 
@@ -71,7 +71,7 @@ After that, every example below works without the `./` prefix.
 
 ## Step 2 — Configure the Agent Binary
 
-ClaudeOS defaults to `claude` as the agent binary (the Claude Code CLI).
+TuringOS defaults to `claude` as the agent binary (the Claude Code CLI).
 
 If it's installed elsewhere, or you want to use a different binary:
 
@@ -98,7 +98,7 @@ Other tunable options in `~/.claudeos/config.env`:
 claudeos agent start /path/to/your/project "Refactor the auth module and run tests"
 ```
 
-ClaudeOS will:
+TuringOS will:
 
 1. Create a Btrfs snapshot (or rsync copy) of your project
 2. Write a task prompt into the sandbox
@@ -147,7 +147,7 @@ When the agent finishes, you'll see a completion banner:
 
 ```
   ╭──────────────────────────────────────────╮
-  │  🟢 ClaudeOS                             │
+  │  🟢 TuringOS                             │
   │                                          │
   │  Agent task completed                    │
   │  14 passed, 0 failed                     │
@@ -237,7 +237,7 @@ claudeos bazaar install postgres-mcp
 claudeos bazaar install filesystem-mcp
 ```
 
-ClaudeOS will:
+TuringOS will:
 1. Check that required env vars are set (e.g. `GITHUB_PERSONAL_ACCESS_TOKEN`)
 2. Verify the npx package is downloadable
 3. Inject a server entry into `~/.config/Claude/claude_desktop_config.json`
@@ -270,7 +270,7 @@ Output:
 
 ```
   ╭────────────────────────────────────────╮
-  │       CLAUDEOS GAME MODE               │
+  │       TURINGOS GAME MODE               │
   ├────────────────────────────────────────┤
   │  claude [18432]          LOW           │
   │  ollama [9811]           LOW           │
@@ -387,7 +387,7 @@ The copy backend uses rsync. Slower to create, but works on any filesystem.
 ### Check logs
 
 ```bash
-# Last 50 lines of ClaudeOS operational log
+# Last 50 lines of TuringOS operational log
 claudeos logs
 
 # Last 100 lines
