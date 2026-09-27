@@ -1,6 +1,6 @@
-# Shipping ClaudeOS in a Debian ISO
+# Shipping TuringOS in a Debian ISO
 
-How to bake ClaudeOS into a custom Debian ISO so it's available on first boot.
+How to bake TuringOS into a custom Debian ISO so it's available on first boot.
 
 ---
 
