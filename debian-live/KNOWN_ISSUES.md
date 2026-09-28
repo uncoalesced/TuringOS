@@ -8,7 +8,7 @@ the desktop comes up, but the TuringOS UI still doesn't appear. It only
 launches if you run this by hand:
 
 ```bash
-KIOSK=1 /usr/local/bin/claudeos-ui
+KIOSK=1 /usr/local/bin/turingos-ui
 ```
 
 ### Why a manual run is needed right now
@@ -22,7 +22,7 @@ isn't firing.
    get a login prompt, so autologin isn't taking effect.
 
 2. **openbox autostart** (`config/includes.chroot/etc/xdg/openbox/autostart`)
-   should launch `claudeos-ui` a second after the session starts. It only
+   should launch `turingos-ui` a second after the session starts. It only
    runs if the session that actually starts *is* openbox. If the greeter
    falls back to some other default session, this file is never read.
 
@@ -63,7 +63,7 @@ Electron bundle work. The launch *mechanism* is what's broken.
    `agetty --autologin user --noclear tty1` + `startx` directly. That
    removes the lightdm/live-config race completely.
 4. **Add a fallback autostart** in `/home/user/.bashrc` or
-   `/etc/profile.d/` that launches `claudeos-ui` on first TTY login too.
+   `/etc/profile.d/` that launches `turingos-ui` on first TTY login too.
    If the graphical autologin path fails, a console login still reaches
    the UI.
 5. **Bake in explicit test credentials** (see below) so debugging doesn't
