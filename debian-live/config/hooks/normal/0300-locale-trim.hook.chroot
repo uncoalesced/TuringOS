@@ -4,7 +4,7 @@
 # Keeps: en_US.UTF-8, en_GB.UTF-8 (safe for demo audiences).
 # Expected savings: 150–300MB
 #
-# Runs AFTER 0200-trim, BEFORE claudeos install hooks.
+# Runs AFTER 0200-trim, BEFORE turingos install hooks.
 
 set -euo pipefail
 
@@ -42,7 +42,7 @@ find /usr/share/doc -depth -not -name "copyright" -not -path "/usr/share/doc" \
 
 # ─── 3. Remove /usr/share/man ─────────────────────────────────────────────────
 # Man pages — not needed in a demo image.
-# ClaudeOS has its own help system via 'claudeos help'.
+# TuringOS has its own help system via 'turingos help'.
 
 echo "==> [0300-locale-trim] Stripping /usr/share/man..."
 find /usr/share/man -type f -delete 2>/dev/null || true
