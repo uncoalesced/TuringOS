@@ -1,12 +1,12 @@
-Source: claudeos
+Source: turingos
 Section: utils
 Priority: optional
-Maintainer: ClaudeOS Contributors <noreply@example.com>
+Maintainer: TuringOS Contributors <noreply@example.com>
 Build-Depends: debhelper-compat (= 13)
 Standards-Version: 4.6.2
-Homepage: https://github.com/uncoalesced/claudeos
+Homepage: https://github.com/uncoalesced/TuringOS
 
-Package: claudeos
+Package: turingos
 Architecture: all
 Depends: ${misc:Depends},
  bash (>= 5.0),
@@ -20,5 +20,5 @@ Depends: ${misc:Depends},
 Recommends: gum, fzf, nodejs, npm
 Suggests: nvidia-utils, git-delta, diff-so-fancy
 Description: Agentic OS substrate — safe Claude agent execution
- ClaudeOS provides Btrfs sandboxing, MCP Bazaar, and Game Mode
+ TuringOS provides Btrfs sandboxing, MCP Bazaar, and Game Mode
  for running Claude agent tasks safely on Debian.
