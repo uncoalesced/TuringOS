@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# sandbox/diff.sh — ClaudeOS Sandbox Diff Inspector
+# sandbox/diff.sh — TuringOS Sandbox Diff Inspector
 #
 # Displays a rich, human-readable summary of what an agent changed inside a
 # sandbox vs the original project. Combines git diff stats, file-level changes,
@@ -20,12 +20,12 @@ diff::show() {
     fi
 
     if [[ -z "$sandbox_path" || ! -d "$sandbox_path" ]]; then
-        ui::fail "No active sandbox found. Run: claudeos sandbox create"
+        ui::fail "No active sandbox found. Run: turingos sandbox create"
         log::warn "diff::show — no sandbox path"
         return 1
     fi
 
-    local meta="${sandbox_path}/.claudeos_sandbox"
+    local meta="${sandbox_path}/.turingos_sandbox"
     if [[ ! -f "$meta" ]]; then
         ui::fail "Sandbox metadata missing: $meta"
         return 1
@@ -155,7 +155,7 @@ diff::_test_summary() {
     # Look for common test result indicators left behind by the agent
     local result_file
     for candidate in \
-        "${sandbox}/.claudeos_test_result" \
+        "${sandbox}/.turingos_test_result" \
         "${sandbox}/test-results.txt" \
         "${sandbox}/pytest_output.txt"; do
         if [[ -f "$candidate" ]]; then
@@ -178,7 +178,7 @@ diff::_test_summary() {
     else
         # Try to detect test frameworks and check last run status
         if [[ -f "${sandbox}/package.json" ]]; then
-            ui::info "Tests: run 'claudeos agent status' for test output"
+            ui::info "Tests: run 'turingos agent status' for test output"
         fi
     fi
 }
@@ -193,7 +193,7 @@ diff::_rsync_summary() {
     echo ""
 
     local diff_lines
-    diff_lines=$(rsync -rcn --exclude='.claudeos_sandbox' \
+    diff_lines=$(rsync -rcn --exclude='.turingos_sandbox' \
         "${sandbox}/" "${source}/" 2>/dev/null) || true
 
     local count
@@ -314,7 +314,7 @@ diff::save() {
         return 1
     fi
 
-    local outfile="${CLAUDEOS_LOG_DIR}/diff-$(date +%Y%m%dT%H%M%S).patch"
+    local outfile="${TURINGOS_LOG_DIR}/diff-$(date +%Y%m%dT%H%M%S).patch"
     git -C "$sandbox_path" diff > "$outfile"
     ui::ok "Diff saved to: $outfile"
     log::info "diff saved: $outfile"
