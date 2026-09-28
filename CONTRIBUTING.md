@@ -1,10 +1,10 @@
 # Contributing to TuringOS
 
-TuringOS is building a Linux execution layer for AI agents. We're looking for people interested in Linux, Bash, security, desktop UI, MCP, filesystems and developer tooling.
+TuringOS is a Linux execution layer for AI agents, and we'd like help from people who work on Linux, Bash, security, desktop UI, MCP, filesystems, or developer tooling.
 
-You don't need to know the whole codebase. Pick an issue, build a component, and help shape the OS.
+You don't need to know the whole codebase. Pick one issue or one component and start there.
 
-By participating you agree to follow our [Code of Conduct](CODE_OF_CONDUCT.md). To report a vulnerability, **do not open a public issue**. See [SECURITY.md](SECURITY.md).
+By taking part, you agree to follow our [Code of Conduct](CODE_OF_CONDUCT.md). To report a vulnerability, **do not open a public issue**. See [SECURITY.md](SECURITY.md).
 
 ---
 
@@ -29,8 +29,8 @@ By participating you agree to follow our [Code of Conduct](CODE_OF_CONDUCT.md). 
    git clone https://github.com/<you>/TuringOS.git
    cd TuringOS
    ```
-2. Follow the Quick Start in [README.md](README.md) to set up your environment.
-3. Read [WORKFLOW.md](WORKFLOW.md) to see how the agent → sandbox → diff → approval flow works.
+2. Follow the quick start in [README.md](README.md) to set up your environment.
+3. Read [WORKFLOW.md](WORKFLOW.md) for how the agent → sandbox → diff → approval flow works.
 
 ## Finding work
 
@@ -38,7 +38,7 @@ By participating you agree to follow our [Code of Conduct](CODE_OF_CONDUCT.md). 
 - `help wanted` marks larger tasks we'd love help with.
 - Subsystem labels (`sandbox`, `bazaar`, `ui`, ...) show which area an issue touches.
 - Comment on an issue before you start so nobody duplicates work.
-- If you have a new idea, open an issue to discuss it before you write a big PR.
+- Got a new idea? Open an issue and talk it through with us before writing a big PR.
 
 ## Making changes
 
@@ -55,18 +55,18 @@ By participating you agree to follow our [Code of Conduct](CODE_OF_CONDUCT.md). 
 
 ## Testing and approval (required before merging into `main`)
 
-**You must test your change yourself and show us the results before we approve it.** A PR without test evidence will not be approved.
+**Test your change yourself and show us the results. We won't approve a PR that has no test evidence.**
 
-1. **Test locally.** Run your change for real, not only in theory.
-2. **Show us the result after testing.** Put the evidence in the PR description:
-   - **Scripts / CLI (`claudeos`, `agent/`, `core/`, `monitor/`):** the commands you ran and their output.
-   - **Sandbox / agent changes:** the sandbox diff output and the result of the merge or discard.
-   - **UI / desktop / Game Mode:** screenshots or a short screen recording.
-   - **ISO / packaging (`debian-live/`, `iso/`, `pkg/`):** build log excerpt plus a screenshot of it booting in a VM.
-   - **Docs:** a rendered preview or a screenshot of the changed section.
-3. **Say what you tested on**, e.g. distro, kernel, filesystem, GPU if relevant.
-4. **Review.** A maintainer checks your evidence and code, and may ask you to re-test.
-5. **Merge.** Your PR is merged into `main` only after a maintainer approves it.
+1. Test locally. Actually run your change; reading the code doesn't count.
+2. Put the post-test evidence in the PR description:
+   - Scripts / CLI (`claudeos`, `agent/`, `core/`, `monitor/`): the commands you ran and their output.
+   - Sandbox / agent changes: the sandbox diff output and the result of the merge or discard.
+   - UI / desktop / Game Mode: screenshots or a short screen recording.
+   - ISO / packaging (`debian-live/`, `iso/`, `pkg/`): build log excerpt plus a screenshot of it booting in a VM.
+   - Docs: a rendered preview or a screenshot of the changed section.
+3. Say what you tested on: distro, kernel, filesystem, and GPU if it matters.
+4. A maintainer reviews your evidence and code, and may ask you to re-test.
+5. Your PR is merged into `main` only after a maintainer approves it.
 
 ## PR checklist
 
