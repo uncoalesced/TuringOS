@@ -1,9 +1,9 @@
-# claudeos.list.chroot
-# Explicit package list for ClaudeOS live image.
+# turingos.list.chroot
+# Explicit package list for TuringOS live image.
 #
 # Philosophy: install only what the demo needs.
 # Trim hooks (0200/0300) clean up whatever the base profile drags in.
-# Hooks (0400-0460) install gum, ClaudeOS scripts, Electron deps, and Claude CLI.
+# Hooks (0400-0460) install gum, TuringOS scripts, Electron deps, and Claude CLI.
 
 # ── Core system ───────────────────────────────────────────────────────────────
 bash
@@ -65,7 +65,7 @@ htop
 tree
 file
 
-# ── ClaudeOS runtime deps ─────────────────────────────────────────────────────
+# ── TuringOS runtime deps ─────────────────────────────────────────────────────
 git
 jq
 fzf
