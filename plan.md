@@ -61,29 +61,29 @@ The Bash layer is the product.
 
 ## CLI interface
 
-There's one executable, `claudeos`:
+There's one executable, `turingos`:
 
 ```bash
-claudeos init
-claudeos dashboard
+turingos init
+turingos dashboard
 
-claudeos agent start
-claudeos agent stop
-claudeos agent status
+turingos agent start
+turingos agent stop
+turingos agent status
 
-claudeos sandbox create
-claudeos sandbox diff
-claudeos sandbox merge
-claudeos sandbox rollback
+turingos sandbox create
+turingos sandbox diff
+turingos sandbox merge
+turingos sandbox rollback
 
-claudeos bazaar
-claudeos bazaar install <tool>
+turingos bazaar
+turingos bazaar install <tool>
 
-claudeos game on
-claudeos game off
-claudeos game status
+turingos game on
+turingos game off
+turingos game status
 
-claudeos status
+turingos status
 ```
 
 ---
@@ -92,7 +92,7 @@ claudeos status
 
 ```
 turingos/
-├── claudeos              # main entrypoint
+├── turingos              # main entrypoint
 ├── core/
 │   ├── ui.sh
 │   ├── config.sh
@@ -122,7 +122,7 @@ This is what sets TuringOS apart. It rests on real filesystem features, and you 
 
 ```bash
 PROJECT="$PWD"
-SANDBOX="$HOME/.claudeos/sandboxes/task-$(date +%s)"
+SANDBOX="$HOME/.turingos/sandboxes/task-$(date +%s)"
 
 sudo btrfs subvolume snapshot "$PROJECT" "$SANDBOX"
 cd "$SANDBOX"
@@ -133,7 +133,7 @@ Claude works inside the snapshot, and the original project stays untouched.
 
 Diff:
 ```bash
-claudeos sandbox diff
+turingos sandbox diff
 # combines git diff + btrfs info
 ```
 
@@ -171,7 +171,7 @@ None of this is mocked. It actually works.
 
 Flow:
 ```bash
-claudeos bazaar
+turingos bazaar
 ```
 → `fzf` selection  
 → `git clone`  
@@ -185,7 +185,7 @@ Don't claim 500 tools. Ship 2–3, and make sure one works end to end.
 ## Pillar 3: Game Mode (Bash-native, don't oversell it)
 
 ```bash
-claudeos game on
+turingos game on
 
 PID=$(pgrep -af claude)
 renice +10 -p "$PID"
@@ -245,7 +245,7 @@ That gets us a terminal UI without writing a frontend.
 
 Scene 1: agent request
 ```bash
-claudeos agent start
+turingos agent start
 ```
 > "Refactor this authentication module and run the tests."
 
@@ -272,7 +272,7 @@ Claude Agent
 
 Scene 4: TuringOS catches everything
 ```bash
-claudeos sandbox diff
+turingos sandbox diff
 ```
 ```
 7 files changed
@@ -291,7 +291,7 @@ Scene 5: the human stays in control
 
 Scene 6: Game Mode
 ```bash
-claudeos game on
+turingos game on
 ```
 ```
 🎮 GAME MODE
@@ -319,10 +319,10 @@ Then the notification fires:
 
 | Time | Task |
 |------|------|
-| 0–2h | Core sandbox: `claudeos sandbox create/diff/merge/rollback` working end-to-end |
-| 2–3h | `claudeos agent start` — Claude running inside sandbox |
+| 0–2h | Core sandbox: `turingos sandbox create/diff/merge/rollback` working end-to-end |
+| 2–3h | `turingos agent start` — Claude running inside sandbox |
 | 3–4h | Clawd Bazaar — fzf + registry.json + one real MCP install |
-| 4–5h | Game Mode + `claudeos status` dashboard |
+| 4–5h | Game Mode + `turingos status` dashboard |
 | 5–6h | UI polish with gum, demo script, notification on agent completion |
 
 ---
