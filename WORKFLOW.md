@@ -37,8 +37,8 @@ Run `init` once. It creates the runtime directories and checks your environment.
 
 ```bash
 cd /path/to/turingos
-chmod +x claudeos
-./claudeos init
+chmod +x turingos
+./turingos init
 ```
 
 You'll see a dependency check like this:
@@ -52,13 +52,13 @@ You'll see a dependency check like this:
 
   TuringOS initialized
 
-  Data dir:    ~/.claudeos/
-  Config:      ~/.claudeos/config.env
-  Agent log:   ~/.claudeos/logs/
-  Sandboxes:   ~/.claudeos/sandboxes/
+  Data dir:    ~/.turingos/
+  Config:      ~/.turingos/config.env
+  Agent log:   ~/.turingos/logs/
+  Sandboxes:   ~/.turingos/sandboxes/
 ```
 
-### Optional: add `claudeos` to your PATH
+### Optional: add `turingos` to your PATH
 
 ```bash
 echo 'export PATH="$PATH:/path/to/turingos"' >> ~/.bashrc
@@ -76,17 +76,17 @@ By default TuringOS runs `claude` (the Claude Code CLI) as the agent.
 To point it at a binary somewhere else, or a different binary altogether:
 
 ```bash
-echo 'CLAUDEOS_AGENT_BINARY=/usr/local/bin/claude' >> ~/.claudeos/config.env
+echo 'TURINGOS_AGENT_BINARY=/usr/local/bin/claude' >> ~/.turingos/config.env
 ```
 
-You can also set these in `~/.claudeos/config.env`:
+You can also set these in `~/.turingos/config.env`:
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `CLAUDEOS_AGENT_BINARY` | `claude` | Path to Claude Code CLI |
-| `CLAUDEOS_SANDBOX_BACKEND` | `btrfs` | `btrfs` or `copy` (rsync fallback) |
-| `CLAUDEOS_GAME_RENICE_LEVEL` | `10` | nice value applied in game mode |
-| `CLAUDEOS_LOG_LEVEL` | `info` | `debug`, `info`, `warn`, or `error` |
+| `TURINGOS_AGENT_BINARY` | `claude` | Path to Claude Code CLI |
+| `TURINGOS_SANDBOX_BACKEND` | `btrfs` | `btrfs` or `copy` (rsync fallback) |
+| `TURINGOS_GAME_RENICE_LEVEL` | `10` | nice value applied in game mode |
+| `TURINGOS_LOG_LEVEL` | `info` | `debug`, `info`, `warn`, or `error` |
 
 ---
 
@@ -95,7 +95,7 @@ You can also set these in `~/.claudeos/config.env`:
 ### 3a. Point at a project and start
 
 ```bash
-claudeos agent start /path/to/your/project "Refactor the auth module and run tests"
+turingos agent start /path/to/your/project "Refactor the auth module and run tests"
 ```
 
 TuringOS then:
@@ -112,13 +112,13 @@ Nothing in your original project changes until you merge.
 If you skipped tailing at startup:
 
 ```bash
-claudeos agent logs
+turingos agent logs
 ```
 
 Or check the current state:
 
 ```bash
-claudeos agent status
+turingos agent status
 ```
 
 Output:
@@ -152,14 +152,14 @@ When the agent finishes, it prints a completion banner:
   │  Agent task completed                    │
   │  14 passed, 0 failed                     │
   │                                          │
-  │  Run: claudeos sandbox diff              │
+  │  Run: turingos sandbox diff              │
   ╰──────────────────────────────────────────╯
 ```
 
 Now look at the changes:
 
 ```bash
-claudeos sandbox diff
+turingos sandbox diff
 ```
 
 You'll get a summary like:
@@ -202,7 +202,7 @@ Then pick what to do:
 ### Merge
 
 ```bash
-claudeos sandbox merge
+turingos sandbox merge
 ```
 
 This copies the agent's changes back into your original project with rsync. It asks you to confirm first, then offers to destroy the sandbox.
@@ -210,7 +210,7 @@ This copies the agent's changes back into your original project with rsync. It a
 ### Rollback
 
 ```bash
-claudeos sandbox rollback
+turingos sandbox rollback
 ```
 
 This deletes the sandbox. On Btrfs that means `btrfs subvolume delete`, which is instant and frees the space right away. On the copy backend it runs `rm -rf` on the sandbox directory.
@@ -224,7 +224,7 @@ In both cases your original project is left alone.
 To browse the tool registry interactively:
 
 ```bash
-claudeos bazaar
+turingos bazaar
 ```
 
 This opens an fzf picker. Select a tool, read its details, and install it.
@@ -232,9 +232,9 @@ This opens an fzf picker. Select a tool, read its details, and install it.
 You can also install directly by key:
 
 ```bash
-claudeos bazaar install github-mcp
-claudeos bazaar install postgres-mcp
-claudeos bazaar install filesystem-mcp
+turingos bazaar install github-mcp
+turingos bazaar install postgres-mcp
+turingos bazaar install filesystem-mcp
 ```
 
 During install, TuringOS:
@@ -247,13 +247,13 @@ Restart Claude Desktop afterwards so it picks up the new MCP server.
 To see what's installed:
 
 ```bash
-claudeos bazaar installed
+turingos bazaar installed
 ```
 
 To remove a tool:
 
 ```bash
-claudeos bazaar uninstall github-mcp
+turingos bazaar uninstall github-mcp
 ```
 
 ---
@@ -263,7 +263,7 @@ claudeos bazaar uninstall github-mcp
 If you're about to play a game and want the agent to keep working in the background without fighting it for resources:
 
 ```bash
-claudeos game on
+turingos game on
 ```
 
 Output:
@@ -281,13 +281,13 @@ Output:
   ╰────────────────────────────────────────╯
 
   → Agents continue running in background
-  → Disable with: claudeos game off
+  → Disable with: turingos game off
 ```
 
 When you're done playing:
 
 ```bash
-claudeos game off
+turingos game off
 ```
 
 This puts process priorities back to their original values.
@@ -295,7 +295,7 @@ This puts process priorities back to their original values.
 Auto-detect mode watches for Steam, Lutris, or Heroic to launch:
 
 ```bash
-claudeos game watch &
+turingos game watch &
 ```
 
 ---
@@ -305,19 +305,19 @@ claudeos game watch &
 One-shot status HUD:
 
 ```bash
-claudeos status
+turingos status
 ```
 
 Live dashboard that refreshes in place, like htop (Ctrl+C to exit):
 
 ```bash
-claudeos monitor watch
+turingos monitor watch
 ```
 
 Token usage and estimated API cost:
 
 ```bash
-claudeos monitor spend
+turingos monitor spend
 ```
 
 ---
@@ -328,25 +328,25 @@ We use this sequence for presentations and demos.
 
 ```bash
 # 1. Show the system is ready
-claudeos status
+turingos status
 
 # 2. Start the agent on a real project
-claudeos agent start ~/projects/myapp "Refactor auth module, run tests"
+turingos agent start ~/projects/myapp "Refactor auth module, run tests"
 
 # 3. Watch it work (optional — or just let it run)
-claudeos agent logs
+turingos agent logs
 
 # 4. Once complete, inspect the changes
-claudeos sandbox diff
+turingos sandbox diff
 
 # 5. Merge if satisfied
 #    (choose M at the prompt, or run directly)
-claudeos sandbox merge
+turingos sandbox merge
 
 # 6. Demonstrate game mode
-claudeos game on
-claudeos game status
-claudeos game off
+turingos game on
+turingos game status
+turingos game off
 ```
 
 ---
@@ -358,7 +358,7 @@ claudeos game off
 ```bash
 # Previous sandbox is gone after merge/rollback
 # Just start a new one
-claudeos agent start ~/projects/myapp "Add pagination to the /users endpoint"
+turingos agent start ~/projects/myapp "Add pagination to the /users endpoint"
 ```
 
 ### Keep a sandbox around for later review
@@ -366,19 +366,19 @@ claudeos agent start ~/projects/myapp "Add pagination to the /users endpoint"
 Choose `Q` (Quit, keep sandbox) at the diff prompt. To find it later:
 
 ```bash
-claudeos sandbox list
+turingos sandbox list
 ```
 
 Then pass its path to diff, merge, or rollback:
 
 ```bash
-claudeos sandbox diff ~/.claudeos/sandboxes/my-task-1748976000
+turingos sandbox diff ~/.turingos/sandboxes/my-task-1748976000
 ```
 
 ### Override the sandbox backend (no Btrfs)
 
 ```bash
-echo 'CLAUDEOS_SANDBOX_BACKEND=copy' >> ~/.claudeos/config.env
+echo 'TURINGOS_SANDBOX_BACKEND=copy' >> ~/.turingos/config.env
 ```
 
 The copy backend uses rsync. Sandboxes take longer to create, but it works on any filesystem.
@@ -387,14 +387,14 @@ The copy backend uses rsync. Sandboxes take longer to create, but it works on an
 
 ```bash
 # Last 50 lines of TuringOS operational log
-claudeos logs
+turingos logs
 
 # Last 100 lines
-claudeos logs 100
+turingos logs 100
 
 # Raw log file location
-claudeos logs 1 2>/dev/null  # prints path implicitly via log::path
-ls ~/.claudeos/logs/
+turingos logs 1 2>/dev/null  # prints path implicitly via log::path
+ls ~/.turingos/logs/
 ```
 
 ### Audit trail
@@ -402,13 +402,13 @@ ls ~/.claudeos/logs/
 Sandbox creation, agent start and stop, merges, and bazaar installs all get written to:
 
 ```
-~/.claudeos/logs/audit.log
+~/.turingos/logs/audit.log
 ```
 
 Format: `[TIMESTAMP] EVENT key=value key=value ...`
 
 ```bash
-tail -f ~/.claudeos/logs/audit.log
+tail -f ~/.turingos/logs/audit.log
 ```
 
 ---
@@ -416,19 +416,19 @@ tail -f ~/.claudeos/logs/audit.log
 ## Directory reference
 
 ```
-~/.claudeos/
-├── config.env          # user overrides (CLAUDEOS_AGENT_BINARY, etc.)
+~/.turingos/
+├── config.env          # user overrides (TURINGOS_AGENT_BINARY, etc.)
 ├── state.json          # active sandbox path, agent PID, game mode state
 ├── pids/
 │   └── claude.pid      # running agent PID
 ├── logs/
-│   ├── claudeos-YYYYMMDD.log   # operational log
+│   ├── turingos-YYYYMMDD.log   # operational log
 │   ├── audit.log               # structured action trail
 │   └── agent-session-*.log     # per-session agent output
 ├── sandboxes/
 │   └── <label>-<timestamp>/    # one directory per sandbox
-│       ├── .claudeos_sandbox   # metadata (source project, backend, etc.)
-│       └── .claudeos_prompt    # task prompt written for the agent
+│       ├── .turingos_sandbox   # metadata (source project, backend, etc.)
+│       └── .turingos_prompt    # task prompt written for the agent
 └── bazaar/
     └── <tool-key>/
         ├── .installed          # timestamp of install
@@ -440,10 +440,10 @@ tail -f ~/.claudeos/logs/audit.log
 ## Troubleshooting
 
 **`claude: command not found`**
-Set `CLAUDEOS_AGENT_BINARY` in `~/.claudeos/config.env` to the full path of your Claude Code CLI binary.
+Set `TURINGOS_AGENT_BINARY` in `~/.turingos/config.env` to the full path of your Claude Code CLI binary.
 
 **Sandbox creation fails with "not a btrfs subvolume"**
-Set `CLAUDEOS_SANDBOX_BACKEND=copy` in `~/.claudeos/config.env`. The rsync copy fallback works on any filesystem, macOS APFS included.
+Set `TURINGOS_SANDBOX_BACKEND=copy` in `~/.turingos/config.env`. The rsync copy fallback works on any filesystem, macOS APFS included.
 
 **`jq: command not found`**
 The Bazaar and state management both need `jq`. Install it with `sudo pacman -S jq`.
@@ -454,7 +454,7 @@ Claude Desktop only reads MCP config at startup, so restart it after any change.
 - Linux: `~/.config/Claude/claude_desktop_config.json`
 
 **Agent completed but diff shows no changes**
-The agent may have worked on untracked files. If the sandbox has no `.git`, the diff falls back to an rsync dry-run. Check `~/.claudeos/logs/agent-session-*.log` to see what the agent actually did.
+The agent may have worked on untracked files. If the sandbox has no `.git`, the diff falls back to an rsync dry-run. Check `~/.turingos/logs/agent-session-*.log` to see what the agent actually did.
 
 **Game mode says "no processes found"**
-`claudeos game on` only affects agents that are already running. Start the agent first, then turn on game mode.
+`turingos game on` only affects agents that are already running. Start the agent first, then turn on game mode.
