@@ -1,6 +1,6 @@
-# Security Policy
+# Security policy
 
-TuringOS sits between AI agents and your filesystem, so we treat security issues seriously.
+TuringOS sits between AI agents and your filesystem, so we take security reports seriously.
 
 ## Supported versions
 
@@ -15,11 +15,11 @@ TuringOS is pre-release. Only the latest `main` branch receives security fixes.
 
 **Do not open a public issue, discussion, or PR for security problems.**
 
-Report privately through GitHub's **Private Vulnerability Reporting**:
+Report it privately through GitHub's private vulnerability reporting:
 1. Go to the repository's **Security** tab.
 2. Click **Report a vulnerability**.
 
-Include:
+In the report, include:
 - The affected component (e.g. `sandbox/`, `core/`, `bazaar/`, `ui/`, ISO)
 - Steps to reproduce, or a minimal proof of concept
 - The impact: what an attacker or a misbehaving agent can do
@@ -36,7 +36,7 @@ Include:
 
 ## Out of scope
 
-- Vulnerabilities in upstream projects (Claude Code, Debian, Electron, third-party MCP servers). Please report those to the upstream project. Tell us too if TuringOS makes the issue worse.
+- Vulnerabilities in upstream projects (Claude Code, Debian, Electron, third-party MCP servers). Report those upstream. If TuringOS makes the problem worse, tell us as well.
 - Problems that need an already-compromised root account
 - Social engineering
 
@@ -49,4 +49,4 @@ Include:
 | Fix or mitigation plan | depends on severity |
 | Public disclosure | coordinated, by default within 90 days |
 
-We will credit you in the advisory unless you prefer to stay anonymous. Please give us reasonable time to fix the issue before you disclose it publicly.
+We'll credit you in the advisory unless you'd rather stay anonymous. Please give us reasonable time to ship a fix before you disclose publicly.
