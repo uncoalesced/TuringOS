@@ -1,5 +1,5 @@
 // ui-shell — Electron main process.
-// Reads ClaudeOS state from ~/.claudeos and the machine, and pushes one
+// Reads TuringOS state from ~/.turingos and the machine, and pushes one
 // snapshot to the page whenever something changes. The page never touches
 // the system directly.
 
@@ -11,12 +11,12 @@ const http = require('http');
 const os = require('os');
 const path = require('path');
 
-const DATA_DIR = path.join(os.homedir(), '.claudeos');
+const DATA_DIR = path.join(os.homedir(), '.turingos');
 const STATE_FILE = path.join(DATA_DIR, 'state.json');
 const KIOSK = process.env.KIOSK === '1';
 const POLL_MS = 2000;
 const REPO_ROOT = path.join(__dirname, '..');
-const CLAUDEOS_BIN = path.join(REPO_ROOT, 'claudeos');
+const TURINGOS_BIN = path.join(REPO_ROOT, 'turingos');
 
 let win = null;
 
@@ -100,15 +100,15 @@ const USER_NAME = readFirstName();
 
 // ─── Projects (for the @ picker) ────────────────────────────────────────────
 // Git repos under $HOME and next to this repo, 3 levels deep. Override with
-// CLAUDEOS_PROJECT_ROOTS=/path/a:/path/b.
+// TURINGOS_PROJECT_ROOTS=/path/a:/path/b.
 
 const SKIP_DIRS = new Set(['node_modules', 'Library', 'Applications', 'Movies', 'Music', 'Pictures', 'snap', 'go', 'vendor', 'target', 'build', 'dist']);
 // On a Mac preview, reading these pops a privacy prompt; the VM has no such prompts.
 if (process.platform === 'darwin') ['Desktop', 'Documents', 'Downloads'].forEach((d) => SKIP_DIRS.add(d));
 
 async function findProjects() {
-  const roots = process.env.CLAUDEOS_PROJECT_ROOTS
-    ? process.env.CLAUDEOS_PROJECT_ROOTS.split(':')
+  const roots = process.env.TURINGOS_PROJECT_ROOTS
+    ? process.env.TURINGOS_PROJECT_ROOTS.split(':')
     : [os.homedir(), path.dirname(REPO_ROOT)];
   const found = new Map();
 
@@ -136,8 +136,8 @@ async function findProjects() {
 
 // ─── Weather ────────────────────────────────────────────────────────────────
 // Location from the public IP (ipapi.co, fallback ipwho.is), weather from
-// Open-Meteo. No API keys. Override with CLAUDEOS_WEATHER="lat,lon,City",
-// or turn it off with CLAUDEOS_WEATHER=off.
+// Open-Meteo. No API keys. Override with TURINGOS_WEATHER="lat,lon,City",
+// or turn it off with TURINGOS_WEATHER=off.
 
 const WEATHER_MS = 15 * 60 * 1000;
 let weather = null;
@@ -150,7 +150,7 @@ async function getJSON(url) {
 }
 
 async function locate() {
-  const env = process.env.CLAUDEOS_WEATHER;
+  const env = process.env.TURINGOS_WEATHER;
   if (env && env !== 'off') {
     const [lat, lon, ...city] = env.split(',');
     return { lat: Number(lat), lon: Number(lon), city: city.join(',').trim() || null };
@@ -164,7 +164,7 @@ async function locate() {
 }
 
 async function refreshWeather() {
-  if (process.env.CLAUDEOS_WEATHER === 'off') return;
+  if (process.env.TURINGOS_WEATHER === 'off') return;
   try {
     place ??= await locate();
     const q = new URLSearchParams({
@@ -192,7 +192,7 @@ async function refreshWeather() {
 
 // ─── GitHub widget ──────────────────────────────────────────────────────────
 // No new credentials — assumes `gh auth login` is already done on the
-// machine, same as the rest of ClaudeOS's GitHub flows (see
+// machine, same as the rest of TuringOS's GitHub flows (see
 // ui-docs/UI_SHELL.md's GitHub integration section for the exact commands).
 
 const GITHUB_MS = 5 * 60 * 1000;
@@ -222,11 +222,11 @@ async function refreshGithub() {
   push();
 }
 
-// ─── Config file (for values that need to survive `claudeos ui`'s exec) ────
-// `./claudeos ui` execs into ui/run.sh, which does NOT inherit non-exported
+// ─── Config file (for values that need to survive `turingos ui`'s exec) ────
+// `./turingos ui` execs into ui/run.sh, which does NOT inherit non-exported
 // shell variables. core/config.sh's config::load() does a plain `source`
 // (no `export`/`set -a`), and config::set() writes plain KEY=VALUE with no
-// `export` keyword — so a key a user puts in ~/.claudeos/config.env never
+// `export` keyword — so a key a user puts in ~/.turingos/config.env never
 // reaches this process's `process.env`. Parse the file ourselves; a real
 // exported env var still wins if one happens to be set.
 
@@ -258,7 +258,7 @@ function getConfigValue(key) {
 // The first feature that touches real third-party personal data — a bigger
 // trust surface than anything else here. Needs the project owner to
 // register a Google Cloud "Desktop app" OAuth client and put
-// GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET in ~/.claudeos/config.env. The
+// GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET in ~/.turingos/config.env. The
 // resulting refresh token lives in its own file, mode 0600, and never
 // crosses the IPC bridge — only derived display fields (event title/time) do.
 
@@ -309,7 +309,7 @@ async function connectGoogle() {
   if (!creds) {
     return {
       ok: false,
-      error: 'Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in ~/.claudeos/config.env first (a Google Cloud "Desktop app" OAuth client).',
+      error: 'Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in ~/.turingos/config.env first (a Google Cloud "Desktop app" OAuth client).',
     };
   }
 
@@ -422,7 +422,7 @@ async function refreshGoogleCalendar() {
 function snapshot() {
   const state = readJSON(STATE_FILE);
   return {
-    // "live" means ClaudeOS has been initialised on this machine.
+    // "live" means TuringOS has been initialised on this machine.
     live: fs.existsSync(DATA_DIR),
     user: { name: USER_NAME },
     agent: {
@@ -591,7 +591,7 @@ const EFFORT_MODELS = new Set(['claude-sonnet-5', 'claude-opus-5-5', 'claude-fab
 async function askAnthropic({ message, model, effort, systemPrompt, maxTokens, whoLabel }) {
   if (typeof message !== 'string' || !message.trim()) return { ok: false, error: 'Say something first.' };
   const key = getConfigValue('ANTHROPIC_API_KEY');
-  if (!key) return { ok: false, error: `${whoLabel} needs an API key — set ANTHROPIC_API_KEY in ~/.claudeos/config.env.` };
+  if (!key) return { ok: false, error: `${whoLabel} needs an API key — set ANTHROPIC_API_KEY in ~/.turingos/config.env.` };
   const useModel = model || 'claude-haiku-4-5';
   try {
     const body = {
@@ -633,17 +633,17 @@ ipcMain.handle('state:get', () => snapshot());
 ipcMain.handle('projects:list', () => findProjects());
 
 // Start the agent on a task. The UI never builds shell strings: arguments go
-// straight to the claudeos script, which creates the sandbox first.
+// straight to the turingos script, which creates the sandbox first.
 ipcMain.handle('agent:start', (_e, { project, task, model, effort }) => {
-  if (!fs.existsSync(DATA_DIR)) return { ok: false, error: 'TuringOS is not set up. Run ./claudeos init first.' };
+  if (!fs.existsSync(DATA_DIR)) return { ok: false, error: 'TuringOS is not set up. Run ./turingos init first.' };
   if (typeof project !== 'string' || !fs.existsSync(project)) return { ok: false, error: 'That project folder no longer exists.' };
   if (typeof task !== 'string' || !task.trim()) return { ok: false, error: 'Describe the task first.' };
   // Passed through as env vars, not yet read by agent/claude.sh — additive
   // and inert until the backend opts in, not a silent no-op.
   const env = { ...process.env };
-  if (typeof model === 'string') env.CLAUDEOS_AGENT_MODEL = model;
-  if (typeof effort === 'string') env.CLAUDEOS_AGENT_EFFORT = effort;
-  const child = spawn(CLAUDEOS_BIN, ['agent', 'start', project, task.trim()], {
+  if (typeof model === 'string') env.TURINGOS_AGENT_MODEL = model;
+  if (typeof effort === 'string') env.TURINGOS_AGENT_EFFORT = effort;
+  const child = spawn(TURINGOS_BIN, ['agent', 'start', project, task.trim()], {
     cwd: REPO_ROOT,
     detached: true,
     stdio: 'ignore',
