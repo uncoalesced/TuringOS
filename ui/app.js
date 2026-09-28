@@ -9,11 +9,11 @@ const SAMPLE = {
   agent: { running: true, task: 'Refactor the auth module and run the tests' },
   sandbox: 'task-1727340000',
   gameMode: false,
-  system: { host: 'claudeos', cpu: 18, mem: 42, battery: { level: 82, charging: false }, wifi: { ssid: 'Studio' } },
+  system: { host: 'turingos', cpu: 18, mem: 42, battery: { level: 82, charging: false }, wifi: { ssid: 'Studio' } },
   weather: { city: 'Bengaluru', temp: 26, feels: 30, rain: 0, wind: 8, windDir: 200, code: 2, day: true },
   github: {
     mine: [{ number: 127, title: 'Handle an interrupted pacman install', url: '#' }],
-    reviews: [{ number: 89, title: 'Add Btrfs snapshot rollback', repository: { name: 'claudeos' }, url: '#' }],
+    reviews: [{ number: 89, title: 'Add Btrfs snapshot rollback', repository: { name: 'turingos' }, url: '#' }],
   },
   // Real personal data, not made up — unlike weather/agent sample data
   // (meant to make the desktop read as intended), a fake meeting here could
@@ -24,7 +24,7 @@ const SAMPLE = {
 };
 
 const SAMPLE_PROJECTS = [
-  { name: 'claudeos', path: '~/code/claudeos' },
+  { name: 'turingos', path: '~/code/turingos' },
   { name: 'auth-service', path: '~/code/auth-service' },
   { name: 'dotfiles', path: '~/dotfiles' },
 ];
@@ -202,9 +202,9 @@ function renderCalendar(cal) {
 
 const MIN = 60_000;
 let notifications = [
-  { app: 'claude', title: 'Completed reviewing the PR on claudeos', body: '#42 ui-fixes — left 3 comments, approved with suggestions', at: Date.now() - 4 * MIN },
+  { app: 'claude', title: 'Completed reviewing the PR on turingos', body: '#42 ui-fixes — left 3 comments, approved with suggestions', at: Date.now() - 4 * MIN },
   { app: 'terminal', title: 'Task finished in turing-web', body: 'Tests pass · 5 files changed · ready for review', at: Date.now() - 18 * MIN },
-  { app: 'github', title: 'Review requested', body: 'anthropic/claudeos #51 — Debian packaging for ui/', at: Date.now() - 62 * MIN },
+  { app: 'github', title: 'Review requested', body: 'anthropic/turingos #51 — Debian packaging for ui/', at: Date.now() - 62 * MIN },
 ];
 
 const NOTIF_ICON = { claude: 'claude-spark', terminal: 'ic-terminal', github: 'ic-github' };
@@ -333,7 +333,7 @@ function tickClock() {
 // ─── State ──────────────────────────────────────────────────────────────────
 
 function render(snap) {
-  // Before ClaudeOS is initialised, keep real system numbers but show
+  // Before TuringOS is initialised, keep real system numbers but show
   // sample agent data so the desktop still reads as intended.
   const s = snap.live ? snap : { ...SAMPLE, system: { ...SAMPLE.system, ...pickDefined(snap.system) } };
   $('#sample-badge').hidden = snap.live;
@@ -551,7 +551,7 @@ function sync() {
 
 // ─── Model picker ───────────────────────────────────────────────────────────
 // Which model/effort the next agent run uses. Persisted locally; passed
-// through to the backend as env vars on start (CLAUDEOS_AGENT_MODEL/EFFORT) —
+// through to the backend as env vars on start (TURINGOS_AGENT_MODEL/EFFORT) —
 // additive only, agent/claude.sh doesn't read them yet, so this is inert
 // until that's wired up, not a silent no-op pretending to work today.
 
