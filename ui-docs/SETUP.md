@@ -1,4 +1,4 @@
-# ui-shell — desktop UI for TuringOS (ClaudeOS)
+# ui-shell: desktop UI for TuringOS (ClaudeOS)
 
 ## Run it in the VM (Debian)
 
@@ -26,15 +26,15 @@ CLAUDEOS_WEATHER=off ./claudeos ui                  # hide the weather widget
 CLAUDEOS_WEATHER="12.97,77.59,Bengaluru" ./claudeos ui  # fixed location instead of IP geolocation
 ```
 
-Quit: Ctrl+Q, or Alt+F4 in fullscreen.
+To quit, press Ctrl+Q (or Alt+F4 in fullscreen).
 
 ## Real data vs sample data
 
-- If ClaudeOS isn't set up yet, the UI shows **sample data** and says so at the bottom.
-- Run `./claudeos init` once. After that the UI reads live state from `~/.claudeos`:
-  - `./claudeos agent start` → bottom-left corner shows **Agentic** with the task
-  - `./claudeos sandbox create` → bottom-right corner shows "Sandbox active"
-  - `./claudeos game on` → bottom-right corner shows "Game mode"
+- If ClaudeOS isn't set up yet, the UI shows sample data and says so at the bottom.
+- Run `./claudeos init` once. From then on the UI reads live state from `~/.claudeos`:
+  - `./claudeos agent start` → the bottom-left corner shows **Agentic** with the task
+  - `./claudeos sandbox create` → the bottom-right corner shows "Sandbox active"
+  - `./claudeos game on` → the bottom-right corner shows "Game mode"
 - CPU, memory, battery and Wi-Fi are always real (Wi-Fi needs NetworkManager).
 
 ## If it doesn't open
@@ -48,7 +48,7 @@ Quit: Ctrl+Q, or Alt+F4 in fullscreen.
 | Refuses to start as root | Run as your normal user, not with sudo |
 | No Wi-Fi name shown | `sudo apt install -y network-manager` |
 
-Send the full terminal output to the UI owner if none of these work.
+If none of these work, send the full terminal output to the UI owner.
 
 ## Files
 
