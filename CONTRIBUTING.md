@@ -67,7 +67,7 @@ Run and test TuringOS scripts on a Debian install built from the official netins
 
 1. Test on Debian from `debian-13.7.0-amd64-netinst.iso` (see [Test environment](#test-environment)). Actually run your change; reading the code doesn't count.
 2. Put the post-test evidence in the PR description:
-   - Scripts / CLI (`claudeos`, `agent/`, `core/`, `monitor/`): the commands you ran and their output.
+   - Scripts / CLI (`turingos`, `agent/`, `core/`, `monitor/`): the commands you ran and their output.
    - Sandbox / agent changes: the sandbox diff output and the result of the merge or discard.
    - UI / desktop / Game Mode: screenshots or a short screen recording.
    - ISO / packaging (`debian-live/`, `iso/`, `pkg/`): build log excerpt plus a screenshot of it booting in a VM.
