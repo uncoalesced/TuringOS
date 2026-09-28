@@ -7,18 +7,18 @@ override_dh_auto_build:
 	# Nothing to build — pure Bash
 
 override_dh_auto_install:
-	install -Dm755 ../claudeos                       debian/claudeos/usr/bin/claudeos
-	install -Dm644 ../core/config.sh                  debian/claudeos/usr/lib/claudeos/core/config.sh
-	install -Dm644 ../core/ui.sh                      debian/claudeos/usr/lib/claudeos/core/ui.sh
-	install -Dm644 ../core/logging.sh                 debian/claudeos/usr/lib/claudeos/core/logging.sh
-	install -Dm644 ../agent/claude.sh                 debian/claudeos/usr/lib/claudeos/agent/claude.sh
-	install -Dm644 ../sandbox/btrfs.sh                debian/claudeos/usr/lib/claudeos/sandbox/btrfs.sh
-	install -Dm644 ../sandbox/diff.sh                 debian/claudeos/usr/lib/claudeos/sandbox/diff.sh
-	install -Dm644 ../bazaar/registry.sh              debian/claudeos/usr/lib/claudeos/bazaar/registry.sh
-	install -Dm644 ../bazaar/install.sh               debian/claudeos/usr/lib/claudeos/bazaar/install.sh
-	install -Dm644 ../bazaar/registry.json            debian/claudeos/usr/lib/claudeos/bazaar/registry.json
-	install -Dm644 ../game/gamemode.sh                debian/claudeos/usr/lib/claudeos/game/gamemode.sh
-	install -Dm644 ../monitor/system.sh               debian/claudeos/usr/lib/claudeos/monitor/system.sh
-	install -Dm644 ../WORKFLOW.md                     debian/claudeos/usr/share/doc/claudeos/WORKFLOW.md
-	install -Dm644 ../plan.md                         debian/claudeos/usr/share/doc/claudeos/plan.md
-	install -Dm755 claudeos-first-run.sh              debian/claudeos/etc/profile.d/claudeos-first-run.sh
+	install -Dm755 ../turingos                       debian/turingos/usr/bin/turingos
+	install -Dm644 ../core/config.sh                  debian/turingos/usr/lib/turingos/core/config.sh
+	install -Dm644 ../core/ui.sh                      debian/turingos/usr/lib/turingos/core/ui.sh
+	install -Dm644 ../core/logging.sh                 debian/turingos/usr/lib/turingos/core/logging.sh
+	install -Dm644 ../agent/claude.sh                 debian/turingos/usr/lib/turingos/agent/claude.sh
+	install -Dm644 ../sandbox/btrfs.sh                debian/turingos/usr/lib/turingos/sandbox/btrfs.sh
+	install -Dm644 ../sandbox/diff.sh                 debian/turingos/usr/lib/turingos/sandbox/diff.sh
+	install -Dm644 ../bazaar/registry.sh              debian/turingos/usr/lib/turingos/bazaar/registry.sh
+	install -Dm644 ../bazaar/install.sh               debian/turingos/usr/lib/turingos/bazaar/install.sh
+	install -Dm644 ../bazaar/registry.json            debian/turingos/usr/lib/turingos/bazaar/registry.json
+	install -Dm644 ../game/gamemode.sh                debian/turingos/usr/lib/turingos/game/gamemode.sh
+	install -Dm644 ../monitor/system.sh               debian/turingos/usr/lib/turingos/monitor/system.sh
+	install -Dm644 ../WORKFLOW.md                     debian/turingos/usr/share/doc/turingos/WORKFLOW.md
+	install -Dm644 ../plan.md                         debian/turingos/usr/share/doc/turingos/plan.md
+	install -Dm755 turingos-first-run.sh              debian/turingos/etc/profile.d/turingos-first-run.sh
