@@ -32,6 +32,14 @@ By taking part, you agree to follow our [Code of Conduct](CODE_OF_CONDUCT.md). T
 2. Follow the quick start in [README.md](README.md) to set up your environment.
 3. Read [WORKFLOW.md](WORKFLOW.md) for how the agent → sandbox → diff → approval flow works.
 
+## Test environment
+
+Run and test TuringOS scripts on a Debian install built from the official netinst ISO, not on your everyday machine or another distro.
+
+- Architecture: we only support **amd64** right now. arm64 is coming soon.
+- ISO: always use `debian-13.7.0-amd64-netinst.iso`. Don't use other Debian versions or images. That way everyone tests against the same base, and results stay comparable.
+- A VM (QEMU/KVM, VirtualBox, etc.) is fine and is the easiest option.
+
 ## Finding work
 
 - Issues labelled `good first issue` are small and self-contained.
@@ -57,7 +65,7 @@ By taking part, you agree to follow our [Code of Conduct](CODE_OF_CONDUCT.md). T
 
 **Test your change yourself and show us the results. We won't approve a PR that has no test evidence.**
 
-1. Test locally. Actually run your change; reading the code doesn't count.
+1. Test on Debian from `debian-13.7.0-amd64-netinst.iso` (see [Test environment](#test-environment)). Actually run your change; reading the code doesn't count.
 2. Put the post-test evidence in the PR description:
    - Scripts / CLI (`claudeos`, `agent/`, `core/`, `monitor/`): the commands you ran and their output.
    - Sandbox / agent changes: the sandbox diff output and the result of the merge or discard.
@@ -70,7 +78,7 @@ By taking part, you agree to follow our [Code of Conduct](CODE_OF_CONDUCT.md). T
 
 ## PR checklist
 
-- [ ] Tested locally
+- [ ] Tested on Debian from `debian-13.7.0-amd64-netinst.iso`
 - [ ] Post-test evidence attached (output, screenshots, or recording)
 - [ ] Test environment described
 - [ ] Commits follow Conventional Commits
