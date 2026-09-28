@@ -1,49 +1,49 @@
 #!/usr/bin/env bash
-# claudeos — ClaudeOS main entrypoint
+# turingos — TuringOS main entrypoint
 #
 # Usage:
-#   claudeos init
-#   claudeos dashboard
-#   claudeos agent start [PROJECT] [TASK]
-#   claudeos agent stop
-#   claudeos agent status
-#   claudeos agent logs
-#   claudeos sandbox create [PROJECT] [LABEL]
-#   claudeos sandbox diff   [SANDBOX]
-#   claudeos sandbox merge  [SANDBOX]
-#   claudeos sandbox rollback [SANDBOX]
-#   claudeos sandbox list
-#   claudeos sandbox status
-#   claudeos bazaar
-#   claudeos bazaar search <query>
-#   claudeos bazaar info <tool>
-#   claudeos bazaar install <tool>
-#   claudeos bazaar uninstall <tool>
-#   claudeos bazaar installed
-#   claudeos game on
-#   claudeos game off
-#   claudeos game status
-#   claudeos game watch
-#   claudeos status
-#   claudeos monitor
-#   claudeos monitor watch
-#   claudeos monitor spend
-#   claudeos logs [lines]
-#   claudeos version
-#   claudeos help
+#   turingos init
+#   turingos dashboard
+#   turingos agent start [PROJECT] [TASK]
+#   turingos agent stop
+#   turingos agent status
+#   turingos agent logs
+#   turingos sandbox create [PROJECT] [LABEL]
+#   turingos sandbox diff   [SANDBOX]
+#   turingos sandbox merge  [SANDBOX]
+#   turingos sandbox rollback [SANDBOX]
+#   turingos sandbox list
+#   turingos sandbox status
+#   turingos bazaar
+#   turingos bazaar search <query>
+#   turingos bazaar info <tool>
+#   turingos bazaar install <tool>
+#   turingos bazaar uninstall <tool>
+#   turingos bazaar installed
+#   turingos game on
+#   turingos game off
+#   turingos game status
+#   turingos game watch
+#   turingos status
+#   turingos monitor
+#   turingos monitor watch
+#   turingos monitor spend
+#   turingos logs [lines]
+#   turingos version
+#   turingos help
 
 set -euo pipefail
 
-CLAUDEOS_VERSION="0.1.0"
+TURINGOS_VERSION="0.1.0"
 
 # ─── Resolve Library Path ─────────────────────────────────────────────────────
-# When installed via PKGBUILD: modules live in /usr/lib/claudeos/
+# When installed via PKGBUILD: modules live in /usr/lib/turingos/
 # When running from a local checkout: modules are next to this script.
 
 _SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-if [[ -d "/usr/lib/claudeos" ]]; then
-    _LIB_DIR="/usr/lib/claudeos"
+if [[ -d "/usr/lib/turingos" ]]; then
+    _LIB_DIR="/usr/lib/turingos"
 else
     _LIB_DIR="${_SCRIPT_DIR}"
 fi
@@ -69,12 +69,12 @@ source "${_LIB_DIR}/monitor/system.sh"
 cmd::init() {
     ui::banner
 
-    ui::info "Initializing ClaudeOS..."
+    ui::info "Initializing TuringOS..."
     echo ""
 
     # Create runtime dirs
     config::init_dirs
-    ui::ok "Runtime directories created: ${CLAUDEOS_DATA_DIR}"
+    ui::ok "Runtime directories created: ${TURINGOS_DATA_DIR}"
 
     # Check optional dependencies
     echo ""
@@ -121,9 +121,9 @@ cmd::init() {
             # Locate the install script
             local install_script=""
             for candidate in \
-                "${_LIB_DIR}/../pkg/claudeos-install-claude-cli.sh" \
-                "/usr/lib/claudeos/pkg/claudeos-install-claude-cli.sh" \
-                "${_SCRIPT_DIR}/pkg/claudeos-install-claude-cli.sh"; do
+                "${_LIB_DIR}/../pkg/turingos-install-claude-cli.sh" \
+                "/usr/lib/turingos/pkg/turingos-install-claude-cli.sh" \
+                "${_SCRIPT_DIR}/pkg/turingos-install-claude-cli.sh"; do
                 if [[ -f "$candidate" ]]; then
                     install_script="$candidate"
                     break
@@ -152,7 +152,7 @@ cmd::init() {
     else
         # Check config.env
         local key_in_config
-        key_in_config=$(grep '^ANTHROPIC_API_KEY=' "${CLAUDEOS_CONFIG_FILE}" 2>/dev/null | cut -d= -f2-)
+        key_in_config=$(grep '^ANTHROPIC_API_KEY=' "${TURINGOS_CONFIG_FILE}" 2>/dev/null | cut -d= -f2-)
         if [[ -n "$key_in_config" ]]; then
             ui::status_row "ANTHROPIC_API_KEY" "set (in config.env)" "ok"
         else
@@ -166,21 +166,21 @@ cmd::init() {
     echo ""
 
     if $all_ok; then
-        ui::ok "ClaudeOS initialized"
+        ui::ok "TuringOS initialized"
     else
         ui::warn "Some required dependencies are missing — install them before running agents"
     fi
 
     echo ""
-    ui::info "Data dir:    ${CLAUDEOS_DATA_DIR}"
-    ui::info "Config:      ${CLAUDEOS_CONFIG_FILE}"
-    ui::info "Agent log:   ${CLAUDEOS_LOG_DIR}/"
-    ui::info "Sandboxes:   ${CLAUDEOS_SANDBOX_DIR}/"
+    ui::info "Data dir:    ${TURINGOS_DATA_DIR}"
+    ui::info "Config:      ${TURINGOS_CONFIG_FILE}"
+    ui::info "Agent log:   ${TURINGOS_LOG_DIR}/"
+    ui::info "Sandboxes:   ${TURINGOS_SANDBOX_DIR}/"
     echo ""
     ui::info "Next steps:"
-    ui::info "  claudeos agent start   — launch Claude in a safe sandbox"
-    ui::info "  claudeos bazaar        — browse MCP tools"
-    ui::info "  claudeos dashboard     — interactive menu"
+    ui::info "  turingos agent start   — launch Claude in a safe sandbox"
+    ui::info "  turingos bazaar        — browse MCP tools"
+    ui::info "  turingos dashboard     — interactive menu"
     echo ""
 }
 
@@ -191,7 +191,7 @@ cmd::dashboard() {
 
     while true; do
         local choice
-        choice=$(ui::choose "ClaudeOS Dashboard" \
+        choice=$(ui::choose "TuringOS Dashboard" \
             "◈  Agent → Start"          \
             "◈  Agent → Status"         \
             "◈  Agent → Logs"           \
@@ -246,7 +246,7 @@ cmd::help() {
     ui::banner
     cat <<'HELP'
   USAGE
-    claudeos <command> [subcommand] [args...]
+    turingos <command> [subcommand] [args...]
 
   AGENT
     agent start [project] [task]   Start Claude in a sandbox
@@ -286,7 +286,7 @@ cmd::help() {
     init                           First-time setup + dependency check
     dashboard                      Interactive menu
     ui                             Open the ui-shell desktop UI
-    logs [N]                       Show last N lines of ClaudeOS log
+    logs [N]                       Show last N lines of TuringOS log
     version                        Print version
     help                           This message
 
@@ -305,13 +305,13 @@ main() {
         # ── Desktop UI ────────────────────────────────────────────────────────
         ui)
             # Repo checkout: ui/ sits next to this script. Debian image: the
-            # UI lives in /opt/claudeos-ui behind the claudeos-ui launcher.
+            # UI lives in /opt/turingos-ui behind the turingos-ui launcher.
             if [[ -x "${_SCRIPT_DIR}/ui/run.sh" ]]; then
                 exec "${_SCRIPT_DIR}/ui/run.sh" ${sub:+"$sub"} "$@"
-            elif command -v claudeos-ui &>/dev/null; then
-                exec claudeos-ui ${sub:+"$sub"} "$@"
+            elif command -v turingos-ui &>/dev/null; then
+                exec turingos-ui ${sub:+"$sub"} "$@"
             else
-                echo "ClaudeOS UI not found (no ui/run.sh, no claudeos-ui)." >&2
+                echo "TuringOS UI not found (no ui/run.sh, no turingos-ui)." >&2
                 exit 1
             fi
             ;;
@@ -364,7 +364,7 @@ main() {
                 *)
                     # Treat unknown sub as a tool key to install
                     ui::warn "Unknown bazaar subcommand '${sub}'"
-                    ui::info "Did you mean: claudeos bazaar install ${sub}?"
+                    ui::info "Did you mean: turingos bazaar install ${sub}?"
                     exit 1
                     ;;
             esac
@@ -404,7 +404,7 @@ main() {
 
         # ── Meta ──────────────────────────────────────────────────────────────
         version | --version | -v)
-            echo "  ClaudeOS v${CLAUDEOS_VERSION}"
+            echo "  TuringOS v${TURINGOS_VERSION}"
             ;;
 
         help | --help | -h | "")
