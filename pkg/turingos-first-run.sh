@@ -1,4 +1,4 @@
-# /etc/profile.d/claudeos-first-run.sh
+# /etc/profile.d/turingos-first-run.sh
 #
 # Sourced on every interactive login via /etc/profile.d/.
 # Shows a welcome message once, then self-disables via a marker file.
@@ -7,16 +7,16 @@
 # Only run in interactive shells
 [[ $- == *i* ]] || return 0
 
-# Only run if claudeos is installed
-command -v claudeos &>/dev/null || return 0
+# Only run if turingos is installed
+command -v turingos &>/dev/null || return 0
 
 # Only run once per user
-_MARKER="${HOME}/.claudeos/.first-run-done"
+_MARKER="${HOME}/.turingos/.first-run-done"
 [[ -f "$_MARKER" ]] && return 0
 
-# Don't run if claudeos init has already been run
-[[ -f "${HOME}/.claudeos/config.env" ]] && {
-    mkdir -p "${HOME}/.claudeos"
+# Don't run if turingos init has already been run
+[[ -f "${HOME}/.turingos/config.env" ]] && {
+    mkdir -p "${HOME}/.turingos"
     touch "$_MARKER"
     return 0
 }
@@ -26,12 +26,12 @@ _MARKER="${HOME}/.claudeos/.first-run-done"
 echo ""
 echo "  ╔═══════════════════════════════════════════╗"
 echo "  ║                                           ║"
-echo "  ║   Welcome to ClaudeOS                     ║"
+echo "  ║   Welcome to TuringOS                     ║"
 echo "  ║   Agentic Substrate · Debian Edition      ║"
 echo "  ║                                           ║"
 echo "  ╠═══════════════════════════════════════════╣"
 echo "  ║                                           ║"
-echo "  ║   ClaudeOS gives Claude Code a safe       ║"
+echo "  ║   TuringOS gives Claude Code a safe       ║"
 echo "  ║   execution layer:                        ║"
 echo "  ║                                           ║"
 echo "  ║   • Btrfs sandboxes protect your files   ║"
@@ -44,13 +44,13 @@ echo "  ╚═══════════════════════
 echo ""
 echo "  Run setup now (takes about 10 seconds):"
 echo ""
-echo "    claudeos init"
+echo "    turingos init"
 echo ""
 echo "  Or read the workflow guide:"
 echo ""
-echo "    cat /usr/share/doc/claudeos/WORKFLOW.md"
+echo "    cat /usr/share/doc/turingos/WORKFLOW.md"
 echo ""
 
 # Mark as shown so this doesn't appear on every login
-mkdir -p "${HOME}/.claudeos"
+mkdir -p "${HOME}/.turingos"
 touch "$_MARKER"
