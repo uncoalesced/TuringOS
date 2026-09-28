@@ -1,24 +1,24 @@
 # ui-shell
 
-**TuringOS** is the on-screen name. The codebase is still called ClaudeOS/ui-shell, and the CLI, data dir, branch and package name haven't changed. This is the assistant layer for our Claude-powered Linux OS (Debian base, KDE), and it's the part people see: a menu bar, a Raycast-style command bar, a permission sheet, notifications with Undo, and a side panel of widgets.
+**TuringOS** is the on-screen name. The codebase is still called TuringOS/ui-shell, and the CLI, data dir, branch and package name haven't changed. This is the assistant layer for our Claude-powered Linux OS (Debian base, KDE), and it's the part people see: a menu bar, a Raycast-style command bar, a permission sheet, notifications with Undo, and a side panel of widgets.
 
 
 ## Status
 
 | Built | Not built yet |
 |---|---|
-| Electron app in `ui/`, launched with `./claudeos ui` | Command bar, PR views, Actions menu (Ctrl/⌘+K focuses the composer for now) |
+| Electron app in `ui/`, launched with `./turingos ui` | Command bar, PR views, Actions menu (Ctrl/⌘+K focuses the composer for now) |
 | Menu bar: Claude spark + "TuringOS" brand, Wi-Fi, battery, light/dark toggle, clock (click to open the side panel) | Task view, permission sheet |
 | Desktop, vertically centred: clock, greeting with the user's first name, "What do you want to cook?" composer | Notifications with Undo |
-| @ (or +) project picker listing git repos; Enter runs `claudeos agent start <project> <task>` | |
+| @ (or +) project picker listing git repos; Enter runs `turingos agent start <project> <task>` | |
 | Weather in the top-right corner (Open-Meteo, geolocated by IP), click for the full card | |
 | Bottom-left corner: agent status (**idle** / **working** / **agentic**) and task; bottom-right: sandbox / game mode / CPU / memory | |
-| Live state from `~/.claudeos/state.json`, sample data fallback | Running other `claudeos` commands from the UI |
+| Live state from `~/.turingos/state.json`, sample data fallback | Running other `turingos` commands from the UI |
 | Light/dark in Claude brand colours, circular reveal | Spring engine, progressive blur |
 | macOS-style app icon (`assets/brand/app-icon.png`, squircle) | |
 | "Focused today", centred above the composer (placeholder; no focus-tracking backend yet) | |
 | Dock: hidden until the cursor hits the bottom edge. Floating (detached, all corners rounded, iOS-style continuous curvature via CSS `corner-shape: squircle`), tight resting spacing, macOS-style magnification toward the cursor with a name-label tooltip above the hovered icon. The magnification runs on a real spring (mass-spring-damper), not a CSS transition retargeting a JS value. Fixed set: Terminal, Files (wide fallback chain: xdg-open/dolphin/nautilus/pcmanfm/nemo/thunar), Browser, Settings, all launching real system commands via the main process | Auto-discovered/configurable icon list |
-| Model picker in the composer (Fable 5.1 / Opus 5.5 / Sonnet 5 / Haiku 4.5, Effort submenu Low–Max), defaults to Sonnet 5 / Medium, persisted locally. The selection is passed to the agent as `CLAUDEOS_AGENT_MODEL`/`CLAUDEOS_AGENT_EFFORT` env vars | `agent/claude.sh` doesn't read those env vars yet. The picker is fully wired on the UI side and does nothing on the backend until that's added |
+| Model picker in the composer (Fable 5.1 / Opus 5.5 / Sonnet 5 / Haiku 4.5, Effort submenu Low–Max), defaults to Sonnet 5 / Medium, persisted locally. The selection is passed to the agent as `TURINGOS_AGENT_MODEL`/`TURINGOS_AGENT_EFFORT` env vars | `agent/claude.sh` doesn't read those env vars yet. The picker is fully wired on the UI side and does nothing on the backend until that's added |
 | A composer message with no @project attached is a plain question, answered inline with one Claude call (the chosen model/effort). No sandbox, no agent. Attaching a project is what turns it into a real Claude Code task. That's the actual Claude-chat vs. Claude-Code distinction; there's no separate mode |
 | Mic button next to send, dictation via Chromium's built-in Web Speech API | Unverified on the real (offline-capable) Debian target. This API needs Chromium's own speech backend to be reachable, which is a known soft spot in Electron builds |
 | Clawd: patrols near the dock (slides only, no flip). Shake the cursor anywhere to open its chat (a real shake, meaning several quick reversals, not just fast motion). Ctrl/Cmd+Enter to send |
@@ -36,9 +36,9 @@ The spec below describes the full target. Where it differs from what's built, th
 See [SETUP.md](SETUP.md). Short version:
 
 ```bash
-./claudeos ui              # app window
-KIOSK=1 ./claudeos ui      # fullscreen, use this for the demo
-LITE=1 ./claudeos ui       # software drawing, for VMs without 3D (auto-detected)
+./turingos ui              # app window
+KIOSK=1 ./turingos ui      # fullscreen, use this for the demo
+LITE=1 ./turingos ui       # software drawing, for VMs without 3D (auto-detected)
 ```
 
 To preview on a Mac without the OS, run the same command or open `ui/index.html` in Chrome.
@@ -47,7 +47,7 @@ To preview on a Mac without the OS, run the same command or open `ui/index.html`
 
 - The OS only ever runs inside a VM (QEMU/UTM). Never on real hardware, and never on a work laptop's own boot disk.
 - Scripts never use `sudo` and refuse to run as root.
-- The UI reads `~/.claudeos` and never writes system files itself.
+- The UI reads `~/.turingos` and never writes system files itself.
 - The page is loaded from local files only; no network access from the UI.
 - Never write to `/dev/*` or run `dd`, `mkfs` or `diskutil` against anything outside the project's `build/` folder.
 
@@ -88,11 +88,11 @@ The page never touches the system. `ui/main.js` is the only part that does, and 
 
 ### What's wired today
 
-`main.js` reads these and pushes a snapshot every 2 s and whenever `~/.claudeos` changes:
+`main.js` reads these and pushes a snapshot every 2 s and whenever `~/.turingos` changes:
 
 | Snapshot field | Source |
 |---|---|
-| `live` | `~/.claudeos` exists (ClaudeOS initialised) |
+| `live` | `~/.turingos` exists (TuringOS initialised) |
 | `agent.running` | `agent_pid` in `state.json` is a live process |
 | `agent.task` | `agent_task` in `state.json` |
 | `sandbox` | `active_sandbox` in `state.json` (folder name) |
@@ -103,7 +103,7 @@ The page never touches the system. `ui/main.js` is the only part that does, and 
 
 ### Next: live agent steps
 
-`claudeos agent start` runs Claude with `--output-format stream-json` and writes the output to `~/.claudeos/logs/agent-*.log`. `main.js` will tail the newest log and translate its lines into the events below.
+`turingos agent start` runs Claude with `--output-format stream-json` and writes the output to `~/.turingos/logs/agent-*.log`. `main.js` will tail the newest log and translate its lines into the events below.
 
 ### Event protocol (target)
 
@@ -129,7 +129,7 @@ The page never touches the system. `ui/main.js` is the only part that does, and 
 
 ### Rules for the backend
 
-- Anything that changes the system must go through `approval` first. In ClaudeOS that means the agent works in a sandbox, and **Merge** / **Rollback** are the approval.
+- Anything that changes the system must go through `approval` first. In TuringOS that means the agent works in a sandbox, and **Merge** / **Rollback** are the approval.
 - Read-only actions (reading settings, listing packages, `git status`) don't need approval.
 - `commands[]` must be the exact commands that will run, not a description of them.
 - Needed from the backend team: `sandbox merge`, `sandbox rollback` and `agent stop` currently ask a yes/no question in the terminal. The UI has no terminal, so these need a non-interactive flag (e.g. `--yes`) before the UI can call them.
@@ -224,7 +224,7 @@ Backup: record the full run once as a video before presenting.
 - **What leaves the machine?** Only the prompt and the context needed for the task. API keys stay local.
 - **Why an OS and not an app?** Sandboxes, process priorities and a permission layer need OS-level access that an app can't enforce.
 - **What happens offline?** The shell and system status still work; tasks that need Claude show an error instead of hanging.
-- **What did you build versus what already existed?** Debian and KDE are the base. We built the ClaudeOS control layer, the sandbox flow, and the ui-shell UI.
+- **What did you build versus what already existed?** Debian and KDE are the base. We built the TuringOS control layer, the sandbox flow, and the ui-shell UI.
 
 ---
 
@@ -233,7 +233,7 @@ Backup: record the full run once as a video before presenting.
 | File | Purpose |
 |---|---|
 | `ui/run.sh` | Launcher: installs Electron on first run, detects VM quirks, opens the app |
-| `ui/main.js` | Reads `~/.claudeos`, system stats, weather, GitHub (`gh`), Google Calendar (OAuth), and answers Clawd's questions (Anthropic API); pushes snapshots to the page |
+| `ui/main.js` | Reads `~/.turingos`, system stats, weather, GitHub (`gh`), Google Calendar (OAuth), and answers Clawd's questions (Anthropic API); pushes snapshots to the page |
 | `ui/preload.js` | The only bridge between the page and the system |
 | `ui/index.html` | Markup, plus the icon sprite (`<symbol>`s) |
 | `ui/styles.css` | Design tokens and styles |
@@ -246,11 +246,11 @@ Backup: record the full run once as a video before presenting.
 | `ui-docs/UI_SHELL.md` | This document |
 | `ui-docs/NEXT_FEATURES.md` | The plan these features were built from, kept as a record of what was decided and why |
 
-## 9. Config keys (`~/.claudeos/config.env`)
+## 9. Config keys (`~/.turingos/config.env`)
 
 The side panel's Calendar widget and Clawd need these. Use plain `KEY=VALUE`
 lines. `ui/main.js` parses this file itself instead of relying on
-`process.env`, because `./claudeos ui` execs into `ui/run.sh`, and that
+`process.env`, because `./turingos ui` execs into `ui/run.sh`, and that
 doesn't inherit the non-exported shell variables `core/config.sh` sources.
 
 | Key | Used by | Where to get it |
