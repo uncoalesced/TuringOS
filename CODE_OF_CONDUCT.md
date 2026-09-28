@@ -40,7 +40,7 @@ This Code of Conduct applies within all community spaces, including GitHub issue
 
 ## Reporting
 
-Report instances of abusive, harassing, or otherwise unacceptable behavior to the maintainers at **[CONTACT EMAIL]**, or by contacting [@uncoalesced](https://github.com/uncoalesced) on GitHub. All complaints will be reviewed and investigated promptly and fairly.
+Report instances of abusive, harassing, or otherwise unacceptable behavior to the maintainers at **[mail@uncoalesced.com](mailto:mail@uncoalesced.com)**, or by contacting [@uncoalesced](https://github.com/uncoalesced) on GitHub. All complaints will be reviewed and investigated promptly and fairly.
 
 Maintainers are obligated to respect the privacy and security of the reporter of any incident.
 
