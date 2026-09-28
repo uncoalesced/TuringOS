@@ -1,17 +1,17 @@
-# TuringOS — Build Plan
+# TuringOS build plan
 
-## The Concept
+## The concept
 
-Not "a distro with Claude installed." An **agent-computer interaction model** — a Bash orchestration layer that wraps CachyOS primitives into a cohesive, safe execution environment for autonomous agents.
+TuringOS isn't a distro with Claude preinstalled. It's a model for how an agent interacts with a computer: a Bash orchestration layer that wraps CachyOS primitives into one safe execution environment for autonomous agents.
 
-The interesting framing for Anthropic:
+Here's the framing we want Anthropic to see.
 
-**Traditional:**
+Traditional:
 ```
 Human → Terminal → Program → Filesystem
 ```
 
-**TuringOS:**
+TuringOS:
 ```
 Human
   ↓
@@ -55,13 +55,13 @@ Merge
                          HARDWARE / GPU
 ```
 
-The Bash layer **is** the product.
+The Bash layer is the product.
 
 ---
 
-## CLI Interface
+## CLI interface
 
-One executable: `claudeos`
+There's one executable, `claudeos`:
 
 ```bash
 claudeos init
@@ -88,7 +88,7 @@ claudeos status
 
 ---
 
-## File Structure
+## File structure
 
 ```
 turingos/
@@ -112,13 +112,13 @@ turingos/
     └── system.sh
 ```
 
-Start as one giant Bash script. Split only if there's time.
+We start with one big Bash script and split it up only if there's time.
 
 ---
 
-## Pillar 1: Btrfs Agent Sandbox (Core Feature — Build This First)
+## Pillar 1: Btrfs agent sandbox (core feature, build this first)
 
-This is the real differentiator. It's technically grounded and visually demonstrable.
+This is what sets TuringOS apart. It rests on real filesystem features, and you can see it working in a demo.
 
 ```bash
 PROJECT="$PWD"
@@ -129,29 +129,29 @@ cd "$SANDBOX"
 claude
 ```
 
-Claude works inside the snapshot. Original project is untouched.
+Claude works inside the snapshot, and the original project stays untouched.
 
-**Diff:**
+Diff:
 ```bash
 claudeos sandbox diff
 # combines git diff + btrfs info
 ```
 
-**Rollback:**
+Rollback:
 ```bash
 sudo btrfs subvolume delete "$SANDBOX"
 ```
 
-**Merge:**
+Merge:
 ```bash
 # apply git changes from sandbox back to original repo
 ```
 
-This is a real feature, not a mock.
+None of this is mocked. It actually works.
 
 ---
 
-## Pillar 2: Clawd Bazaar (Keep It Honest — 2–3 Tools, One Must Actually Install)
+## Pillar 2: Clawd Bazaar (keep it honest: 2–3 tools, one must actually install)
 
 `registry.json`:
 ```json
@@ -178,11 +178,11 @@ claudeos bazaar
 → install dependencies  
 → generate MCP config entry  
 
-Don't claim 500 tools. Have 2–3, with one actually working end-to-end.
+Don't claim 500 tools. Ship 2–3, and make sure one works end to end.
 
 ---
 
-## Pillar 3: Game Mode (Bash-Native, Don't Oversell It)
+## Pillar 3: Game Mode (Bash-native, don't oversell it)
 
 ```bash
 claudeos game on
@@ -208,11 +208,11 @@ Display:
 ╰────────────────────────────────────╯
 ```
 
-You're orchestrating CachyOS, not reinventing its scheduler. Frame it that way.
+We're orchestrating CachyOS here, not reinventing its scheduler. Present it that way.
 
 ---
 
-## UI Tools (No Frontend Needed)
+## UI tools (no frontend needed)
 
 ```bash
 gum
@@ -237,19 +237,19 @@ gum choose \
   "System Status"
 ```
 
-Terminal UI without writing a frontend.
+That gets us a terminal UI without writing a frontend.
 
 ---
 
-## The Demo (3 Minutes)
+## The demo (3 minutes)
 
-**Scene 1 — Agent request**
+Scene 1: agent request
 ```bash
 claudeos agent start
 ```
 > "Refactor this authentication module and run the tests."
 
-**Scene 2 — TuringOS protects the machine**
+Scene 2: TuringOS protects the machine
 ```
 Creating Btrfs CoW Agent Sandbox...
 
@@ -258,7 +258,7 @@ Creating Btrfs CoW Agent Sandbox...
 ✓ Claude execution authorized
 ```
 
-**Scene 3 — Claude works**
+Scene 3: Claude works
 ```
 Claude Agent
 
@@ -270,7 +270,7 @@ Claude Agent
 ✓ 14/14 tests passed
 ```
 
-**Scene 4 — TuringOS catches everything**
+Scene 4: TuringOS catches everything
 ```bash
 claudeos sandbox diff
 ```
@@ -282,14 +282,14 @@ claudeos sandbox diff
 Tests: 14/14 ✓
 ```
 
-**Scene 5 — Human remains in control**
+Scene 5: the human stays in control
 ```
 [ M ] Merge Changes
 [ R ] Rollback
 [ V ] View Diff
 ```
 
-**Scene 6 — Game Mode**
+Scene 6: Game Mode
 ```bash
 claudeos game on
 ```
@@ -303,7 +303,7 @@ Game → interactive priority
 Agent continues running.
 ```
 
-Then notification fires:
+Then the notification fires:
 ```
 ╭──────────────────────────────────────╮
 │ 🟢 TuringOS                          │
@@ -315,7 +315,7 @@ Then notification fires:
 
 ---
 
-## Time Budget (6 Hours)
+## Time budget (6 hours)
 
 | Time | Task |
 |------|------|
@@ -327,10 +327,10 @@ Then notification fires:
 
 ---
 
-## What to Say to Anthropic Judges
+## What to say to Anthropic judges
 
-Not: *"We put Claude on CachyOS."*
+Don't pitch it as "We put Claude on CachyOS."
 
-Instead: **"We changed the execution model around autonomous agents."**
+Pitch it as "We changed the execution model around autonomous agents."
 
-The OS enforces a human-approval gate between every agent action and the real filesystem. Agents get full autonomy inside sandboxes. Humans see a diff before anything is permanent. That's the product.
+The OS puts a human-approval gate between every agent action and the real filesystem. Inside a sandbox the agent has full autonomy. Before anything becomes permanent, a human reviews the diff. That gate is what we're building.
