@@ -3,7 +3,7 @@
 **Status: all five pieces below are built** (Finder Option A, side panel
 shell, GitHub widget, Gmail/Calendar OAuth widget, Clawd). The Status table
 in `ui-docs/UI_SHELL.md` has a one-line summary of each, and its new §9
-lists the exact `~/.claudeos/config.env` keys the project owner needs to set:
+lists the exact `~/.turingos/config.env` keys the project owner needs to set:
 `ANTHROPIC_API_KEY` for Clawd, `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` for
 Calendar. The Google keys need a real Google Cloud OAuth "Desktop app"
 client registered first, which can't be done from inside this repo. The
@@ -19,8 +19,8 @@ and both were confirmed by reading the code, not assumed:
    (`getState`, `onState`, `listProjects`, `startAgent`, `launchApp`) mean
    every new network call (Anthropic, `gh`, Google) has to live in
    `ui/main.js` and cross the bridge only as already-shaped data.
-2. **`./claudeos ui` doesn't get you `~/.claudeos/config.env` for free.**
-   We confirmed this by reading `claudeos` and `core/config.sh`: `config.sh`
+2. **`./turingos ui` doesn't get you `~/.turingos/config.env` for free.**
+   We confirmed this by reading `turingos` and `core/config.sh`: `config.sh`
    *is* sourced for every subcommand, `ui` included, but `config::load()`
    does a plain `source` with no `export`/`set -a`, and `config::set()`
    writes the file as plain `KEY=VALUE` lines (no `export` keyword). Values
@@ -81,7 +81,7 @@ ipcMain.handle('clawd:ask', async (_e, { message }) => {
   if (typeof message !== 'string' || !message.trim())
     return { ok: false, error: 'Say something first.' };
   const key = getAnthropicKey();
-  if (!key) return { ok: false, error: 'Clawd needs an API key — set ANTHROPIC_API_KEY in ~/.claudeos/config.env.' };
+  if (!key) return { ok: false, error: 'Clawd needs an API key — set ANTHROPIC_API_KEY in ~/.turingos/config.env.' };
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -104,9 +104,9 @@ ipcMain.handle('clawd:ask', async (_e, { message }) => {
 Model: `claude-haiku-4-5`. `max_tokens: 512` caps the cost of each turn.
 Each request is independent, so there's no history growing over a session.
 Disable send while a request is in flight. Add an optional
-`CLAUDEOS_CLAWD=off` switch to match `CLAUDEOS_WEATHER=off`.
+`TURINGOS_CLAWD=off` switch to match `TURINGOS_WEATHER=off`.
 
-**API key storage:** `ANTHROPIC_API_KEY` goes in `~/.claudeos/config.env`
+**API key storage:** `ANTHROPIC_API_KEY` goes in `~/.turingos/config.env`
 and is read by a new `readConfigEnv()` helper in `main.js`, a plain
 `KEY=VALUE` parser (see point 2 above for why `process.env` alone isn't
 enough). Precedence: a real `process.env.ANTHROPIC_API_KEY` first, for
@@ -167,8 +167,8 @@ Add only `google-auth-library` (not the full `googleapis` SDK) and call
 prefers raw fetch over an SDK, so this matches.
 
 **Credentials:** `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` go in
-`~/.claudeos/config.env` (same `readConfigEnv()` helper as the Anthropic
-key). The refresh token goes in a new `~/.claudeos/google-tokens.json`,
+`~/.turingos/config.env` (same `readConfigEnv()` helper as the Anthropic
+key). The refresh token goes in a new `~/.turingos/google-tokens.json`,
 mode `0o600`, and is never exposed to the renderer. Only derived display
 fields (event title/time) cross the bridge. Keep the scope minimal:
 `calendar.events.readonly` only, unless someone explicitly confirms they
@@ -245,4 +245,4 @@ or commit to a real in-app file browser (B)?
 - `ui/app.js`: patterns to copy: `setWeatherOpen()`, the dock's magnify `requestAnimationFrame` loop, the `SAMPLE`/`snap.live` fallback convention
 - `ui/styles.css`: motion tokens, `corner-shape: squircle`, and the existing z-index/positioning to design around
 - `ui-docs/UI_SHELL.md`: the target spec this should stay consistent with
-- `core/config.sh`: the `~/.claudeos/config.env` convention we're reusing, and the source of the config-bypass problem above
+- `core/config.sh`: the `~/.turingos/config.env` convention we're reusing, and the source of the config-bypass problem above
