@@ -3,9 +3,9 @@ set -e
 
 if [ "$1" = "remove" ]; then
     echo ""
-    echo "  ClaudeOS will be removed."
-    echo "  Your ~/.claudeos/ data directory is NOT deleted."
-    echo "  Remove it manually if needed: rm -rf ~/.claudeos"
+    echo "  TuringOS will be removed."
+    echo "  Your ~/.turingos/ data directory is NOT deleted."
+    echo "  Remove it manually if needed: rm -rf ~/.turingos"
     echo ""
 fi
 
