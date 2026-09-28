@@ -68,7 +68,7 @@ One HUD for GPU VRAM, CPU load, RAM, the active agent PID, the sandbox name, and
 
 ```
 turingos/
-├── claudeos                  # main CLI entrypoint
+├── turingos                  # main CLI entrypoint
 ├── core/
 │   ├── config.sh             # paths, state, PID files
 │   ├── ui.sh                 # terminal UI primitives
@@ -107,20 +107,20 @@ Requires: `git`, `jq`. Optional but recommended: `gum`, `fzf`.
 ```bash
 git clone https://github.com/uncoalesced/turingos
 cd turingos
-chmod +x claudeos
-./claudeos init
+chmod +x turingos
+./turingos init
 ```
 
 Set your API key when prompted, then:
 
 ```bash
-./claudeos agent start /path/to/project "Refactor auth module and run tests"
+./turingos agent start /path/to/project "Refactor auth module and run tests"
 ```
 
 When the agent finishes:
 
 ```bash
-./claudeos sandbox diff
+./turingos sandbox diff
 ```
 
 Choose merge, rollback, or view the full patch.
@@ -153,7 +153,7 @@ The ISO lands in `debian-live/`. Boot it in a VM or write it to USB with:
 sudo dd if=live-image-amd64.hybrid.iso of=/dev/sdX bs=4M status=progress
 ```
 
-On first boot the UI launches fullscreen. Open a terminal and run `claudeos init` to configure your API key.
+On first boot the UI launches fullscreen. Open a terminal and run `turingos init` to configure your API key.
 
 Full build instructions: [`debian-live/pkg/DEBIAN_BUILD.md`](debian-live/pkg/DEBIAN_BUILD.md)
 
@@ -162,31 +162,31 @@ Full build instructions: [`debian-live/pkg/DEBIAN_BUILD.md`](debian-live/pkg/DEB
 ## CLI reference
 
 ```
-claudeos agent start [project] [task]   Start Claude in a sandbox
-claudeos agent stop                     Stop the running agent
-claudeos agent status                   Show agent state
-claudeos agent logs                     Tail agent output
+turingos agent start [project] [task]   Start Claude in a sandbox
+turingos agent stop                     Stop the running agent
+turingos agent status                   Show agent state
+turingos agent logs                     Tail agent output
 
-claudeos sandbox create [project]       Create sandbox
-claudeos sandbox diff                   Review what the agent changed
-claudeos sandbox merge                  Apply changes to original project
-claudeos sandbox rollback               Discard sandbox
+turingos sandbox create [project]       Create sandbox
+turingos sandbox diff                   Review what the agent changed
+turingos sandbox merge                  Apply changes to original project
+turingos sandbox rollback               Discard sandbox
 
-claudeos bazaar                         Browse MCP tools (fzf UI)
-claudeos bazaar install <tool>          Install + wire into Claude Desktop
-claudeos bazaar installed               List installed tools
+turingos bazaar                         Browse MCP tools (fzf UI)
+turingos bazaar install <tool>          Install + wire into Claude Desktop
+turingos bazaar installed               List installed tools
 
-claudeos game on                        Deprioritize agents for gaming
-claudeos game off                       Restore priorities
-claudeos game watch                     Auto-detect game launches
+turingos game on                        Deprioritize agents for gaming
+turingos game off                       Restore priorities
+turingos game watch                     Auto-detect game launches
 
-claudeos status                         System + agent HUD
-claudeos monitor watch                  Live refreshing dashboard
-claudeos monitor spend                  API token usage + cost estimate
+turingos status                         System + agent HUD
+turingos monitor watch                  Live refreshing dashboard
+turingos monitor spend                  API token usage + cost estimate
 
-claudeos init                           First-time setup
-claudeos dashboard                      Interactive menu
-claudeos help                           Full command list
+turingos init                           First-time setup
+turingos dashboard                      Interactive menu
+turingos help                           Full command list
 ```
 
 ---
@@ -197,7 +197,7 @@ claudeos help                           Full command list
 |---|---|
 | `0200-trim` | Purges LibreOffice, CUPS, Bluetooth, unused GPU drivers (~1GB) |
 | `0300-locale-trim` | Strips locale data, man pages, docs (~200MB) |
-| `0400-install-claudeos` | Installs TuringOS CLI, gum, runtime deps |
+| `0400-install-turingos` | Installs TuringOS CLI, gum, runtime deps |
 | `0450-install-electron-deps` | Installs Electron system libraries |
 | `0460-prebundle-electron` | Runs `npm install`, pre-caches Electron 44 |
 | `0500-install-claude-cli` | Installs Claude Code CLI via native installer |
