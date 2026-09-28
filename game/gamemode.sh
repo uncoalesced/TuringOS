@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# game/gamemode.sh — ClaudeOS Game Mode
+# game/gamemode.sh — TuringOS Game Mode
 #
 # Deprioritizes agent/build processes when a game is detected or manually
 # triggered. Uses renice + ionice to yield CPU/IO to interactive apps.
@@ -12,7 +12,7 @@ log::set_module "game"
 # ─── Constants ────────────────────────────────────────────────────────────────
 
 GAME_STATE_KEY="game_mode"
-GAME_PIDS_FILE="${CLAUDEOS_DATA_DIR}/game_deprioritized.pids"
+GAME_PIDS_FILE="${TURINGOS_DATA_DIR}/game_deprioritized.pids"
 
 # Processes to deprioritize when game mode activates
 BACKGROUND_PROCESS_PATTERNS=(
@@ -52,7 +52,7 @@ gamemode::on() {
     echo ""
 
     local deprioritized=()
-    local renice_level="${CLAUDEOS_GAME_RENICE_LEVEL:-10}"
+    local renice_level="${TURINGOS_GAME_RENICE_LEVEL:-10}"
 
     # Find and deprioritize matching processes
     for pattern in "${BACKGROUND_PROCESS_PATTERNS[@]}"; do
@@ -131,7 +131,7 @@ gamemode::off() {
 
 gamemode::watch() {
     # Polls for game launcher processes and auto-enables/disables game mode
-    # Intended to run in background: claudeos game watch &
+    # Intended to run in background: turingos game watch &
     ui::info "Game Mode watcher started (PID $$)"
     log::info "game watcher started"
 
@@ -237,7 +237,7 @@ gamemode::_display_active() {
 
     echo ""
     printf "  \033[1;32m╭────────────────────────────────────────╮\033[0m\n"
-    printf "  \033[1;32m│\033[0m       \033[1;37mCLAUDEOS GAME MODE\033[0m              \033[1;32m│\033[0m\n"
+    printf "  \033[1;32m│\033[0m       \033[1;37mTURINGOS GAME MODE\033[0m              \033[1;32m│\033[0m\n"
     printf "  \033[1;32m├────────────────────────────────────────┤\033[0m\n"
 
     if [[ ${#entries[@]} -eq 0 ]]; then
@@ -257,6 +257,6 @@ gamemode::_display_active() {
     printf "  \033[1;32m╰────────────────────────────────────────╯\033[0m\n"
     echo ""
     ui::info "Agents continue running in background"
-    ui::info "Disable with: claudeos game off"
+    ui::info "Disable with: turingos game off"
     echo ""
 }
