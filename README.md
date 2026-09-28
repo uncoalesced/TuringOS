@@ -1,12 +1,12 @@
 # TuringOS
 
-An agentic execution layer built on Debian — safe sandboxing for Claude Code agents, a live desktop UI, an MCP tool registry, and Game Mode.
+An agentic execution layer built on Debian. It runs Claude Code agents in safe sandboxes and comes with a live desktop UI, an MCP tool registry, and Game Mode.
 
 ---
 
 ## What it is
 
-TuringOS wraps Claude Code in a policy layer that sits between the agent and your filesystem. Every agent task runs inside an ephemeral Btrfs snapshot. Nothing touches your real project until you review a diff and approve a merge.
+TuringOS wraps Claude Code in a policy layer between the agent and your filesystem. Every agent task runs inside an ephemeral Btrfs snapshot, and nothing touches your real project until you review a diff and approve the merge.
 
 ```
 You
@@ -26,14 +26,14 @@ Diff + Human Approval
 Merge
 ```
 
-It ships as a bootable Debian live ISO with the UI and all tooling pre-installed.
+We ship it as a bootable Debian live ISO with the UI and all tooling pre-installed.
 
 ---
 
 ## Preview
 
 <video src="assets/turingos-ui-v1-demo.mp4" controls width="720">
-  Your browser doesn't support inline video — <a href="assets/turingos-ui-v1-demo.mp4">download the clip</a> instead.
+  Your browser doesn't support inline video. <a href="assets/turingos-ui-v1-demo.mp4">download the clip</a> instead.
 </video>
 
 *Early walkthrough of the v1 desktop UI.*
@@ -42,20 +42,25 @@ It ships as a bootable Debian live ISO with the UI and all tooling pre-installed
 
 ## Features
 
-**Btrfs Agent Sandboxing**
-Instant copy-on-write snapshots protect your project. The agent works in isolation. You see every change before anything is permanent. One keystroke to merge or roll back.
+### Btrfs agent sandboxing
 
-**Clawd Bazaar**
-A terminal registry of MCP tools. Browse, install, and wire tools into Claude Desktop's config with one command. Ships with GitHub, Postgres, Filesystem, Brave Search, and Memory servers.
+The agent works in an instant copy-on-write snapshot of your project, isolated from the original. You see every change before anything becomes permanent, and one keystroke merges or rolls back.
 
-**Game Mode**
-Deprioritizes agent and build processes when you launch a game. Agents keep running in the background at low priority. A notification fires when the task completes.
+### Clawd Bazaar
 
-**Live Desktop UI**
-An Electron desktop shell that shows agent state, sandbox status, system stats, and MCP connections in real time. Launches fullscreen on boot.
+A terminal registry of MCP tools. You can browse tools, install them, and wire them into Claude Desktop's config with one command. It ships with GitHub, Postgres, Filesystem, Brave Search, and Memory servers.
 
-**System Monitor**
-GPU VRAM, CPU load, RAM, active agent PID, sandbox name, and API token spend — all in one HUD.
+### Game Mode
+
+When you launch a game, TuringOS drops agent and build processes to low priority. Agents keep working in the background, and you get a notification when the task finishes.
+
+### Live desktop UI
+
+An Electron desktop shell that shows agent state, sandbox status, system stats, and MCP connections in real time. It launches fullscreen on boot.
+
+### System monitor
+
+One HUD for GPU VRAM, CPU load, RAM, the active agent PID, the sandbox name, and API token spend.
 
 ---
 
@@ -225,4 +230,4 @@ claudeos help                           Full command list
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).
