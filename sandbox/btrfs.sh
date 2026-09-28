@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# sandbox/btrfs.sh — ClaudeOS Agent Sandbox
+# sandbox/btrfs.sh — TuringOS Agent Sandbox
 #
 # Creates ephemeral Btrfs CoW snapshots of a project directory before handing
 # it to an agent. If Btrfs is unavailable, falls back to a plain rsync copy.
@@ -20,7 +20,7 @@ sandbox::_is_btrfs() {
 
 sandbox::_backend() {
     local project="$1"
-    if [[ "${CLAUDEOS_SANDBOX_BACKEND:-btrfs}" == "btrfs" ]] && \
+    if [[ "${TURINGOS_SANDBOX_BACKEND:-btrfs}" == "btrfs" ]] && \
        command -v btrfs &>/dev/null && \
        sandbox::_is_btrfs "$project"; then
         echo "btrfs"
@@ -51,7 +51,7 @@ sandbox::create() {
     local safe_label
     safe_label=$(echo "$label" | tr ' /' '__' | tr -cd '[:alnum:]_-' | cut -c1-32)
     local sandbox_name="${safe_label}-${ts}"
-    local sandbox_path="${CLAUDEOS_SANDBOX_DIR}/${sandbox_name}"
+    local sandbox_path="${TURINGOS_SANDBOX_DIR}/${sandbox_name}"
 
     local backend
     backend=$(sandbox::_backend "$project")
@@ -78,7 +78,7 @@ sandbox::create() {
     fi
 
     # Write metadata file inside sandbox
-    cat > "${sandbox_path}/.claudeos_sandbox" <<EOF
+    cat > "${sandbox_path}/.turingos_sandbox" <<EOF
 SANDBOX_NAME=${sandbox_name}
 SANDBOX_PATH=${sandbox_path}
 SOURCE_PROJECT=${project}
@@ -129,7 +129,7 @@ sandbox::list() {
     local sandboxes=()
     while IFS= read -r -d '' dir; do
         sandboxes+=("$dir")
-    done < <(find "$CLAUDEOS_SANDBOX_DIR" -maxdepth 1 -mindepth 1 -type d -print0 2>/dev/null)
+    done < <(find "$TURINGOS_SANDBOX_DIR" -maxdepth 1 -mindepth 1 -type d -print0 2>/dev/null)
 
     if [[ ${#sandboxes[@]} -eq 0 ]]; then
         ui::info "No sandboxes found"
@@ -138,7 +138,7 @@ sandbox::list() {
 
     ui::header "Active Sandboxes"
     for sb in "${sandboxes[@]}"; do
-        local meta="${sb}/.claudeos_sandbox"
+        local meta="${sb}/.turingos_sandbox"
         if [[ -f "$meta" ]]; then
             local name created label project
             name=$(grep '^SANDBOX_NAME=' "$meta" | cut -d= -f2-)
@@ -173,7 +173,7 @@ sandbox::rollback() {
 
     ui::warn "Rolling back sandbox: $sandbox_path"
 
-    local meta="${sandbox_path}/.claudeos_sandbox"
+    local meta="${sandbox_path}/.turingos_sandbox"
     local backend="copy"
     [[ -f "$meta" ]] && backend=$(grep '^BACKEND=' "$meta" | cut -d= -f2-)
 
@@ -211,7 +211,7 @@ sandbox::merge() {
         return 1
     fi
 
-    local meta="${sandbox_path}/.claudeos_sandbox"
+    local meta="${sandbox_path}/.turingos_sandbox"
     if [[ ! -f "$meta" ]]; then
         ui::fail "Sandbox metadata not found: ${meta}"
         return 1
@@ -242,7 +242,7 @@ sandbox::merge() {
     fi
 
     # Apply: rsync sandbox → source, then clean up sandbox
-    rsync -a --exclude='.claudeos_sandbox' --exclude='.git/' \
+    rsync -a --exclude='.turingos_sandbox' --exclude='.git/' \
         "${sandbox_path}/" "${source_project}/"
 
     log::audit SANDBOX_MERGE \
@@ -278,7 +278,7 @@ sandbox::_show_summary() {
     else
         # Fallback: rsync dry-run diff
         local diff_count
-        diff_count=$(rsync -a --dry-run --exclude='.claudeos_sandbox' \
+        diff_count=$(rsync -a --dry-run --exclude='.turingos_sandbox' \
             "${sandbox}/" "${source}/" 2>/dev/null | grep -c '^>' || echo 0)
         ui::label "Files to sync" "$diff_count"
     fi
@@ -295,7 +295,7 @@ sandbox::status() {
     if [[ -z "$active" ]]; then
         ui::status_row "Active Sandbox" "none" "warn"
     elif [[ -d "$active" ]]; then
-        local meta="${active}/.claudeos_sandbox"
+        local meta="${active}/.turingos_sandbox"
         ui::status_row "Active Sandbox" "$(basename "$active")" "ok"
         if [[ -f "$meta" ]]; then
             local created label project backend
