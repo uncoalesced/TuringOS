@@ -1,39 +1,39 @@
 #!/usr/bin/env bash
-# core/config.sh — ClaudeOS configuration and path definitions
+# core/config.sh — TuringOS configuration and path definitions
 # Source this file to get all runtime paths and settings.
 # Safe to source multiple times (idempotent).
 
 # ─── Guard ────────────────────────────────────────────────────────────────────
 
-[[ -n "${_CLAUDEOS_CONFIG_LOADED:-}" ]] && return 0
-_CLAUDEOS_CONFIG_LOADED=1
+[[ -n "${_TURINGOS_CONFIG_LOADED:-}" ]] && return 0
+_TURINGOS_CONFIG_LOADED=1
 
-# ─── ClaudeOS Root ────────────────────────────────────────────────────────────
+# ─── TuringOS Root ────────────────────────────────────────────────────────────
 
 # Resolve the real directory of this script so paths work regardless of $PWD
 _CORE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# When installed via PKGBUILD, libs are at /usr/lib/claudeos
+# When installed via PKGBUILD, libs are at /usr/lib/turingos
 # When running from a local checkout, root is one level up from core/
-if [[ -d "/usr/lib/claudeos" ]]; then
-    export CLAUDEOS_ROOT="/usr/lib/claudeos"
+if [[ -d "/usr/lib/turingos" ]]; then
+    export TURINGOS_ROOT="/usr/lib/turingos"
 else
-    export CLAUDEOS_ROOT="$(cd "${_CORE_DIR}/.." && pwd)"
+    export TURINGOS_ROOT="$(cd "${_CORE_DIR}/.." && pwd)"
 fi
 
 # ─── Runtime Directories ──────────────────────────────────────────────────────
 
-export CLAUDEOS_DATA_DIR="${HOME}/.claudeos"
-export CLAUDEOS_SANDBOX_DIR="${CLAUDEOS_DATA_DIR}/sandboxes"
-export CLAUDEOS_LOG_DIR="${CLAUDEOS_DATA_DIR}/logs"
-export CLAUDEOS_BAZAAR_DIR="${CLAUDEOS_DATA_DIR}/bazaar"
-export CLAUDEOS_AGENT_DIR="${CLAUDEOS_DATA_DIR}/agents"
-export CLAUDEOS_CONFIG_FILE="${CLAUDEOS_DATA_DIR}/config.env"
-export CLAUDEOS_STATE_FILE="${CLAUDEOS_DATA_DIR}/state.json"
-export CLAUDEOS_PID_DIR="${CLAUDEOS_DATA_DIR}/pids"
+export TURINGOS_DATA_DIR="${HOME}/.turingos"
+export TURINGOS_SANDBOX_DIR="${TURINGOS_DATA_DIR}/sandboxes"
+export TURINGOS_LOG_DIR="${TURINGOS_DATA_DIR}/logs"
+export TURINGOS_BAZAAR_DIR="${TURINGOS_DATA_DIR}/bazaar"
+export TURINGOS_AGENT_DIR="${TURINGOS_DATA_DIR}/agents"
+export TURINGOS_CONFIG_FILE="${TURINGOS_DATA_DIR}/config.env"
+export TURINGOS_STATE_FILE="${TURINGOS_DATA_DIR}/state.json"
+export TURINGOS_PID_DIR="${TURINGOS_DATA_DIR}/pids"
 
-# Bazaar registry (ships with ClaudeOS)
-export CLAUDEOS_REGISTRY="${CLAUDEOS_ROOT}/bazaar/registry.json"
+# Bazaar registry (ships with TuringOS)
+export TURINGOS_REGISTRY="${TURINGOS_ROOT}/bazaar/registry.json"
 
 # Claude Desktop MCP config (standard location)
 export CLAUDE_DESKTOP_CONFIG="${HOME}/.config/Claude/claude_desktop_config.json"
@@ -44,16 +44,16 @@ fi
 
 # ─── Defaults (overridable via config.env) ────────────────────────────────────
 
-CLAUDEOS_AGENT_BINARY="${CLAUDEOS_AGENT_BINARY:-claude}"
-CLAUDEOS_LOCAL_LLM_BINARY="${CLAUDEOS_LOCAL_LLM_BINARY:-ollama}"
-CLAUDEOS_NOTIFICATION_TITLE="${CLAUDEOS_NOTIFICATION_TITLE:-ClaudeOS}"
-CLAUDEOS_SANDBOX_BACKEND="${CLAUDEOS_SANDBOX_BACKEND:-btrfs}"   # btrfs | copy
-CLAUDEOS_GAME_RENICE_LEVEL="${CLAUDEOS_GAME_RENICE_LEVEL:-10}"  # nice value for background procs
-CLAUDEOS_LOG_LEVEL="${CLAUDEOS_LOG_LEVEL:-info}"                # debug | info | warn | error
+TURINGOS_AGENT_BINARY="${TURINGOS_AGENT_BINARY:-claude}"
+TURINGOS_LOCAL_LLM_BINARY="${TURINGOS_LOCAL_LLM_BINARY:-ollama}"
+TURINGOS_NOTIFICATION_TITLE="${TURINGOS_NOTIFICATION_TITLE:-TuringOS}"
+TURINGOS_SANDBOX_BACKEND="${TURINGOS_SANDBOX_BACKEND:-btrfs}"   # btrfs | copy
+TURINGOS_GAME_RENICE_LEVEL="${TURINGOS_GAME_RENICE_LEVEL:-10}"  # nice value for background procs
+TURINGOS_LOG_LEVEL="${TURINGOS_LOG_LEVEL:-info}"                # debug | info | warn | error
 
-export CLAUDEOS_AGENT_BINARY CLAUDEOS_LOCAL_LLM_BINARY
-export CLAUDEOS_NOTIFICATION_TITLE CLAUDEOS_SANDBOX_BACKEND
-export CLAUDEOS_GAME_RENICE_LEVEL CLAUDEOS_LOG_LEVEL
+export TURINGOS_AGENT_BINARY TURINGOS_LOCAL_LLM_BINARY
+export TURINGOS_NOTIFICATION_TITLE TURINGOS_SANDBOX_BACKEND
+export TURINGOS_GAME_RENICE_LEVEL TURINGOS_LOG_LEVEL
 
 # ─── Runtime State Keys ───────────────────────────────────────────────────────
 # Used by state.json — these are just the key names as constants.
@@ -70,12 +70,12 @@ export STATE_KEY_AGENT_PID STATE_KEY_AGENT_TASK
 
 config::init_dirs() {
     local dirs=(
-        "$CLAUDEOS_DATA_DIR"
-        "$CLAUDEOS_SANDBOX_DIR"
-        "$CLAUDEOS_LOG_DIR"
-        "$CLAUDEOS_BAZAAR_DIR"
-        "$CLAUDEOS_AGENT_DIR"
-        "$CLAUDEOS_PID_DIR"
+        "$TURINGOS_DATA_DIR"
+        "$TURINGOS_SANDBOX_DIR"
+        "$TURINGOS_LOG_DIR"
+        "$TURINGOS_BAZAAR_DIR"
+        "$TURINGOS_AGENT_DIR"
+        "$TURINGOS_PID_DIR"
     )
     for dir in "${dirs[@]}"; do
         mkdir -p "$dir"
@@ -87,9 +87,9 @@ config::init_dirs() {
 config::load() {
     config::init_dirs
 
-    if [[ -f "$CLAUDEOS_CONFIG_FILE" ]]; then
+    if [[ -f "$TURINGOS_CONFIG_FILE" ]]; then
         # shellcheck source=/dev/null
-        source "$CLAUDEOS_CONFIG_FILE"
+        source "$TURINGOS_CONFIG_FILE"
     fi
 }
 
@@ -101,13 +101,13 @@ config::set() {
     local value="$2"
     config::init_dirs
 
-    if [[ -f "$CLAUDEOS_CONFIG_FILE" ]]; then
+    if [[ -f "$TURINGOS_CONFIG_FILE" ]]; then
         # Remove existing key if present
         local tmp
-        tmp=$(grep -v "^${key}=" "$CLAUDEOS_CONFIG_FILE" 2>/dev/null || true)
-        echo "$tmp" > "$CLAUDEOS_CONFIG_FILE"
+        tmp=$(grep -v "^${key}=" "$TURINGOS_CONFIG_FILE" 2>/dev/null || true)
+        echo "$tmp" > "$TURINGOS_CONFIG_FILE"
     fi
-    echo "${key}=${value}" >> "$CLAUDEOS_CONFIG_FILE"
+    echo "${key}=${value}" >> "$TURINGOS_CONFIG_FILE"
     export "${key}=${value}"
 }
 
@@ -116,8 +116,8 @@ config::set() {
 config::state_get() {
     # Usage: config::state_get KEY
     local key="$1"
-    if [[ -f "$CLAUDEOS_STATE_FILE" ]] && command -v jq &>/dev/null; then
-        jq -r ".${key} // empty" "$CLAUDEOS_STATE_FILE" 2>/dev/null
+    if [[ -f "$TURINGOS_STATE_FILE" ]] && command -v jq &>/dev/null; then
+        jq -r ".${key} // empty" "$TURINGOS_STATE_FILE" 2>/dev/null
     fi
 }
 
@@ -128,25 +128,25 @@ config::state_set() {
     config::init_dirs
 
     local current="{}"
-    if [[ -f "$CLAUDEOS_STATE_FILE" ]]; then
-        current=$(cat "$CLAUDEOS_STATE_FILE")
+    if [[ -f "$TURINGOS_STATE_FILE" ]]; then
+        current=$(cat "$TURINGOS_STATE_FILE")
     fi
 
     if command -v jq &>/dev/null; then
-        echo "$current" | jq --arg v "$value" ".${key} = \$v" > "$CLAUDEOS_STATE_FILE"
+        echo "$current" | jq --arg v "$value" ".${key} = \$v" > "$TURINGOS_STATE_FILE"
     else
         # Fallback: simple key=value sidecar file
-        echo "${key}=${value}" >> "${CLAUDEOS_STATE_FILE}.kv"
+        echo "${key}=${value}" >> "${TURINGOS_STATE_FILE}.kv"
     fi
 }
 
 config::state_del() {
     # Usage: config::state_del KEY
     local key="$1"
-    if [[ -f "$CLAUDEOS_STATE_FILE" ]] && command -v jq &>/dev/null; then
+    if [[ -f "$TURINGOS_STATE_FILE" ]] && command -v jq &>/dev/null; then
         local tmp
-        tmp=$(jq "del(.${key})" "$CLAUDEOS_STATE_FILE")
-        echo "$tmp" > "$CLAUDEOS_STATE_FILE"
+        tmp=$(jq "del(.${key})" "$TURINGOS_STATE_FILE")
+        echo "$tmp" > "$TURINGOS_STATE_FILE"
     fi
 }
 
@@ -157,13 +157,13 @@ config::pid_write() {
     local name="$1"
     local pid="$2"
     config::init_dirs
-    echo "$pid" > "${CLAUDEOS_PID_DIR}/${name}.pid"
+    echo "$pid" > "${TURINGOS_PID_DIR}/${name}.pid"
 }
 
 config::pid_read() {
     # Usage: config::pid_read NAME
     local name="$1"
-    local pidfile="${CLAUDEOS_PID_DIR}/${name}.pid"
+    local pidfile="${TURINGOS_PID_DIR}/${name}.pid"
     if [[ -f "$pidfile" ]]; then
         cat "$pidfile"
     fi
@@ -172,7 +172,7 @@ config::pid_read() {
 config::pid_clear() {
     # Usage: config::pid_clear NAME
     local name="$1"
-    rm -f "${CLAUDEOS_PID_DIR}/${name}.pid"
+    rm -f "${TURINGOS_PID_DIR}/${name}.pid"
 }
 
 config::pid_alive() {
