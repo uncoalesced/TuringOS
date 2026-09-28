@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # sync-scripts.sh
-# Copies ClaudeOS scripts AND the Electron UI into config/includes.chroot/
+# Copies TuringOS scripts AND the Electron UI into config/includes.chroot/
 # so live-build bakes them into the image before hooks run.
 #
 # Run this from the debian-live/ directory BEFORE running lb build:
@@ -15,18 +15,18 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 # ── Destination paths inside includes.chroot ──────────────────────────────────
 # These map directly to filesystem paths inside the live image:
-#   includes.chroot/opt/claudeos/  →  /opt/claudeos/
-#   includes.chroot/opt/claudeos-ui/  →  /opt/claudeos-ui/
+#   includes.chroot/opt/turingos/  →  /opt/turingos/
+#   includes.chroot/opt/turingos-ui/  →  /opt/turingos-ui/
 
-DEST_SCRIPTS="${SCRIPT_DIR}/config/includes.chroot/opt/claudeos"
-DEST_UI="${SCRIPT_DIR}/config/includes.chroot/opt/claudeos-ui"
+DEST_SCRIPTS="${SCRIPT_DIR}/config/includes.chroot/opt/turingos"
+DEST_UI="${SCRIPT_DIR}/config/includes.chroot/opt/turingos-ui"
 
 echo "╭─────────────────────────────────────────╮"
-echo "│  ClaudeOS — syncing to includes.chroot  │"
+echo "│  TuringOS — syncing to includes.chroot  │"
 echo "╰─────────────────────────────────────────╯"
 echo ""
 
-# ── 1. Sync ClaudeOS Bash scripts ─────────────────────────────────────────────
+# ── 1. Sync TuringOS Bash scripts ─────────────────────────────────────────────
 echo "→ Syncing Bash scripts to ${DEST_SCRIPTS}..."
 mkdir -p "${DEST_SCRIPTS}"
 
@@ -41,9 +41,9 @@ rsync -a --delete \
     --exclude='node_modules/' \
     "${REPO_ROOT}/" "${DEST_SCRIPTS}/"
 
-chmod +x "${DEST_SCRIPTS}/claudeos"
-chmod +x "${DEST_SCRIPTS}/pkg/claudeos-install-claude-cli.sh"
-chmod +x "${DEST_SCRIPTS}/pkg/claudeos-first-run.sh"
+chmod +x "${DEST_SCRIPTS}/turingos"
+chmod +x "${DEST_SCRIPTS}/pkg/turingos-install-claude-cli.sh"
+chmod +x "${DEST_SCRIPTS}/pkg/turingos-first-run.sh"
 
 SCRIPT_COUNT=$(find "${DEST_SCRIPTS}" -type f | wc -l)
 echo "  ✓ ${SCRIPT_COUNT} files synced"
@@ -77,8 +77,8 @@ fi
 # ── 3. Summary ────────────────────────────────────────────────────────────────
 echo ""
 echo "includes.chroot layout:"
-echo "  /opt/claudeos/      ← Bash scripts + entrypoint"
-echo "  /opt/claudeos-ui/   ← Electron UI source"
+echo "  /opt/turingos/      ← Bash scripts + entrypoint"
+echo "  /opt/turingos-ui/   ← Electron UI source"
 echo ""
 echo "Next step:"
 echo "  sudo lb build"
