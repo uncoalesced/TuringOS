@@ -1,4 +1,5 @@
-# Maintainer: ClaudeOS Contributors
+# Maintainer: ClaudeOS Contributors <mail@uncoalesced.com>
+# Contributor: Stavin Fernandes <stavinfernandes2098@gmail.com>
 
 pkgname=claudeos
 pkgver=0.1.0

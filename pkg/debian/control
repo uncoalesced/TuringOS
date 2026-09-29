@@ -1,7 +1,8 @@
 Source: claudeos
 Section: utils
 Priority: optional
-Maintainer: ClaudeOS Contributors <noreply@example.com>
+Maintainer: ClaudeOS Contributors <mail@uncoalesced.com>
+Uploaders: Stavin Fernandes <stavinfernandes2098@gmail.com>
 Build-Depends: debhelper-compat (= 13)
 Standards-Version: 4.6.2
 Homepage: https://github.com/uncoalesced/claudeos
