@@ -1,23 +1,23 @@
 #!/bin/bash
 # 0460-prebundle-electron.hook.chroot
 #
-# Pre-bundles Electron into /opt/claudeos-ui/node_modules/ at build time
+# Pre-bundles Electron into /opt/turingos-ui/node_modules/ at build time
 # so the UI launches without internet access on first boot (Option A).
 #
 # What this does:
-#   1. Runs npm install in /opt/claudeos-ui/
+#   1. Runs npm install in /opt/turingos-ui/
 #   2. Electron's npm postinstall downloads the platform binary (~100-150MB)
 #   3. Sets correct permissions so the live user can run it
-#   4. Wires /usr/local/bin/claudeos-ui as a convenience launcher
+#   4. Wires /usr/local/bin/turingos-ui as a convenience launcher
 #
 # Requires: nodejs, npm (from package list), Electron deps (from 0450)
-# Requires: /opt/claudeos-ui/ populated by includes.chroot + sync-scripts.sh
+# Requires: /opt/turingos-ui/ populated by includes.chroot + sync-scripts.sh
 
 set -euo pipefail
 
 export DEBIAN_FRONTEND=noninteractive
 
-UI_DIR="/opt/claudeos-ui"
+UI_DIR="/opt/turingos-ui"
 
 echo "==> [0460-prebundle-electron] Pre-bundling Electron UI..."
 
@@ -87,37 +87,37 @@ if [[ -n "$CHROME_SANDBOX" ]]; then
 fi
 
 # ── System-wide launcher ──────────────────────────────────────────────────────
-# This is what 'claudeos ui' calls and what the autostart script uses.
-cat > /usr/local/bin/claudeos-ui <<'LAUNCHER'
+# This is what 'turingos ui' calls and what the autostart script uses.
+cat > /usr/local/bin/turingos-ui <<'LAUNCHER'
 #!/usr/bin/env bash
-# /usr/local/bin/claudeos-ui
-# Launches the ClaudeOS Electron UI.
+# /usr/local/bin/turingos-ui
+# Launches the TuringOS Electron UI.
 # Wrapper so the UI can be launched from autostart, dock, or terminal.
 
-UI_DIR="/opt/claudeos-ui"
+UI_DIR="/opt/turingos-ui"
 
 if [[ ! -f "${UI_DIR}/package.json" ]]; then
-    echo "ClaudeOS UI not found at ${UI_DIR}" >&2
+    echo "TuringOS UI not found at ${UI_DIR}" >&2
     exit 1
 fi
 
 exec "${UI_DIR}/run.sh" "$@"
 LAUNCHER
-chmod +x /usr/local/bin/claudeos-ui
+chmod +x /usr/local/bin/turingos-ui
 
-# ── Wire 'claudeos ui' subcommand ─────────────────────────────────────────────
-# The claudeos entrypoint already has a router. We add a ui subcommand handler
+# ── Wire 'turingos ui' subcommand ─────────────────────────────────────────────
+# The turingos entrypoint already has a router. We add a ui subcommand handler
 # by dropping a small override file that the entrypoint sources if present.
-cat > /usr/lib/claudeos/ui.sh <<'UI_HANDLER'
+cat > /usr/lib/turingos/ui.sh <<'UI_HANDLER'
 #!/usr/bin/env bash
-# /usr/lib/claudeos/ui.sh
-# Sourced by the claudeos entrypoint for the 'ui' subcommand.
+# /usr/lib/turingos/ui.sh
+# Sourced by the turingos entrypoint for the 'ui' subcommand.
 
 ui::launch() {
-    exec /usr/local/bin/claudeos-ui "$@"
+    exec /usr/local/bin/turingos-ui "$@"
 }
 UI_HANDLER
-chmod 644 /usr/lib/claudeos/ui.sh
+chmod 644 /usr/lib/turingos/ui.sh
 
 # ── Clean up npm cache ────────────────────────────────────────────────────────
 rm -rf "$npm_config_cache"

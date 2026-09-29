@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# claudeos-install-claude-cli.sh
+# turingos-install-claude-cli.sh
 #
 # Installs the Claude Code CLI via native installer (recommended),
 # Homebrew, or npm fallback. Also handles API key setup.
 #
 # Usage:
-#   ./claudeos-install-claude-cli.sh          # interactive
-#   ./claudeos-install-claude-cli.sh --brew   # force Homebrew method
-#   ./claudeos-install-claude-cli.sh --npm    # force npm method
+#   ./turingos-install-claude-cli.sh          # interactive
+#   ./turingos-install-claude-cli.sh --brew   # force Homebrew method
+#   ./turingos-install-claude-cli.sh --npm    # force npm method
 
 set -euo pipefail
 
@@ -15,8 +15,8 @@ set -euo pipefail
 
 _SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-if [[ -f "/usr/lib/claudeos/core/ui.sh" ]]; then
-    source /usr/lib/claudeos/core/ui.sh
+if [[ -f "/usr/lib/turingos/core/ui.sh" ]]; then
+    source /usr/lib/turingos/core/ui.sh
 elif [[ -f "${_SELF_DIR}/../core/ui.sh" ]]; then
     source "${_SELF_DIR}/../core/ui.sh"
 else
@@ -189,23 +189,23 @@ install_claude_cli::configure_api_key() {
         ui::warn "Unexpected format — saving anyway (expected sk-ant-...)"
     fi
 
-    # Write to ClaudeOS config
-    local claudeos_config="${HOME}/.claudeos/config.env"
-    mkdir -p "$(dirname "$claudeos_config")"
-    grep -v '^ANTHROPIC_API_KEY=' "$claudeos_config" 2>/dev/null > "${claudeos_config}.tmp" || true
-    echo "ANTHROPIC_API_KEY=${api_key}" >> "${claudeos_config}.tmp"
-    mv "${claudeos_config}.tmp" "$claudeos_config"
+    # Write to TuringOS config
+    local turingos_config="${HOME}/.turingos/config.env"
+    mkdir -p "$(dirname "$turingos_config")"
+    grep -v '^ANTHROPIC_API_KEY=' "$turingos_config" 2>/dev/null > "${turingos_config}.tmp" || true
+    echo "ANTHROPIC_API_KEY=${api_key}" >> "${turingos_config}.tmp"
+    mv "${turingos_config}.tmp" "$turingos_config"
 
     # Write to shell profile
     local profile="${HOME}/.bashrc"
     grep -v 'ANTHROPIC_API_KEY' "$profile" 2>/dev/null > "${profile}.tmp" || true
     echo "" >> "${profile}.tmp"
-    echo "# ClaudeOS — Anthropic API Key" >> "${profile}.tmp"
+    echo "# TuringOS — Anthropic API Key" >> "${profile}.tmp"
     echo "export ANTHROPIC_API_KEY=${api_key}" >> "${profile}.tmp"
     mv "${profile}.tmp" "$profile"
 
     export ANTHROPIC_API_KEY="$api_key"
-    ui::ok "API key saved to ~/.claudeos/config.env and ${profile}"
+    ui::ok "API key saved to ~/.turingos/config.env and ${profile}"
 }
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
@@ -271,7 +271,7 @@ main() {
 
     echo ""
     ui::ok "Setup complete. Test with: claude --version"
-    ui::info "Then run: claudeos agent start"
+    ui::info "Then run: turingos agent start"
     echo ""
 }
 

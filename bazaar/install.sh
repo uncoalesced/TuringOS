@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# bazaar/install.sh — ClaudeOS Clawd Bazaar installer
+# bazaar/install.sh — TuringOS Clawd Bazaar installer
 #
 # Installs MCP tools from registry.json into:
-#   1. ~/.claudeos/bazaar/<key>/   (local tool directory)
+#   1. ~/.turingos/bazaar/<key>/   (local tool directory)
 #   2. Claude Desktop's claude_desktop_config.json (MCP server entry)
 #
 # Depends on: core/config.sh, core/logging.sh, core/ui.sh, bazaar/registry.sh
@@ -16,8 +16,8 @@ bazaar::install() {
     local key="${1:-}"
 
     if [[ -z "$key" ]]; then
-        ui::fail "Usage: claudeos bazaar install <tool>"
-        ui::info "Browse available tools: claudeos bazaar"
+        ui::fail "Usage: turingos bazaar install <tool>"
+        ui::info "Browse available tools: turingos bazaar"
         return 1
     fi
 
@@ -33,7 +33,7 @@ bazaar::install() {
     ui::header "Installing: ${name}"
 
     # Already installed?
-    local install_dir="${CLAUDEOS_BAZAAR_DIR}/${key}"
+    local install_dir="${TURINGOS_BAZAAR_DIR}/${key}"
     local marker="${install_dir}/.installed"
     if [[ -f "$marker" ]]; then
         ui::warn "Already installed ($(cat "$marker"))"
@@ -235,17 +235,17 @@ bazaar::_auto_build() {
     if [[ -f "${dir}/package.json" ]]; then
         ui::info "Running npm install..."
         npm install --prefix "$dir" --silent 2>&1 | \
-            tee "${CLAUDEOS_BAZAAR_DIR}/${key}/build.log"
+            tee "${TURINGOS_BAZAAR_DIR}/${key}/build.log"
 
     elif [[ -f "${dir}/requirements.txt" ]]; then
         ui::info "Running pip install -r requirements.txt..."
         pip install -r "${dir}/requirements.txt" --quiet 2>&1 | \
-            tee "${CLAUDEOS_BAZAAR_DIR}/${key}/build.log"
+            tee "${TURINGOS_BAZAAR_DIR}/${key}/build.log"
 
     elif [[ -f "${dir}/Cargo.toml" ]]; then
         ui::info "Running cargo build --release..."
         cargo build --release --manifest-path "${dir}/Cargo.toml" 2>&1 | \
-            tee "${CLAUDEOS_BAZAAR_DIR}/${key}/build.log"
+            tee "${TURINGOS_BAZAAR_DIR}/${key}/build.log"
     fi
 }
 
@@ -268,7 +268,7 @@ bazaar::_check_env_vars() {
             printf "    \033[1;31m%-36s\033[0m  not set\n" "$v"
         done
         echo ""
-        ui::info "Set them in ~/.claudeos/config.env or export before running"
+        ui::info "Set them in ~/.turingos/config.env or export before running"
 
         if ! ui::confirm "Continue install anyway?"; then
             return 1
@@ -368,13 +368,13 @@ bazaar::uninstall() {
     local key="${1:-}"
 
     if [[ -z "$key" ]]; then
-        ui::fail "Usage: claudeos bazaar uninstall <tool>"
+        ui::fail "Usage: turingos bazaar uninstall <tool>"
         return 1
     fi
 
     local name
     name=$(registry::get_field "$key" "name" 2>/dev/null || echo "$key")
-    local install_dir="${CLAUDEOS_BAZAAR_DIR}/${key}"
+    local install_dir="${TURINGOS_BAZAAR_DIR}/${key}"
 
     if [[ ! -d "$install_dir" ]]; then
         ui::info "${key} is not installed"

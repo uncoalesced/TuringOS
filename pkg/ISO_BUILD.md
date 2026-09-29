@@ -1,78 +1,78 @@
-# Shipping ClaudeOS in a Debian ISO
+# Shipping TuringOS in a Debian ISO
 
-How to bake ClaudeOS into a custom Debian ISO so it's available on first boot.
+How to bake TuringOS into a custom Debian ISO so it's there on first boot.
 
 ---
 
 ## Overview
 
-Debian uses `live-build` for ISO builds. The process is:
+Debian builds ISOs with `live-build`. The steps:
 
-1. Build the `claudeos` `.deb` package locally with `dpkg-buildpackage`
-2. Place the resulting `.deb` in a local apt repo
+1. Build the `turingos` `.deb` package locally with `dpkg-buildpackage`
+2. Put the resulting `.deb` in a local apt repo
 3. Set up a `live-build` config
-4. Add `claudeos` to the package list
+4. Add `turingos` to the package list
 5. Point the ISO build at your local repo
 6. Run `lb build`
 
 ---
 
-## Step 1 — Build the Package
+## Step 1: Build the package
 
 On a Debian (or Debian-based) machine:
 
 ```bash
-cd /path/to/claudeos/pkg
+cd /path/to/turingos/pkg
 sudo apt install devscripts debhelper build-essential
 dpkg-buildpackage -us -uc -b
 ```
 
-This produces a file like:
+You should get a file like:
 
 ```
-../claudeos_0.1.0-1_all.deb
+../turingos_0.1.0-1_all.deb
 ```
 
 ---
 
-## Step 2 — Create a Local Apt Repo
+## Step 2: Create a local apt repo
 
 ```bash
-mkdir -p ~/claudeos-repo
-cp ../claudeos_0.1.0-1_all.deb ~/claudeos-repo/
-cd ~/claudeos-repo
+mkdir -p ~/turingos-repo
+cp ../turingos_0.1.0-1_all.deb ~/turingos-repo/
+cd ~/turingos-repo
 sudo apt install dpkg-dev
 dpkg-scanpackages . /dev/null | gzip -9c > Packages.gz
 ```
 
 ---
 
-## Step 3 — Set Up live-build
+## Step 3: Set up live-build
 
 ```bash
 sudo apt install live-build
-mkdir claudeos-iso && cd claudeos-iso
+mkdir turingos-iso && cd turingos-iso
 lb config --distribution bookworm --archive-areas "main"
 ```
 
 ---
 
-## Step 4 — Add Your Local Repo to the ISO's apt sources
+## Step 4: Add your local repo to the ISO's apt sources
 
-Create `config/archives/claudeos-repo.list.chroot`:
+Create `config/archives/turingos-repo.list.chroot`:
 
 ```
-deb [trusted=yes] file:///home/yourusername/claudeos-repo ./
+deb [trusted=yes] file:///home/yourusername/turingos-repo ./
 ```
 
 ---
 
-## Step 5 — Add claudeos to the Package List
+## Step 5: Add turingos to the package list
 
-Create/edit `config/package-lists/claudeos.list.chroot`:
+Create or edit `config/package-lists/turingos.list.chroot`:
 
 ```
-claudeos
+turingos
 gum
 fzf
 nodejs
@@ -83,24 +83,24 @@ libnotify-bin
 ```
 
 `gum`, `fzf`, `jq`, `btrfs-progs`, and `libnotify-bin` are the runtime deps
-that give the best experience. `claudeos` depends on them anyway — this
-ensures they're pre-installed rather than downloaded on first run.
+that give the best experience. `turingos` depends on them anyway; listing them
+here means they're pre-installed instead of downloaded on first run.
 
 ---
 
-## Step 6 — Build the ISO
+## Step 6: Build the ISO
 
 ```bash
 sudo lb build
 ```
 
-This takes 10–30 minutes depending on your machine.
+Expect 10–30 minutes, depending on your machine.
 
-The output ISO lands in the current directory as `live-image-amd64.hybrid.iso`.
+The ISO ends up in the current directory as `live-image-amd64.hybrid.iso`.
 
 ---
 
-## Step 7 — Test in a VM Before Burning
+## Step 7: Test in a VM before burning
 
 ```bash
 # QEMU quick test
@@ -111,48 +111,48 @@ qemu-system-x86_64 \
   -boot d
 ```
 
-Boot it, open a terminal, and verify:
+Boot it, open a terminal, and check:
 
 ```bash
-claudeos version
-claudeos init
-claudeos help
+turingos version
+turingos init
+turingos help
 ```
 
 ---
 
-## First Boot Experience
+## First boot
 
 When the user logs in after installing from the ISO:
 
-1. `/etc/profile.d/claudeos-first-run.sh` fires on the first interactive shell
-2. A welcome banner is shown
-3. User runs `claudeos init` — dependency check passes because everything is pre-installed
-4. `claudeos agent start` is ready to use
+1. `/etc/profile.d/turingos-first-run.sh` runs on the first interactive shell
+2. A welcome banner appears
+3. The user runs `turingos init`. The dependency check passes because everything is already installed
+4. `turingos agent start` is ready to use
 
 ---
 
-## Updating the Package
+## Updating the package
 
 Bump the version in `debian/changelog` (use `dch -i`), rebuild with
-`dpkg-buildpackage`, re-scan the local repo, rebuild the ISO.
+`dpkg-buildpackage`, re-scan the local repo, then rebuild the ISO.
 
 ```bash
 # In pkg/
 dch -i
 dpkg-buildpackage -us -uc -b
-cp ../claudeos_*.deb ~/claudeos-repo/
-cd ~/claudeos-repo
+cp ../turingos_*.deb ~/turingos-repo/
+cd ~/turingos-repo
 dpkg-scanpackages . /dev/null | gzip -9c > Packages.gz
 ```
 
 ---
 
-## File Layout After Install
+## File layout after install
 
 ```
-/usr/bin/claudeos                ← main executable (in PATH)
-/usr/lib/claudeos/
+/usr/bin/turingos                ← main executable (in PATH)
+/usr/lib/turingos/
 ├── core/
 │   ├── config.sh
 │   ├── ui.sh
@@ -167,11 +167,11 @@ dpkg-scanpackages . /dev/null | gzip -9c > Packages.gz
 │   └── registry.json
 ├── game/gamemode.sh
 └── monitor/system.sh
-/usr/share/doc/claudeos/
+/usr/share/doc/turingos/
 ├── WORKFLOW.md
 └── plan.md
-/etc/profile.d/claudeos-first-run.sh
+/etc/profile.d/turingos-first-run.sh
 ```
 
-User data (sandboxes, logs, config) always lives in `~/.claudeos/` — never
-touched by package install, upgrade, or removal.
+User data (sandboxes, logs, config) always lives in `~/.turingos/`. Package
+install, upgrade, and removal never touch it.

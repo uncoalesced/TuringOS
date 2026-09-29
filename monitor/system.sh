@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# monitor/system.sh — ClaudeOS System Monitor / HUD
+# monitor/system.sh — TuringOS System Monitor / HUD
 #
 # Displays a live dashboard: GPU VRAM, CPU load, RAM, active agent, sandbox,
 # game mode state, and MCP connections. Refreshes in-place like htop.
@@ -148,7 +148,7 @@ monitor::render() {
     echo ""
     printf "  \033[1;36m╭%s╮\033[0m\n" "$line"
     printf "  \033[1;36m│\033[0m  \033[1;37m%-${W}s\033[1;36m│\033[0m\n" \
-        "ClaudeOS · System HUD · ${METRICS[timestamp]}"
+        "TuringOS · System HUD · ${METRICS[timestamp]}"
     printf "  \033[1;36m├%s┤\033[0m\n" "$line"
 
     # ── Agent block ──────────────────────────────────────────────────────────
@@ -298,7 +298,7 @@ monitor::spend() {
     local session_count=0
 
     # Scan agent session logs for JSON token usage lines
-    for logfile in "${CLAUDEOS_LOG_DIR}"/agent-session-*.log; do
+    for logfile in "${TURINGOS_LOG_DIR}"/agent-session-*.log; do
         [[ -f "$logfile" ]] || continue
         (( session_count++ ))
 

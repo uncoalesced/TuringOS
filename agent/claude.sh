@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# agent/claude.sh — ClaudeOS Agent Lifecycle Manager
+# agent/claude.sh — TuringOS Agent Lifecycle Manager
 #
 # Starts Claude Code (or any configured agent binary) inside an active sandbox,
 # tracks the process, streams output, and fires a notification on completion.
@@ -27,7 +27,7 @@ agent::start() {
         local existing_pid
         existing_pid=$(config::pid_read "$AGENT_PID_NAME")
         ui::warn "Agent already running (PID ${existing_pid})"
-        ui::info "Use: claudeos agent status"
+        ui::info "Use: turingos agent status"
         return 1
     fi
 
@@ -53,28 +53,28 @@ agent::start() {
     config::state_set "$STATE_KEY_AGENT_TASK" "$task"
 
     # Prepare agent log file
-    local agent_log="${CLAUDEOS_LOG_DIR}/${AGENT_LOG_NAME}-$(date +%Y%m%dT%H%M%S).log"
+    local agent_log="${TURINGOS_LOG_DIR}/${AGENT_LOG_NAME}-$(date +%Y%m%dT%H%M%S).log"
 
     ui::info "Starting agent inside sandbox..."
     log::section "AGENT START — task: ${task}"
     log::info "sandbox=${sandbox_path} log=${agent_log}"
 
     # Check the agent binary exists
-    if ! command -v "$CLAUDEOS_AGENT_BINARY" &>/dev/null; then
-        ui::fail "Agent binary not found: ${CLAUDEOS_AGENT_BINARY}"
-        ui::info "Set CLAUDEOS_AGENT_BINARY in ~/.claudeos/config.env"
-        log::error "agent binary missing: ${CLAUDEOS_AGENT_BINARY}"
+    if ! command -v "$TURINGOS_AGENT_BINARY" &>/dev/null; then
+        ui::fail "Agent binary not found: ${TURINGOS_AGENT_BINARY}"
+        ui::info "Set TURINGOS_AGENT_BINARY in ~/.turingos/config.env"
+        log::error "agent binary missing: ${TURINGOS_AGENT_BINARY}"
         return 1
     fi
 
     # Build the prompt file so Claude gets context without interactive input
-    local prompt_file="${sandbox_path}/.claudeos_prompt"
+    local prompt_file="${sandbox_path}/.turingos_prompt"
     agent::_write_prompt "$prompt_file" "$task" "$sandbox_path"
 
     # Launch agent in background, captured to log
     (
         cd "$sandbox_path" || exit 1
-        "$CLAUDEOS_AGENT_BINARY" \
+        "$TURINGOS_AGENT_BINARY" \
             --print \
             --output-format stream-json \
             < "$prompt_file" \
@@ -102,7 +102,7 @@ agent::start() {
 
     ui::ok  "Agent started (PID ${agent_pid})"
     ui::info "Tail output: tail -f ${agent_log}"
-    ui::info "Status:      claudeos agent status"
+    ui::info "Status:      turingos agent status"
     echo ""
 
     # Offer to tail the output interactively
@@ -165,7 +165,7 @@ agent::status() {
 
         # Show last few lines of agent log
         local latest_log
-        latest_log=$(ls -t "${CLAUDEOS_LOG_DIR}/${AGENT_LOG_NAME}-"*.log 2>/dev/null | head -1)
+        latest_log=$(ls -t "${TURINGOS_LOG_DIR}/${AGENT_LOG_NAME}-"*.log 2>/dev/null | head -1)
         if [[ -n "$latest_log" ]]; then
             echo ""
             ui::info "Recent output:"
@@ -180,7 +180,7 @@ agent::status() {
 
         if [[ -n "$sandbox_path" && -d "$sandbox_path" ]]; then
             echo ""
-            ui::info "Sandbox ready for review: claudeos sandbox diff"
+            ui::info "Sandbox ready for review: turingos sandbox diff"
         fi
     else
         ui::status_row "Agent" "idle" "warn"
@@ -193,7 +193,7 @@ agent::status() {
 
 agent::logs() {
     local latest_log
-    latest_log=$(ls -t "${CLAUDEOS_LOG_DIR}/${AGENT_LOG_NAME}-"*.log 2>/dev/null | head -1)
+    latest_log=$(ls -t "${TURINGOS_LOG_DIR}/${AGENT_LOG_NAME}-"*.log 2>/dev/null | head -1)
 
     if [[ -z "$latest_log" ]]; then
         ui::info "No agent logs found"
@@ -236,7 +236,7 @@ agent::_write_prompt() {
     local sandbox="$3"
 
     cat > "$prompt_file" <<EOF
-You are running inside a ClaudeOS agent sandbox.
+You are running inside a TuringOS agent sandbox.
 
 Sandbox path: ${sandbox}
 Task: ${task}
@@ -244,7 +244,7 @@ Task: ${task}
 Instructions:
 - Work only within this sandbox directory
 - Make your changes, then run any applicable tests
-- Write test results to: ${sandbox}/.claudeos_test_result
+- Write test results to: ${sandbox}/.turingos_test_result
   Format: "<N> passed, <M> failed"
 - When complete, summarize what you changed
 
@@ -273,7 +273,7 @@ agent::_capture_test_result() {
     fi
 
     if [[ -n "$result" ]]; then
-        echo "$result" > "${sandbox}/.claudeos_test_result"
+        echo "$result" > "${sandbox}/.turingos_test_result"
         log::info "test result captured: $result"
     fi
 }
@@ -290,8 +290,8 @@ agent::_on_complete() {
     config::state_del "$STATE_KEY_AGENT_PID"
 
     local test_result=""
-    [[ -f "${sandbox}/.claudeos_test_result" ]] && \
-        test_result=$(cat "${sandbox}/.claudeos_test_result")
+    [[ -f "${sandbox}/.turingos_test_result" ]] && \
+        test_result=$(cat "${sandbox}/.turingos_test_result")
 
     log::audit AGENT_COMPLETE \
         "exit_code=${exit_code}" \
@@ -316,19 +316,19 @@ agent::_on_complete() {
     echo ""
     if [[ $exit_code -eq 0 ]]; then
         printf "  \033[1;32m╭──────────────────────────────────────────╮\033[0m\n"
-        printf "  \033[1;32m│\033[0m  \033[1;37m🟢 ClaudeOS\033[0m                             \033[1;32m│\033[0m\n"
+        printf "  \033[1;32m│\033[0m  \033[1;37m🟢 TuringOS\033[0m                             \033[1;32m│\033[0m\n"
         printf "  \033[1;32m│\033[0m                                          \033[1;32m│\033[0m\n"
         printf "  \033[1;32m│\033[0m  %-40s\033[1;32m│\033[0m\n" "Agent task completed"
         [[ -n "$test_result" ]] && \
         printf "  \033[1;32m│\033[0m  %-40s\033[1;32m│\033[0m\n" "$test_result"
         printf "  \033[1;32m│\033[0m                                          \033[1;32m│\033[0m\n"
-        printf "  \033[1;32m│\033[0m  \033[2mRun: claudeos sandbox diff\033[0m              \033[1;32m│\033[0m\n"
+        printf "  \033[1;32m│\033[0m  \033[2mRun: turingos sandbox diff\033[0m              \033[1;32m│\033[0m\n"
         printf "  \033[1;32m╰──────────────────────────────────────────╯\033[0m\n"
     else
         printf "  \033[1;31m╭──────────────────────────────────────────╮\033[0m\n"
-        printf "  \033[1;31m│\033[0m  \033[1;37m🔴 ClaudeOS\033[0m                             \033[1;31m│\033[0m\n"
+        printf "  \033[1;31m│\033[0m  \033[1;37m🔴 TuringOS\033[0m                             \033[1;31m│\033[0m\n"
         printf "  \033[1;31m│\033[0m  %-40s\033[1;31m│\033[0m\n" "Agent exited with errors"
-        printf "  \033[1;31m│\033[0m  \033[2mRun: claudeos agent logs\033[0m                \033[1;31m│\033[0m\n"
+        printf "  \033[1;31m│\033[0m  \033[2mRun: turingos agent logs\033[0m                \033[1;31m│\033[0m\n"
         printf "  \033[1;31m╰──────────────────────────────────────────╯\033[0m\n"
     fi
     echo ""
@@ -338,7 +338,7 @@ agent::_on_complete() {
 
 agent::_notify() {
     local body="$1"
-    local title="${CLAUDEOS_NOTIFICATION_TITLE:-ClaudeOS}"
+    local title="${TURINGOS_NOTIFICATION_TITLE:-TuringOS}"
 
     if command -v notify-send &>/dev/null; then
         notify-send "$title" "$body" --icon=terminal 2>/dev/null || true

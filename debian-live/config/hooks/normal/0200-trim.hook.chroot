@@ -3,7 +3,7 @@
 # Purge known-bloat packages after the chroot is assembled.
 # Runs inside the chroot as root. Target: VM/demo image only.
 #
-# ORDER NOTE: this runs BEFORE the claudeos install hooks (0400/0500)
+# ORDER NOTE: this runs BEFORE the turingos install hooks (0400/0500)
 # so do NOT remove anything that curl, npm, git, or nodejs depend on.
 # Specifically: do not touch libssl, libcurl, ca-certificates, libc6.
 #

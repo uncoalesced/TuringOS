@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# core/ui.sh — ClaudeOS UI primitives
+# core/ui.sh — TuringOS UI primitives
 # Colors, box drawing, status indicators, prompts
 # Requires: gum (optional but preferred), tput
 
@@ -155,7 +155,7 @@ ui::input() {
     fi
 }
 
-# ─── ClaudeOS Banner ─────────────────────────────────────────────────────────
+# ─── TuringOS Banner ─────────────────────────────────────────────────────────
 
 ui::banner() {
     echo -e ""

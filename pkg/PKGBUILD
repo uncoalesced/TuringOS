@@ -1,14 +1,14 @@
-# Maintainer: ClaudeOS Contributors <mail@uncoalesced.com>
+# Maintainer: TuringOS Contributors <mail@uncoalesced.com>
 # Contributor: Stavin Fernandes <stavinfernandes2098@gmail.com>
 
-pkgname=claudeos
+pkgname=turingos
 pkgver=0.1.0
 pkgrel=1
 pkgdesc="Agentic layer for CachyOS — Btrfs sandboxing, MCP registry, Game Mode"
 arch=('any')
-url="https://github.com/yourusername/claudeos"
+url="https://github.com/uncoalesced/TuringOS"
 license=('MIT')
-install=claudeos.install
+install=turingos.install
 
 # ─── Dependencies ─────────────────────────────────────────────────────────────
 # bash, procps-ng, util-linux are in base — not listed per Arch guidelines.
@@ -22,7 +22,7 @@ depends=(
 
 optdepends=(
     'rsync: sandbox copy-backend fallback when project is not on btrfs'
-    'curl: required by claudeos-install-claude-cli.sh native installer'
+    'curl: required by turingos-install-claude-cli.sh native installer'
     'gum: interactive terminal UI — browse, confirm, choose prompts (AUR)'
     'fzf: fuzzy finder for Bazaar browser and sandbox picker'
     'nodejs: required for npx-based MCP tool installs'
@@ -53,10 +53,10 @@ check() {
         return 0
     fi
 
-    echo "Running shellcheck on ClaudeOS scripts..."
+    echo "Running shellcheck on TuringOS scripts..."
 
     local scripts=(
-        "${_reporoot}/claudeos"
+        "${_reporoot}/turingos"
         "${_reporoot}/core/config.sh"
         "${_reporoot}/core/ui.sh"
         "${_reporoot}/core/logging.sh"
@@ -67,8 +67,8 @@ check() {
         "${_reporoot}/bazaar/install.sh"
         "${_reporoot}/game/gamemode.sh"
         "${_reporoot}/monitor/system.sh"
-        "${_reporoot}/pkg/claudeos-first-run.sh"
-        "${_reporoot}/pkg/claudeos-install-claude-cli.sh"
+        "${_reporoot}/pkg/turingos-first-run.sh"
+        "${_reporoot}/pkg/turingos-install-claude-cli.sh"
     )
 
     # SC1091 — don't follow sourced files (they resolve at runtime)
@@ -90,51 +90,51 @@ package() {
         "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
 
     # ── Main executable ───────────────────────────────────────────────────────
-    install -Dm755 "${_reporoot}/claudeos" \
-        "${pkgdir}/usr/bin/claudeos"
+    install -Dm755 "${_reporoot}/turingos" \
+        "${pkgdir}/usr/bin/turingos"
 
     # ── Core library ──────────────────────────────────────────────────────────
     install -Dm644 "${_reporoot}/core/config.sh"  \
-        "${pkgdir}/usr/lib/claudeos/core/config.sh"
+        "${pkgdir}/usr/lib/turingos/core/config.sh"
     install -Dm644 "${_reporoot}/core/ui.sh"      \
-        "${pkgdir}/usr/lib/claudeos/core/ui.sh"
+        "${pkgdir}/usr/lib/turingos/core/ui.sh"
     install -Dm644 "${_reporoot}/core/logging.sh" \
-        "${pkgdir}/usr/lib/claudeos/core/logging.sh"
+        "${pkgdir}/usr/lib/turingos/core/logging.sh"
 
     # ── Agent ─────────────────────────────────────────────────────────────────
     install -Dm644 "${_reporoot}/agent/claude.sh" \
-        "${pkgdir}/usr/lib/claudeos/agent/claude.sh"
+        "${pkgdir}/usr/lib/turingos/agent/claude.sh"
 
     # ── Sandbox ───────────────────────────────────────────────────────────────
     install -Dm644 "${_reporoot}/sandbox/btrfs.sh" \
-        "${pkgdir}/usr/lib/claudeos/sandbox/btrfs.sh"
+        "${pkgdir}/usr/lib/turingos/sandbox/btrfs.sh"
     install -Dm644 "${_reporoot}/sandbox/diff.sh"  \
-        "${pkgdir}/usr/lib/claudeos/sandbox/diff.sh"
+        "${pkgdir}/usr/lib/turingos/sandbox/diff.sh"
 
     # ── Bazaar ────────────────────────────────────────────────────────────────
     install -Dm644 "${_reporoot}/bazaar/registry.sh"   \
-        "${pkgdir}/usr/lib/claudeos/bazaar/registry.sh"
+        "${pkgdir}/usr/lib/turingos/bazaar/registry.sh"
     install -Dm644 "${_reporoot}/bazaar/install.sh"    \
-        "${pkgdir}/usr/lib/claudeos/bazaar/install.sh"
+        "${pkgdir}/usr/lib/turingos/bazaar/install.sh"
     install -Dm644 "${_reporoot}/bazaar/registry.json" \
-        "${pkgdir}/usr/lib/claudeos/bazaar/registry.json"
+        "${pkgdir}/usr/lib/turingos/bazaar/registry.json"
 
     # ── Game Mode ─────────────────────────────────────────────────────────────
     install -Dm644 "${_reporoot}/game/gamemode.sh" \
-        "${pkgdir}/usr/lib/claudeos/game/gamemode.sh"
+        "${pkgdir}/usr/lib/turingos/game/gamemode.sh"
 
     # ── Monitor ───────────────────────────────────────────────────────────────
     install -Dm644 "${_reporoot}/monitor/system.sh" \
-        "${pkgdir}/usr/lib/claudeos/monitor/system.sh"
+        "${pkgdir}/usr/lib/turingos/monitor/system.sh"
 
     # ── Claude CLI installer ──────────────────────────────────────────────────
-    install -Dm755 "${_reporoot}/pkg/claudeos-install-claude-cli.sh" \
-        "${pkgdir}/usr/lib/claudeos/pkg/claudeos-install-claude-cli.sh"
+    install -Dm755 "${_reporoot}/pkg/turingos-install-claude-cli.sh" \
+        "${pkgdir}/usr/lib/turingos/pkg/turingos-install-claude-cli.sh"
 
     # ── First-run profile.d hook ──────────────────────────────────────────────
     # mode 644 — profile.d files are sourced, not executed directly
-    install -Dm644 "${_reporoot}/pkg/claudeos-first-run.sh" \
-        "${pkgdir}/etc/profile.d/claudeos-first-run.sh"
+    install -Dm644 "${_reporoot}/pkg/turingos-first-run.sh" \
+        "${pkgdir}/etc/profile.d/turingos-first-run.sh"
 
     # ── Docs ──────────────────────────────────────────────────────────────────
     install -Dm644 "${_reporoot}/WORKFLOW.md" \

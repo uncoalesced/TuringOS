@@ -1,7 +1,7 @@
 #!/bin/bash
 # 0470-autologin-kiosk.hook.chroot
 #
-# Wires lightdm autologin into openbox so the ClaudeOS Electron UI (launched
+# Wires lightdm autologin into openbox so the TuringOS Electron UI (launched
 # by config/includes.chroot/etc/xdg/openbox/autostart) actually runs on boot
 # without sitting at a login prompt.
 #

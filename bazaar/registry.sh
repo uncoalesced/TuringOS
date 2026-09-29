@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# bazaar/registry.sh — ClaudeOS Clawd Bazaar registry reader
+# bazaar/registry.sh — TuringOS Clawd Bazaar registry reader
 #
 # Loads and queries registry.json. Provides the browsing/search UI.
 # Install logic lives in bazaar/install.sh.
@@ -11,9 +11,9 @@ log::set_module "bazaar"
 # ─── Registry Load ────────────────────────────────────────────────────────────
 
 registry::_load() {
-    if [[ ! -f "$CLAUDEOS_REGISTRY" ]]; then
-        ui::fail "Registry not found: $CLAUDEOS_REGISTRY"
-        log::error "registry file missing: $CLAUDEOS_REGISTRY"
+    if [[ ! -f "$TURINGOS_REGISTRY" ]]; then
+        ui::fail "Registry not found: $TURINGOS_REGISTRY"
+        log::error "registry file missing: $TURINGOS_REGISTRY"
         return 1
     fi
     if ! command -v jq &>/dev/null; then
@@ -33,17 +33,17 @@ registry::list() {
     echo ""
 
     local keys
-    keys=$(jq -r '.tools | keys[]' "$CLAUDEOS_REGISTRY" 2>/dev/null)
+    keys=$(jq -r '.tools | keys[]' "$TURINGOS_REGISTRY" 2>/dev/null)
 
     while IFS= read -r key; do
         local name description tags type
-        name=$(        jq -r ".tools[\"${key}\"].name"        "$CLAUDEOS_REGISTRY")
-        description=$( jq -r ".tools[\"${key}\"].description" "$CLAUDEOS_REGISTRY")
-        type=$(        jq -r ".tools[\"${key}\"].type"        "$CLAUDEOS_REGISTRY")
-        tags=$(        jq -r ".tools[\"${key}\"].tags | join(\", \")" "$CLAUDEOS_REGISTRY" 2>/dev/null)
+        name=$(        jq -r ".tools[\"${key}\"].name"        "$TURINGOS_REGISTRY")
+        description=$( jq -r ".tools[\"${key}\"].description" "$TURINGOS_REGISTRY")
+        type=$(        jq -r ".tools[\"${key}\"].type"        "$TURINGOS_REGISTRY")
+        tags=$(        jq -r ".tools[\"${key}\"].tags | join(\", \")" "$TURINGOS_REGISTRY" 2>/dev/null)
 
         # Check if already installed
-        local installed_marker="${CLAUDEOS_BAZAAR_DIR}/${key}/.installed"
+        local installed_marker="${TURINGOS_BAZAAR_DIR}/${key}/.installed"
         local status_sym
         if [[ -f "$installed_marker" ]]; then
             status_sym="\033[0;32m●\033[0m"  # green dot
@@ -71,7 +71,7 @@ registry::info() {
     registry::_load || return 1
 
     local exists
-    exists=$(jq -r ".tools[\"${key}\"] // empty" "$CLAUDEOS_REGISTRY" 2>/dev/null)
+    exists=$(jq -r ".tools[\"${key}\"] // empty" "$TURINGOS_REGISTRY" 2>/dev/null)
     if [[ -z "$exists" ]]; then
         ui::fail "Tool not found in registry: ${key}"
         registry::_suggest "$key"
@@ -79,14 +79,14 @@ registry::info() {
     fi
 
     local name description repo type runtime package env_required tags
-    name=$(         jq -r ".tools[\"${key}\"].name"                           "$CLAUDEOS_REGISTRY")
-    description=$(  jq -r ".tools[\"${key}\"].description"                    "$CLAUDEOS_REGISTRY")
-    repo=$(         jq -r ".tools[\"${key}\"].repo"                           "$CLAUDEOS_REGISTRY")
-    type=$(         jq -r ".tools[\"${key}\"].type"                           "$CLAUDEOS_REGISTRY")
-    runtime=$(      jq -r ".tools[\"${key}\"].runtime"                        "$CLAUDEOS_REGISTRY")
-    package=$(      jq -r ".tools[\"${key}\"].package"                        "$CLAUDEOS_REGISTRY")
-    env_required=$( jq -r ".tools[\"${key}\"].env_required | join(\", \")"    "$CLAUDEOS_REGISTRY" 2>/dev/null)
-    tags=$(         jq -r ".tools[\"${key}\"].tags | join(\", \")"            "$CLAUDEOS_REGISTRY" 2>/dev/null)
+    name=$(         jq -r ".tools[\"${key}\"].name"                           "$TURINGOS_REGISTRY")
+    description=$(  jq -r ".tools[\"${key}\"].description"                    "$TURINGOS_REGISTRY")
+    repo=$(         jq -r ".tools[\"${key}\"].repo"                           "$TURINGOS_REGISTRY")
+    type=$(         jq -r ".tools[\"${key}\"].type"                           "$TURINGOS_REGISTRY")
+    runtime=$(      jq -r ".tools[\"${key}\"].runtime"                        "$TURINGOS_REGISTRY")
+    package=$(      jq -r ".tools[\"${key}\"].package"                        "$TURINGOS_REGISTRY")
+    env_required=$( jq -r ".tools[\"${key}\"].env_required | join(\", \")"    "$TURINGOS_REGISTRY" 2>/dev/null)
+    tags=$(         jq -r ".tools[\"${key}\"].tags | join(\", \")"            "$TURINGOS_REGISTRY" 2>/dev/null)
 
     ui::header "$name"
     ui::label "Key"          "$key"
@@ -100,7 +100,7 @@ registry::info() {
     if [[ -n "$env_required" && "$env_required" != "null" ]]; then
         echo ""
         ui::warn "Required environment variables:"
-        for env_var in $(jq -r ".tools[\"${key}\"].env_required[]" "$CLAUDEOS_REGISTRY" 2>/dev/null); do
+        for env_var in $(jq -r ".tools[\"${key}\"].env_required[]" "$TURINGOS_REGISTRY" 2>/dev/null); do
             local set_indicator
             if [[ -n "${!env_var:-}" ]]; then
                 set_indicator="\033[0;32m(set)\033[0m"
@@ -112,7 +112,7 @@ registry::info() {
     fi
 
     echo ""
-    local installed_marker="${CLAUDEOS_BAZAAR_DIR}/${key}/.installed"
+    local installed_marker="${TURINGOS_BAZAAR_DIR}/${key}/.installed"
     if [[ -f "$installed_marker" ]]; then
         ui::ok "Status: installed"
         local installed_at
@@ -120,7 +120,7 @@ registry::info() {
         ui::label "Installed at" "$installed_at"
     else
         ui::info "Status: not installed"
-        ui::info "Install: claudeos bazaar install ${key}"
+        ui::info "Install: turingos bazaar install ${key}"
     fi
     echo ""
 }
@@ -133,21 +133,21 @@ registry::search() {
     registry::_load || return 1
 
     if [[ -z "$query" ]]; then
-        ui::fail "Usage: claudeos bazaar search <query>"
+        ui::fail "Usage: turingos bazaar search <query>"
         return 1
     fi
 
     ui::header "Search: ${query}"
 
     local keys
-    keys=$(jq -r '.tools | keys[]' "$CLAUDEOS_REGISTRY")
+    keys=$(jq -r '.tools | keys[]' "$TURINGOS_REGISTRY")
 
     local found=0
     while IFS= read -r key; do
         local name description tags
-        name=$(        jq -r ".tools[\"${key}\"].name"                  "$CLAUDEOS_REGISTRY")
-        description=$( jq -r ".tools[\"${key}\"].description"           "$CLAUDEOS_REGISTRY")
-        tags=$(        jq -r ".tools[\"${key}\"].tags | join(\" \")"    "$CLAUDEOS_REGISTRY" 2>/dev/null)
+        name=$(        jq -r ".tools[\"${key}\"].name"                  "$TURINGOS_REGISTRY")
+        description=$( jq -r ".tools[\"${key}\"].description"           "$TURINGOS_REGISTRY")
+        tags=$(        jq -r ".tools[\"${key}\"].tags | join(\" \")"    "$TURINGOS_REGISTRY" 2>/dev/null)
 
         # Case-insensitive match against key, name, description, tags
         local haystack="${key} ${name} ${description} ${tags}"
@@ -161,7 +161,7 @@ registry::search() {
     if [[ $found -eq 0 ]]; then
         ui::info "No tools matched: ${query}"
     else
-        ui::info "${found} result(s). Install with: claudeos bazaar install <key>"
+        ui::info "${found} result(s). Install with: turingos bazaar install <key>"
     fi
 }
 
@@ -181,7 +181,7 @@ registry::browse() {
     fzf_input=$(jq -r '
       .tools | to_entries[] |
       "\(.key)  \(.value.name)  —  \(.value.description)"
-    ' "$CLAUDEOS_REGISTRY" 2>/dev/null)
+    ' "$TURINGOS_REGISTRY" 2>/dev/null)
 
     local selection
     selection=$(echo "$fzf_input" | fzf \
@@ -214,7 +214,7 @@ registry::browse() {
 
 registry::keys() {
     registry::_load || return 1
-    jq -r '.tools | keys[]' "$CLAUDEOS_REGISTRY" 2>/dev/null
+    jq -r '.tools | keys[]' "$TURINGOS_REGISTRY" 2>/dev/null
 }
 
 registry::get_field() {
@@ -222,7 +222,7 @@ registry::get_field() {
     local key="$1"
     local field="$2"
     registry::_load || return 1
-    jq -r ".tools[\"${key}\"].${field} // empty" "$CLAUDEOS_REGISTRY" 2>/dev/null
+    jq -r ".tools[\"${key}\"].${field} // empty" "$TURINGOS_REGISTRY" 2>/dev/null
 }
 
 registry::get_array() {
@@ -230,7 +230,7 @@ registry::get_array() {
     local key="$1"
     local field="$2"
     registry::_load || return 1
-    jq -r ".tools[\"${key}\"].${field}[]? // empty" "$CLAUDEOS_REGISTRY" 2>/dev/null
+    jq -r ".tools[\"${key}\"].${field}[]? // empty" "$TURINGOS_REGISTRY" 2>/dev/null
 }
 
 # ─── Fuzzy Suggestion ────────────────────────────────────────────────────────
@@ -259,7 +259,7 @@ registry::installed() {
     ui::header "Installed Tools"
 
     local found=0
-    for marker in "${CLAUDEOS_BAZAAR_DIR}"/*/.installed; do
+    for marker in "${TURINGOS_BAZAAR_DIR}"/*/.installed; do
         [[ -f "$marker" ]] || continue
         local key
         key=$(basename "$(dirname "$marker")")
@@ -273,7 +273,7 @@ registry::installed() {
 
     if [[ $found -eq 0 ]]; then
         ui::info "No tools installed yet"
-        ui::info "Browse: claudeos bazaar"
+        ui::info "Browse: turingos bazaar"
     fi
     echo ""
 }

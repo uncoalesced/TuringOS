@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# core/logging.sh — ClaudeOS structured logging
+# core/logging.sh — TuringOS structured logging
 # Writes timestamped entries to file; mirrors to terminal based on log level.
-# Depends on: core/config.sh (for CLAUDEOS_LOG_DIR, CLAUDEOS_LOG_LEVEL)
+# Depends on: core/config.sh (for TURINGOS_LOG_DIR, TURINGOS_LOG_LEVEL)
 
 # ─── Guard ────────────────────────────────────────────────────────────────────
 
-[[ -n "${_CLAUDEOS_LOGGING_LOADED:-}" ]] && return 0
-_CLAUDEOS_LOGGING_LOADED=1
+[[ -n "${_TURINGOS_LOGGING_LOADED:-}" ]] && return 0
+_TURINGOS_LOGGING_LOADED=1
 
 # ─── Level Ranks (lower = more verbose) ──────────────────────────────────────
 # Note: avoid declare -A for Bash 3.x (macOS default) compatibility
@@ -22,14 +22,14 @@ _log::_rank() {
 }
 
 # ─── Current Log File ─────────────────────────────────────────────────────────
-# Set once per session; callers can override by setting CLAUDEOS_ACTIVE_LOG.
+# Set once per session; callers can override by setting TURINGOS_ACTIVE_LOG.
 
 _log::_ensure_file() {
-    if [[ -z "${CLAUDEOS_ACTIVE_LOG:-}" ]]; then
-        local log_dir="${CLAUDEOS_LOG_DIR:-${HOME}/.claudeos/logs}"
+    if [[ -z "${TURINGOS_ACTIVE_LOG:-}" ]]; then
+        local log_dir="${TURINGOS_LOG_DIR:-${HOME}/.turingos/logs}"
         mkdir -p "$log_dir"
-        CLAUDEOS_ACTIVE_LOG="${log_dir}/claudeos-$(date +%Y%m%d).log"
-        export CLAUDEOS_ACTIVE_LOG
+        TURINGOS_ACTIVE_LOG="${log_dir}/turingos-$(date +%Y%m%d).log"
+        export TURINGOS_ACTIVE_LOG
     fi
 }
 
@@ -48,10 +48,10 @@ _log::write() {
 
     # Always write to file (no colors)
     printf '[%s] [%-5s] [%s] %s\n' "$ts" "${level^^}" "$module" "$msg" \
-        >> "$CLAUDEOS_ACTIVE_LOG"
+        >> "$TURINGOS_ACTIVE_LOG"
 
     # Mirror to terminal if this level meets the configured threshold
-    local configured_level="${CLAUDEOS_LOG_LEVEL:-info}"
+    local configured_level="${TURINGOS_LOG_LEVEL:-info}"
     local msg_rank cfg_rank
     msg_rank=$(_log::_rank "$level")
     cfg_rank=$(_log::_rank "$configured_level")
@@ -81,10 +81,10 @@ _log::_print_terminal() {
 
 # ─── Public API ───────────────────────────────────────────────────────────────
 
-log::debug() { _log::write "debug" "${_LOG_MODULE:-claudeos}" "$@"; }
-log::info()  { _log::write "info"  "${_LOG_MODULE:-claudeos}" "$@"; }
-log::warn()  { _log::write "warn"  "${_LOG_MODULE:-claudeos}" "$@"; }
-log::error() { _log::write "error" "${_LOG_MODULE:-claudeos}" "$@"; }
+log::debug() { _log::write "debug" "${_LOG_MODULE:-turingos}" "$@"; }
+log::info()  { _log::write "info"  "${_LOG_MODULE:-turingos}" "$@"; }
+log::warn()  { _log::write "warn"  "${_LOG_MODULE:-turingos}" "$@"; }
+log::error() { _log::write "error" "${_LOG_MODULE:-turingos}" "$@"; }
 
 # Convenience: set module name for a script
 # Usage: log::set_module "sandbox"
@@ -100,7 +100,7 @@ log::section() {
     _log::_ensure_file
     local ts
     ts=$(date '+%Y-%m-%dT%H:%M:%S')
-    printf '\n[%s] ══════ %s ══════\n\n' "$ts" "$label" >> "$CLAUDEOS_ACTIVE_LOG"
+    printf '\n[%s] ══════ %s ══════\n\n' "$ts" "$label" >> "$TURINGOS_ACTIVE_LOG"
 }
 
 # ─── Task Audit Trail ─────────────────────────────────────────────────────────
@@ -112,7 +112,7 @@ log::audit() {
     local event="$1"
     shift
 
-    local log_dir="${CLAUDEOS_LOG_DIR:-${HOME}/.claudeos/logs}"
+    local log_dir="${TURINGOS_LOG_DIR:-${HOME}/.turingos/logs}"
     mkdir -p "$log_dir"
     local audit_file="${log_dir}/audit.log"
 
@@ -128,14 +128,14 @@ log::audit() {
 log::rotate() {
     # Keep only the last N daily log files (default: 7)
     local keep="${1:-7}"
-    local log_dir="${CLAUDEOS_LOG_DIR:-${HOME}/.claudeos/logs}"
+    local log_dir="${TURINGOS_LOG_DIR:-${HOME}/.turingos/logs}"
 
-    # List claudeos-*.log files sorted oldest-first, delete excess
+    # List turingos-*.log files sorted oldest-first, delete excess
     local count
-    count=$(ls "${log_dir}/claudeos-"*.log 2>/dev/null | wc -l)
+    count=$(ls "${log_dir}/turingos-"*.log 2>/dev/null | wc -l)
 
     if (( count > keep )); then
-        ls -t "${log_dir}/claudeos-"*.log 2>/dev/null \
+        ls -t "${log_dir}/turingos-"*.log 2>/dev/null \
             | tail -n "+$((keep + 1))" \
             | xargs rm -f
         log::info "Log rotation: kept ${keep} files, removed $((count - keep))"
@@ -147,10 +147,10 @@ log::rotate() {
 log::tail() {
     local lines="${1:-50}"
     _log::_ensure_file
-    tail -n "$lines" "$CLAUDEOS_ACTIVE_LOG"
+    tail -n "$lines" "$TURINGOS_ACTIVE_LOG"
 }
 
 log::path() {
     _log::_ensure_file
-    echo "$CLAUDEOS_ACTIVE_LOG"
+    echo "$TURINGOS_ACTIVE_LOG"
 }

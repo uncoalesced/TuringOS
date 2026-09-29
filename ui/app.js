@@ -9,11 +9,11 @@ const SAMPLE = {
   agent: { running: true, task: 'Refactor the auth module and run the tests' },
   sandbox: 'task-1727340000',
   gameMode: false,
-  system: { host: 'claudeos', cpu: 18, mem: 42, battery: { level: 82, charging: false }, wifi: { ssid: 'Studio' } },
+  system: { host: 'turingos', cpu: 18, mem: 42, battery: { level: 82, charging: false }, wifi: { ssid: 'Studio' } },
   weather: { city: 'Bengaluru', temp: 26, feels: 30, rain: 0, wind: 8, windDir: 200, code: 2, day: true },
   github: {
     mine: [{ number: 127, title: 'Handle an interrupted pacman install', url: '#' }],
-    reviews: [{ number: 89, title: 'Add Btrfs snapshot rollback', repository: { name: 'claudeos' }, url: '#' }],
+    reviews: [{ number: 89, title: 'Add Btrfs snapshot rollback', repository: { name: 'turingos' }, url: '#' }],
   },
   // Real personal data, not made up — unlike weather/agent sample data
   // (meant to make the desktop read as intended), a fake meeting here could
@@ -24,7 +24,7 @@ const SAMPLE = {
 };
 
 const SAMPLE_PROJECTS = [
-  { name: 'claudeos', path: '~/code/claudeos' },
+  { name: 'turingos', path: '~/code/turingos' },
   { name: 'auth-service', path: '~/code/auth-service' },
   { name: 'dotfiles', path: '~/dotfiles' },
 ];
@@ -33,6 +33,8 @@ let lastSnap = null;
 let userName = null;
 let pendingStart = false;
 let pendingStartTimer = null;
+let lastAgentRunning = false;
+let lastAgentTask = '';
 
 // ─── Weather ────────────────────────────────────────────────────────────────
 // WMO weather codes (Open-Meteo): https://open-meteo.com/en/docs
@@ -146,40 +148,122 @@ function renderCalendarMessage(text, isError) {
   body.append(p);
 }
 
-function renderCalendar(cal) {
-  const body = $('#calendar-body');
-  body.replaceChildren();
-  if (!cal.connected) {
-    const empty = document.createElement('p');
-    empty.className = 'widget-empty';
-    empty.textContent = 'Connect Google Calendar to see your next meeting.';
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.id = 'calendar-connect';
-    btn.className = 'widget-connect';
-    btn.textContent = 'Connect Google Calendar';
-    btn.addEventListener('click', connectGoogle);
-    body.append(empty, btn);
-    return;
+// Shown until a real calendar is connected (and when it has nothing coming
+// up), so the demo always has a meeting to look at.
+const DEMO_MEETING = {
+  title: 'Design sync — TuringOS demo',
+  start: (() => { const d = new Date(); d.setHours(16, 30, 0, 0); return d.toISOString(); })(),
+  meta: '30 min · Google Meet',
+};
+
+function meetingCard(ev, { demo }) {
+  const wrap = document.createElement('div');
+  wrap.className = 'meeting';
+  const when = document.createElement('p');
+  when.className = 'meeting-when';
+  when.textContent = formatEventTime(ev.start) || 'Upcoming';
+  const title = document.createElement('p');
+  title.className = 'meeting-title';
+  title.textContent = ev.title;
+  const meta = document.createElement('p');
+  meta.className = 'meeting-meta';
+  meta.textContent = ev.meta || 'Next on your calendar';
+  const foot = document.createElement('div');
+  foot.className = 'meeting-foot';
+  const join = document.createElement('button');
+  join.type = 'button';
+  join.className = 'meeting-join';
+  join.textContent = 'Join';
+  foot.append(join);
+  if (demo) {
+    const link = document.createElement('button');
+    link.type = 'button';
+    link.id = 'calendar-connect';
+    link.className = 'meeting-link';
+    link.textContent = 'Connect Google Calendar';
+    link.addEventListener('click', connectGoogle);
+    foot.append(link);
   }
-  if (!cal.nextEvent) {
-    const empty = document.createElement('p');
-    empty.className = 'widget-empty';
-    empty.textContent = 'No upcoming events.';
-    body.append(empty);
-    return;
-  }
-  const row = document.createElement('div');
-  row.className = 'widget-row';
-  const title = document.createElement('span');
-  title.className = 'widget-row-title';
-  title.textContent = cal.nextEvent.title;
-  const sub = document.createElement('span');
-  sub.className = 'widget-row-sub';
-  sub.textContent = formatEventTime(cal.nextEvent.start);
-  row.append(title, sub);
-  body.append(row);
+  wrap.append(when, title, meta, foot);
+  return wrap;
 }
+
+let calendarKey = '';
+function renderCalendar(cal) {
+  const ev = cal.connected && cal.nextEvent;
+  const key = ev ? `${ev.title}|${ev.start}` : 'demo';
+  if (key === calendarKey) return; // state pushes every few seconds; don't rebuild
+  calendarKey = key;
+  $('#calendar-body').replaceChildren(ev ? meetingCard(ev, { demo: false }) : meetingCard(DEMO_MEETING, { demo: !cal.connected }));
+}
+
+// ─── Notifications ──────────────────────────────────────────────────────────
+// Seeded with a few demo items; real agent task completions are added on top.
+
+const MIN = 60_000;
+let notifications = [
+  { app: 'claude', title: 'Completed reviewing the PR on turingos', body: '#42 ui-fixes — left 3 comments, approved with suggestions', at: Date.now() - 4 * MIN },
+  { app: 'terminal', title: 'Task finished in turing-web', body: 'Tests pass · 5 files changed · ready for review', at: Date.now() - 18 * MIN },
+  { app: 'github', title: 'Review requested', body: 'anthropic/turingos #51 — Debian packaging for ui/', at: Date.now() - 62 * MIN },
+];
+
+const NOTIF_ICON = { claude: 'claude-spark', terminal: 'ic-terminal', github: 'ic-github' };
+
+function timeAgo(t) {
+  const m = Math.round((Date.now() - t) / MIN);
+  if (m < 1) return 'now';
+  if (m < 60) return `${m}m ago`;
+  return `${Math.round(m / 60)}h ago`;
+}
+
+function renderNotifications() {
+  const list = $('#notif-list');
+  $('#notif-clear').hidden = notifications.length === 0;
+  if (!notifications.length) {
+    list.replaceChildren(Object.assign(document.createElement('p'), { className: 'notif-empty', textContent: 'No new notifications' }));
+    return;
+  }
+  list.replaceChildren(...notifications.map((n, i) => {
+    const card = document.createElement('article');
+    card.className = 'notif';
+    card.style.setProperty('--i', i);
+    const app = document.createElement('span');
+    app.className = 'notif-app';
+    app.dataset.app = n.app;
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(svgNS, 'svg');
+    svg.setAttribute('class', n.app === 'claude' ? 'spark' : 'icon');
+    svg.setAttribute('aria-hidden', 'true');
+    const use = document.createElementNS(svgNS, 'use');
+    use.setAttribute('href', `#${NOTIF_ICON[n.app] || 'ic-check'}`);
+    svg.append(use);
+    app.append(svg);
+    const text = document.createElement('div');
+    const top = document.createElement('div');
+    top.className = 'notif-top';
+    top.append(
+      Object.assign(document.createElement('p'), { className: 'notif-title', textContent: n.title }),
+      Object.assign(document.createElement('time'), { className: 'notif-time', textContent: timeAgo(n.at) }),
+    );
+    text.append(top, Object.assign(document.createElement('p'), { className: 'notif-body', textContent: n.body }));
+    card.append(app, text);
+    return card;
+  }));
+  // Widgets follow the notifications in the stagger.
+  document.querySelectorAll('.side-panel .panel-card').forEach((el, j) => el.style.setProperty('--i', notifications.length + j));
+}
+
+function notify(n) {
+  notifications.unshift({ at: Date.now(), ...n });
+  renderNotifications();
+}
+
+$('#notif-clear').addEventListener('click', () => {
+  notifications = [];
+  renderNotifications();
+});
+
+renderNotifications();
 
 let weatherOpen = false;
 function setWeatherOpen(open) {
@@ -213,9 +297,14 @@ let panelOpen = false;
 function setPanelOpen(open) {
   panelOpen = open;
   $('#side-panel').classList.toggle('is-visible', open);
+  document.documentElement.classList.toggle('panel-open', open);
+  if (open) renderNotifications();
 }
 
 $('#menubar-clock').addEventListener('click', () => setPanelOpen(!panelOpen));
+document.addEventListener('click', (e) => {
+  if (panelOpen && !e.target.closest('#side-panel, #menubar-clock')) setPanelOpen(false);
+});
 document.addEventListener('keydown', (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'j') {
     e.preventDefault();
@@ -244,7 +333,7 @@ function tickClock() {
 // ─── State ──────────────────────────────────────────────────────────────────
 
 function render(snap) {
-  // Before ClaudeOS is initialised, keep real system numbers but show
+  // Before TuringOS is initialised, keep real system numbers but show
   // sample agent data so the desktop still reads as intended.
   const s = snap.live ? snap : { ...SAMPLE, system: { ...SAMPLE.system, ...pickDefined(snap.system) } };
   $('#sample-badge').hidden = snap.live;
@@ -274,6 +363,11 @@ function render(snap) {
     clearTimeout(pendingStartTimer);
   }
   const state = pendingStart ? 'working' : s.agent.running ? 'agentic' : 'idle';
+  if (lastAgentRunning && !s.agent.running) {
+    notify({ app: 'terminal', title: 'Agent task finished', body: lastAgentTask || 'The sandboxed agent is done.' });
+  }
+  lastAgentRunning = s.agent.running;
+  if (s.agent.task) lastAgentTask = s.agent.task;
   const label = { idle: 'Agent idle', working: 'Starting…', agentic: 'Agentic' }[state];
 
   const corner = $('#corner-agent');
@@ -455,18 +549,188 @@ function sync() {
   send.disabled = !input.value.trim();
 }
 
-async function submit() {
-  const task = input.value.trim();
-  if (!task) return;
-  if (!project) {
-    setHint('Pick a project with @ first', 'error');
-    return;
-  }
-  if (!window.shell || !lastSnap?.live) {
-    setHint('Sample mode: nothing was started', 'error');
-    return;
-  }
-  const res = await window.shell.startAgent(project.path, task);
+// ─── Model picker ───────────────────────────────────────────────────────────
+// Which model/effort the next agent run uses. Persisted locally; passed
+// through to the backend as env vars on start (TURINGOS_AGENT_MODEL/EFFORT) —
+// additive only, agent/claude.sh doesn't read them yet, so this is inert
+// until that's wired up, not a silent no-op pretending to work today.
+
+const MODELS = [
+  { id: 'claude-fable-5-1', label: 'Fable 5.1', desc: 'For your toughest challenges' },
+  { id: 'claude-opus-5-5', label: 'Opus 5.5', desc: 'Most capable for ambitious work' },
+  { id: 'claude-sonnet-5', label: 'Sonnet 5', desc: 'Most efficient for everyday tasks' },
+  { id: 'claude-haiku-4-5', label: 'Haiku 4.5', desc: 'Fastest for quick answers' },
+];
+const EFFORTS = [
+  { id: 'low', label: 'Low' },
+  { id: 'medium', label: 'Medium', isDefault: true },
+  { id: 'high', label: 'High' },
+  { id: 'xhigh', label: 'Extra' },
+  { id: 'max', label: 'Max' },
+];
+
+let modelChoice = localStorage.getItem('model') || 'claude-sonnet-5';
+let effortChoice = localStorage.getItem('effort') || 'medium';
+if (!MODELS.some((m) => m.id === modelChoice)) modelChoice = 'claude-sonnet-5';
+if (!EFFORTS.some((e) => e.id === effortChoice)) effortChoice = 'medium';
+
+const modelMenu = $('#model-menu');
+const modelPickerButton = $('#model-picker-button');
+let modelMenuOpen = false;
+
+function renderModelPickerButton() {
+  $('#model-picker-label').textContent = MODELS.find((m) => m.id === modelChoice)?.label || modelChoice;
+  $('#model-picker-effort-label').textContent = EFFORTS.find((e) => e.id === effortChoice)?.label || effortChoice;
+}
+
+function renderModelMenu() {
+  const modelsPage = $('#model-menu-page-models');
+  modelsPage.replaceChildren(...MODELS.map((m) => {
+    const el = document.createElement('button');
+    el.type = 'button';
+    el.className = 'model-option';
+    el.setAttribute('role', 'menuitemradio');
+    el.setAttribute('aria-checked', String(m.id === modelChoice));
+    el.innerHTML = `
+      <span class="model-option-text">
+        <span class="model-option-name">${m.label}</span>
+        <span class="model-option-desc">${m.desc}</span>
+      </span>
+      ${m.id === modelChoice ? '<svg class="icon" aria-hidden="true"><use href="#ic-check" /></svg>' : ''}
+    `;
+    el.addEventListener('click', () => {
+      modelChoice = m.id;
+      localStorage.setItem('model', modelChoice);
+      renderModelPickerButton();
+      renderModelMenu();
+      closeModelMenu();
+    });
+    return el;
+  }));
+
+  const divider = document.createElement('hr');
+  divider.className = 'model-menu-divider';
+  const effortRow = document.createElement('button');
+  effortRow.type = 'button';
+  effortRow.className = 'model-menu-more';
+  effortRow.innerHTML = `<span>Effort</span><span class="model-menu-more-value">${EFFORTS.find((e) => e.id === effortChoice)?.label}<svg class="icon" aria-hidden="true"><use href="#ic-chevron-right" /></svg></span>`;
+  effortRow.addEventListener('click', () => showModelMenuPage('effort'));
+
+  const moreDivider = document.createElement('hr');
+  moreDivider.className = 'model-menu-divider';
+  const moreRow = document.createElement('button');
+  moreRow.type = 'button';
+  moreRow.className = 'model-menu-more';
+  moreRow.innerHTML = '<span>More models</span><svg class="icon" aria-hidden="true"><use href="#ic-chevron-right" /></svg>';
+  moreRow.addEventListener('click', () => setHint('More models coming soon'));
+
+  modelsPage.append(divider, effortRow, moreDivider, moreRow);
+
+  const effortPage = $('#model-menu-page-effort');
+  const existingOptions = effortPage.querySelectorAll('.effort-option');
+  existingOptions.forEach((el) => el.remove());
+  effortPage.append(...EFFORTS.map((eff) => {
+    const el = document.createElement('button');
+    el.type = 'button';
+    el.className = 'effort-option';
+    el.setAttribute('role', 'menuitemradio');
+    el.setAttribute('aria-checked', String(eff.id === effortChoice));
+    el.innerHTML = `
+      <span class="model-option-text">${eff.label}</span>
+      ${eff.isDefault ? '<span class="effort-default-tag">Default</span>' : ''}
+      ${eff.id === effortChoice ? '<svg class="icon" aria-hidden="true"><use href="#ic-check" /></svg>' : ''}
+    `;
+    el.addEventListener('click', () => {
+      effortChoice = eff.id;
+      localStorage.setItem('effort', effortChoice);
+      renderModelPickerButton();
+      renderModelMenu();
+      showModelMenuPage('models');
+      closeModelMenu();
+    });
+    return el;
+  }));
+}
+
+function showModelMenuPage(page) {
+  $('#model-menu-page-models').hidden = page !== 'models';
+  $('#model-menu-page-effort').hidden = page !== 'effort';
+}
+
+function openModelMenu() {
+  renderModelMenu();
+  showModelMenuPage('models');
+  modelMenu.hidden = false;
+  modelMenuOpen = true;
+  modelPickerButton.setAttribute('aria-expanded', 'true');
+}
+
+function closeModelMenu() {
+  modelMenu.hidden = true;
+  modelMenuOpen = false;
+  modelPickerButton.setAttribute('aria-expanded', 'false');
+}
+
+modelPickerButton.addEventListener('click', () => (modelMenuOpen ? closeModelMenu() : openModelMenu()));
+$('#model-menu-back').addEventListener('click', () => showModelMenuPage('models'));
+document.addEventListener('click', (e) => {
+  if (modelMenuOpen && !e.target.closest('.model-picker')) closeModelMenu();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && modelMenuOpen) closeModelMenu();
+});
+
+renderModelPickerButton();
+
+// ─── Voice input (mic button) ───────────────────────────────────────────────
+// Chromium's built-in Web Speech API — no new dependency, no new
+// credentials. Depends on Chromium's own speech backend being reachable;
+// unverified on the offline/VM target, so it fails soft with a clear
+// message rather than pretending to work.
+
+const micButton = $('#composer-mic');
+const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognizer = null;
+let micListening = false;
+
+function setMicListening(on) {
+  micListening = on;
+  micButton.setAttribute('aria-pressed', String(on));
+  micButton.querySelector('use').setAttribute('href', on ? '#ic-mic-off' : '#ic-mic');
+  micButton.setAttribute('aria-label', on ? 'Stop dictation' : 'Dictate');
+}
+
+if (!SpeechRecognitionCtor) {
+  micButton.disabled = true;
+  micButton.title = 'Voice input is not available in this build';
+} else {
+  micButton.addEventListener('click', () => {
+    if (micListening) {
+      recognizer?.stop();
+      return;
+    }
+    recognizer = new SpeechRecognitionCtor();
+    recognizer.continuous = true;
+    recognizer.interimResults = false;
+    recognizer.lang = navigator.language || 'en-US';
+    const baseText = input.value ? `${input.value.trim()} ` : '';
+    recognizer.onstart = () => setMicListening(true);
+    recognizer.onresult = (e) => {
+      let transcript = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) transcript += e.results[i][0].transcript;
+      input.value = baseText + transcript;
+      sync();
+    };
+    recognizer.onerror = (e) => {
+      setHint(e.error === 'not-allowed' ? 'Microphone access was denied' : 'Voice input isn’t working right now', 'error');
+    };
+    recognizer.onend = () => setMicListening(false);
+    recognizer.start();
+  });
+}
+
+async function submitTask(task) {
+  const res = await window.shell.startAgent(project.path, task, { model: modelChoice, effort: effortChoice });
   if (!res.ok) {
     setHint(res.error, 'error');
     return;
@@ -486,6 +750,42 @@ async function submit() {
     pendingStart = false;
     if (lastSnap) render(lastSnap);
   }, 30000);
+}
+
+// No @project attached: this is a question, not a coding task — answer it
+// directly instead of starting a sandboxed Claude Code agent. That's the
+// actual difference between "chat with Claude" and "have Claude Code work
+// on my repo": whether a project is attached, not a separate mode to pick.
+async function submitChat(question) {
+  const answer = $('#composer-answer');
+  send.disabled = true;
+  answer.className = 'composer-answer is-pending';
+  answer.textContent = 'Thinking…';
+  const res = await window.shell.askChat(question, modelChoice, effortChoice);
+  send.disabled = !input.value.trim();
+  if (!res.ok) {
+    answer.className = 'composer-answer is-error';
+    answer.textContent = res.error;
+    return;
+  }
+  answer.className = 'composer-answer';
+  answer.textContent = res.text;
+  input.value = '';
+  sync();
+}
+
+async function submit() {
+  const task = input.value.trim();
+  if (!task) return;
+  if (!window.shell || !lastSnap?.live) {
+    setHint('Sample mode: nothing was started', 'error');
+    return;
+  }
+  if (project) {
+    await submitTask(task);
+  } else {
+    await submitChat(task);
+  }
 }
 
 input.addEventListener('input', () => {
@@ -558,37 +858,35 @@ document.addEventListener('keydown', (e) => {
 
 // ─── Dock ───────────────────────────────────────────────────────────────────
 // Hidden until the cursor hits the bottom edge (mirrors the real macOS dock).
-// Icons magnify toward the cursor; transform-origin is the bottom of each
-// icon so they grow upward without reflowing their neighbors.
+// Magnification follows buildui.com's "Magnified Dock" recipe: each icon's
+// distance from the cursor maps linearly to a target *size* (not a scale),
+// and a spring drives the real width/height toward it. Because the size is
+// real layout, a growing icon pushes its neighbours apart and widens the
+// tray instead of overlapping them.
 
 const dock = $('#dock');
 const dockItems = [...document.querySelectorAll('.dock-item')];
 const dockError = $('#dock-error');
+const dockTooltip = $('#dock-tooltip');
 
-const DOCK_MAX_SCALE = 1.6;
-const DOCK_SPREAD = 55; // px — how far the magnification falloff reaches; tight, so the peak is under the cursor and it drops off within a couple of icons, not the whole row
+const DOCK_BASE = 48; // px, resting tile size
+const DOCK_MAX = 84; // px, tile size directly under the cursor
+const DOCK_RANGE = 150; // px, distance at which a tile is back to resting size
 const DOCK_HIDE_DELAY = 250; // ms grace period before hiding, so crossing the gap between edge and dock doesn't flicker it shut
 
-// A real mass-spring-damper per icon, not a CSS transition retargeting a
-// JS-computed value. The difference matters here specifically: a transition
-// restarts its easing curve from scratch every time the target changes
-// (every mousemove), which looks steppy under fast mouse movement — a
-// spring integrates continuously, keeps its velocity across target changes,
-// and settles the same way whether it's interrupted once or a hundred
-// times a second. This is the "spring engine" ui-docs/UI_SHELL.md's Motion
-// section describes as not-built-yet; the dock is its first real use.
-const DOCK_SPRING_STIFFNESS = 380;
-const DOCK_SPRING_DAMPING = 24;
-const DOCK_SPRING_EPSILON = 0.001; // close enough to target + slow enough to call it settled
+// The recipe's own spring (Framer Motion: mass 0.1, stiffness 150,
+// damping 12), integrated here in plain JS since there's no Framer Motion.
+const DOCK_SPRING = { mass: 0.1, stiffness: 150, damping: 12 };
+const DOCK_SPRING_STEP = 1 / 240; // s — substep so a slow frame doesn't destabilise the spring
+const DOCK_SETTLE = 0.05; // px and px/s under which a tile counts as settled
 
 let dockHideTimer = null;
 let dockRaf = null;
 let dockLastFrameTime = 0;
-let pressedDockItem = null;
 let dockErrorTimer = null;
-let mouseOverDock = false;
-let lastMouseX = 0;
-const dockScale = dockItems.map(() => 1);
+let dockMouseX = null; // null = cursor not over the dock
+let dockHovered = null; // tile the tooltip is pointing at
+const dockSize = dockItems.map(() => DOCK_BASE);
 const dockVelocity = dockItems.map(() => 0);
 
 function setDockVisible(visible) {
@@ -599,54 +897,67 @@ function setDockVisible(visible) {
   } else {
     dockHideTimer = setTimeout(() => {
       dock.classList.remove('is-visible');
-      resetDockScale();
+      resetDock();
       $('#sample-badge').classList.remove('is-hidden');
     }, DOCK_HIDE_DELAY);
   }
 }
 
-function resetDockScale() {
+function applyDockSize(el, size) {
+  el.style.width = `${size.toFixed(2)}px`;
+  el.style.height = `${size.toFixed(2)}px`;
+}
+
+function resetDock() {
   if (dockRaf) cancelAnimationFrame(dockRaf);
   dockRaf = null;
   dockLastFrameTime = 0;
-  mouseOverDock = false;
+  dockMouseX = null;
   dockItems.forEach((el, i) => {
-    dockScale[i] = 1;
+    dockSize[i] = DOCK_BASE;
     dockVelocity[i] = 0;
-    el.style.transform = '';
+    el.style.width = '';
+    el.style.height = '';
   });
+  hideDockTooltip();
 }
 
+// Target size for one tile: linear falloff from DOCK_MAX at the cursor to
+// DOCK_BASE at DOCK_RANGE away — the recipe's useTransform([-150, 0, 150]).
 function dockTargetFor(el) {
-  if (!mouseOverDock) return 1;
+  if (dockMouseX === null) return DOCK_BASE;
   const box = el.getBoundingClientRect();
-  const center = box.left + box.width / 2;
-  const dist = Math.abs(lastMouseX - center);
-  const falloff = Math.exp(-(dist * dist) / (2 * DOCK_SPREAD * DOCK_SPREAD));
-  const scale = 1 + (DOCK_MAX_SCALE - 1) * falloff;
-  return el === pressedDockItem ? scale * 0.93 : scale;
+  const dist = Math.abs(dockMouseX - (box.left + box.width / 2));
+  const t = Math.max(0, 1 - dist / DOCK_RANGE);
+  return DOCK_BASE + (DOCK_MAX - DOCK_BASE) * t;
 }
 
-function stepDockSpring(dtSeconds) {
+function stepDock(dt) {
+  // Read every target first, then write — reading layout between writes
+  // would make each tile see its neighbours half-updated.
+  const targets = dockItems.map(dockTargetFor);
   let settled = true;
+  const { mass, stiffness, damping } = DOCK_SPRING;
   dockItems.forEach((el, i) => {
-    const target = dockTargetFor(el);
-    const displacement = dockScale[i] - target;
-    const accel = -DOCK_SPRING_STIFFNESS * displacement - DOCK_SPRING_DAMPING * dockVelocity[i];
-    dockVelocity[i] += accel * dtSeconds;
-    dockScale[i] += dockVelocity[i] * dtSeconds;
-    if (Math.abs(displacement) > DOCK_SPRING_EPSILON || Math.abs(dockVelocity[i]) > DOCK_SPRING_EPSILON) settled = false;
-    el.style.transform = `scale(${dockScale[i].toFixed(4)})`;
+    for (let t = 0; t < dt; t += DOCK_SPRING_STEP) {
+      const h = Math.min(DOCK_SPRING_STEP, dt - t);
+      const accel = (-stiffness * (dockSize[i] - targets[i]) - damping * dockVelocity[i]) / mass;
+      dockVelocity[i] += accel * h; // semi-implicit Euler: velocity first, then position
+      dockSize[i] += dockVelocity[i] * h;
+    }
+    if (Math.abs(dockSize[i] - targets[i]) > DOCK_SETTLE || Math.abs(dockVelocity[i]) > DOCK_SETTLE) settled = false;
+    applyDockSize(el, dockSize[i]);
   });
+  if (dockHovered) positionDockTooltip(dockHovered);
   return settled;
 }
 
-function dockSpringLoop(now) {
-  const dt = dockLastFrameTime ? Math.min((now - dockLastFrameTime) / 1000, 1 / 30) : 0;
+function dockLoop(now) {
+  const dt = dockLastFrameTime ? Math.min((now - dockLastFrameTime) / 1000, 1 / 30) : 1 / 60;
   dockLastFrameTime = now;
-  const settled = stepDockSpring(dt);
-  if (!settled || mouseOverDock) {
-    dockRaf = requestAnimationFrame(dockSpringLoop);
+  const settled = stepDock(dt);
+  if (!settled || dockMouseX !== null) {
+    dockRaf = requestAnimationFrame(dockLoop);
   } else {
     dockRaf = null;
     dockLastFrameTime = 0;
@@ -655,61 +966,58 @@ function dockSpringLoop(now) {
 
 function updateDock() {
   if (reducedMotion.matches) {
+    const targets = dockItems.map(dockTargetFor);
     dockItems.forEach((el, i) => {
-      const target = dockTargetFor(el);
-      dockScale[i] = target;
+      dockSize[i] = targets[i];
       dockVelocity[i] = 0;
-      el.style.transform = target === 1 ? '' : `scale(${target.toFixed(3)})`;
+      applyDockSize(el, targets[i]);
     });
+    if (dockHovered) positionDockTooltip(dockHovered);
     return;
   }
   if (!dockRaf) {
     dockLastFrameTime = 0;
-    dockRaf = requestAnimationFrame(dockSpringLoop);
+    dockRaf = requestAnimationFrame(dockLoop);
   }
 }
 
 $('#dock-edge').addEventListener('mouseenter', () => setDockVisible(true));
-dock.addEventListener('mouseenter', () => {
-  setDockVisible(true);
-  mouseOverDock = true;
+$('#dock-edge').addEventListener('mouseleave', () => setDockVisible(false));
+dock.addEventListener('mouseenter', () => setDockVisible(true));
+dock.addEventListener('mousemove', (e) => {
+  dockMouseX = e.clientX;
   updateDock();
 });
-$('#dock-edge').addEventListener('mouseleave', () => setDockVisible(false));
 dock.addEventListener('mouseleave', () => {
   setDockVisible(false);
-  mouseOverDock = false;
+  dockMouseX = null;
   updateDock();
 });
 
-dock.addEventListener('mousemove', (e) => {
-  lastMouseX = e.clientX;
-  updateDock();
-});
-
-const dockTooltip = $('#dock-tooltip');
+// Tooltip follows its tile every frame, since the tile keeps growing
+// after the cursor lands on it.
+function positionDockTooltip(el) {
+  const box = el.getBoundingClientRect();
+  dockTooltip.style.left = `${box.left + box.width / 2}px`;
+  dockTooltip.style.bottom = `${innerHeight - box.top + 10}px`;
+}
 
 function showDockTooltip(el) {
-  const box = el.getBoundingClientRect();
-  dockTooltip.textContent = el.title;
-  dockTooltip.style.left = `${box.left + box.width / 2}px`;
-  dockTooltip.style.bottom = `${innerHeight - box.top + 12}px`;
+  dockHovered = el;
+  dockTooltip.textContent = el.dataset.label;
+  positionDockTooltip(el);
   dockTooltip.classList.add('is-visible');
 }
 
 function hideDockTooltip() {
+  dockHovered = null;
   dockTooltip.classList.remove('is-visible');
 }
 
 dockItems.forEach((el) => {
   el.addEventListener('mouseenter', () => showDockTooltip(el));
-  el.addEventListener('mousedown', () => {
-    pressedDockItem = el;
-    hideDockTooltip();
-    updateDock();
-  });
-  el.addEventListener('mouseup', () => { pressedDockItem = null; updateDock(); });
-  el.addEventListener('mouseleave', () => { pressedDockItem = null; hideDockTooltip(); });
+  el.addEventListener('mouseleave', hideDockTooltip);
+  el.addEventListener('mousedown', hideDockTooltip);
 });
 
 function showDockError(text) {
@@ -726,6 +1034,8 @@ function showDockError(text) {
 dockItems.forEach((el) => {
   el.addEventListener('click', async () => {
     const id = el.dataset.app;
+    // Bazaar is built into the shell, not a system app.
+    if (id === 'bazaar') { window.openBazaar?.(); return; }
     if (!window.shell) {
       showDockError('Not available in this preview');
       return;
@@ -748,9 +1058,9 @@ let clawdWanderTimer = null;
 function clawdWalkTo(x) {
   const dist = Math.abs(x - clawdX);
   const duration = Math.max(500, Math.min(2200, dist * 14));
-  const facing = x > clawdX ? -1 : 1; // moving toward the dock (left) faces left
+  // No facing flip — just slide sideways and let the legs do the walking.
   clawd.style.transitionDuration = `${duration}ms`;
-  clawd.style.transform = `translateX(${-x}px) scaleX(${facing})`;
+  clawd.style.transform = `translateX(${-x}px)`;
   clawd.classList.add('is-walking');
   clawdX = x;
   clearTimeout(clawdWalkTimer);
@@ -767,6 +1077,49 @@ function scheduleClawdWander() {
 }
 scheduleClawdWander();
 
+// Shake the cursor anywhere — like macOS's shake-to-locate making the
+// pointer huge — and Clawd's chat pops open, no click, no need to be near
+// it. In kiosk mode (the real target) the window covers the whole screen,
+// so this is effectively "anywhere on the OS". A "shake" is several quick
+// direction reversals close together, not just fast motion in one
+// direction (that's just someone moving the mouse across the screen).
+const CLAWD_SHAKE_WINDOW_MS = 450;
+const CLAWD_SHAKE_MIN_DIST = 220; // px of total horizontal travel inside the window
+const CLAWD_SHAKE_MIN_REVERSALS = 3;
+
+let clawdShakeSamples = []; // { x, t }
+
+document.addEventListener('mousemove', (e) => {
+  if (clawdOpen) { clawdShakeSamples = []; return; }
+  // Sweeping back and forth across the dock (or the bottom strip that
+  // reveals it) is browsing apps, not a shake. Same for scrubbing through the
+  // notification panel or the Cmd+K palette.
+  if (panelOpen || document.querySelector('.palette')?.checkVisibility()
+    || e.target.closest?.('#dock, .dock-edge, #side-panel, .palette, .app-window')
+    || e.clientY > innerHeight - 120) {
+    clawdShakeSamples = [];
+    return;
+  }
+  const now = performance.now();
+  clawdShakeSamples.push({ x: e.clientX, t: now });
+  clawdShakeSamples = clawdShakeSamples.filter((s) => now - s.t <= CLAWD_SHAKE_WINDOW_MS);
+  if (clawdShakeSamples.length < 5) return;
+
+  let dist = 0;
+  let reversals = 0;
+  let lastDx = 0;
+  for (let i = 1; i < clawdShakeSamples.length; i++) {
+    const dx = clawdShakeSamples[i].x - clawdShakeSamples[i - 1].x;
+    dist += Math.abs(dx);
+    if (lastDx !== 0 && dx !== 0 && Math.sign(dx) !== Math.sign(lastDx)) reversals++;
+    if (dx !== 0) lastDx = dx;
+  }
+  if (dist >= CLAWD_SHAKE_MIN_DIST && reversals >= CLAWD_SHAKE_MIN_REVERSALS) {
+    clawdShakeSamples = [];
+    setClawdOpen(true);
+  }
+});
+
 let clawdOpen = false;
 function setClawdOpen(open) {
   clawdOpen = open;
@@ -775,6 +1128,10 @@ function setClawdOpen(open) {
   if (open) {
     chat.hidden = false;
     chat.classList.remove('is-closing');
+    // A shake doesn't click into the window, so it may not have real OS
+    // keyboard focus yet — window.focus() brings the app forward first,
+    // otherwise the input looks focused but keystrokes go elsewhere.
+    window.focus();
     $('#clawd-input').focus();
   } else if (!chat.hidden) {
     chat.classList.add('is-closing');
@@ -788,6 +1145,13 @@ document.addEventListener('click', (e) => {
 });
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && clawdOpen) setClawdOpen(false);
+});
+
+$('#clawd-input').addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    e.preventDefault();
+    $('#clawd-form').requestSubmit();
+  }
 });
 
 $('#clawd-form').addEventListener('submit', async (e) => {

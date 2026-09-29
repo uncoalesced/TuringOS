@@ -103,7 +103,7 @@ fi
 # run.sh already detects this and adds --no-sandbox automatically if needed,
 # but setting it here means we don't need the fallback.
 
-SYSCTL_CONF="/etc/sysctl.d/99-claudeos-electron.conf"
+SYSCTL_CONF="/etc/sysctl.d/99-turingos-electron.conf"
 if [[ -f /proc/sys/kernel/unprivileged_userns_clone ]]; then
     echo "kernel.unprivileged_userns_clone = 1" > "$SYSCTL_CONF"
     echo "==> [0450-electron-deps] Enabled unprivileged user namespaces for Electron sandbox"
