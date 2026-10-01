@@ -58,7 +58,7 @@ curl -fsSL https://ollama.com/install.sh | sh
 curl -fsSL https://opencode.ai/install | bash
 ```
 
-Run `turingos model status` to check the provider and ping its endpoint. In your PR, say which provider and model you tested with. Never commit API keys, and only ever send the OpenRouter key to OpenRouter.
+Run `turingos model status` to check the provider and ping its endpoint. In your PR, say which provider and model you tested with. Never commit API keys. TuringOS unsets `OPENROUTER_API_KEY` for any provider other than `openrouter`, so keep it that way if you touch the launch code.
 
 ## Finding work
 
@@ -102,7 +102,7 @@ Run `turingos model status` to check the provider and ping its endpoint. In your
 - [ ] Post-test evidence attached (output, screenshots, or recording)
 - [ ] Test environment described
 - [ ] Commits follow Conventional Commits
-- [ ] `shellcheck` clean (for Bash changes). CI runs `bash -n` and `shellcheck --severity=error` on every PR
+- [ ] `shellcheck` clean with no warnings on the files you changed (for Bash changes). CI only blocks on errors (`bash -n` + `shellcheck --severity=error`), so run `shellcheck <file>` yourself for warnings
 - [ ] Model provider and model named (for agent changes)
 - [ ] Docs updated if behaviour changed
 - [ ] Linked the related issue (`Closes #123`)
