@@ -83,7 +83,7 @@ curl -fsSL https://ollama.com/install.sh | sh
 curl -fsSL https://opencode.ai/install | bash
 ```
 
-The `custom` provider needs a matching `custom` provider entry in OpenCode's `opencode.json`. Put `OPENROUTER_API_KEY` in `~/.turingos/config.env` or your shell. TuringOS only sends it to OpenRouter.
+The `custom` provider needs a matching `custom` provider entry in OpenCode's `opencode.json`. Put `OPENROUTER_API_KEY` in `~/.turingos/config.env` or your shell. TuringOS unsets it for every other provider before launching OpenCode, and `model status` only sends it to OpenRouter.
 
 ### System monitor
 
