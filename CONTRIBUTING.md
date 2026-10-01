@@ -12,7 +12,7 @@ By taking part, you agree to follow our [Code of Conduct](CODE_OF_CONDUCT.md). T
 
 | Directory | What it is | Good fit if you know |
 |---|---|---|
-| `agent/` | Claude agent runtime and task flow | Bash, Claude Code, AI agents |
+| `agent/` | Agent runtime and task flow (Claude, or open models via OpenCode) | Bash, Claude Code, OpenCode, AI agents |
 | `sandbox/` | Ephemeral Btrfs sandboxes, diff and merge | Btrfs, filesystems, Linux internals |
 | `bazaar/` | Clawd Bazaar, the MCP tool registry | MCP servers, tooling |
 | `core/` | Policy layer and system integration | Linux, security, Bash |
@@ -39,6 +39,26 @@ Run and test TuringOS scripts on a Debian install built from the official netins
 - Architecture: we only support **amd64** right now. arm64 is coming soon.
 - ISO: always use `debian-13.7.0-amd64-netinst.iso`. Don't use other Debian versions or images. That way everyone tests against the same base, and results stay comparable.
 - A VM (QEMU/KVM, VirtualBox, etc.) is fine and is the easiest option.
+
+## Model providers
+
+Claude is the default, but TuringOS also runs agents on open models through [OpenCode](https://opencode.ai). If your change touches `agent/`, `core/config.sh`, or `turingos model`, test it against Claude and at least one other provider.
+
+| Provider | Setup | Notes |
+|---|---|---|
+| `claude` | `turingos model set claude` | Default. Runs the Claude CLI. |
+| `ollama` | `turingos model set ollama "" llama3.2` | Local. Default endpoint `http://localhost:11434`. Needs a decent GPU. |
+| `openrouter` | `turingos model set openrouter "" <model>` | Needs `OPENROUTER_API_KEY` in `~/.turingos/config.env` or your shell. |
+| `custom` | `turingos model set custom <url> <model>` | Any OpenAI-compatible server (llama.cpp, LM Studio, vLLM). Needs a matching `custom` provider in `opencode.json`. |
+
+Install the tools yourself, since the live ISO doesn't bundle them:
+
+```bash
+curl -fsSL https://ollama.com/install.sh | sh
+curl -fsSL https://opencode.ai/install | bash
+```
+
+Run `turingos model status` to check the provider and ping its endpoint. In your PR, say which provider and model you tested with. Never commit API keys, and only ever send the OpenRouter key to OpenRouter.
 
 ## Finding work
 
@@ -72,7 +92,7 @@ Run and test TuringOS scripts on a Debian install built from the official netins
    - UI / desktop / Game Mode: screenshots or a short screen recording.
    - ISO / packaging (`debian-live/`, `iso/`, `pkg/`): build log excerpt plus a screenshot of it booting in a VM.
    - Docs: a rendered preview or a screenshot of the changed section.
-3. Say what you tested on: distro, kernel, filesystem, and GPU if it matters.
+3. Say what you tested on: distro, kernel, filesystem, GPU if it matters, and the model provider for agent changes.
 4. A maintainer reviews your evidence and code, and may ask you to re-test.
 5. Your PR is merged into `main` only after a maintainer approves it.
 
@@ -82,7 +102,8 @@ Run and test TuringOS scripts on a Debian install built from the official netins
 - [ ] Post-test evidence attached (output, screenshots, or recording)
 - [ ] Test environment described
 - [ ] Commits follow Conventional Commits
-- [ ] `shellcheck` clean (for Bash changes)
+- [ ] `shellcheck` clean (for Bash changes). CI runs `bash -n` and `shellcheck --severity=error` on every PR
+- [ ] Model provider and model named (for agent changes)
 - [ ] Docs updated if behaviour changed
 - [ ] Linked the related issue (`Closes #123`)
 
