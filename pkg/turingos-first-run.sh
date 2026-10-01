@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # /etc/profile.d/turingos-first-run.sh
 #
 # Sourced on every interactive login via /etc/profile.d/.
