@@ -87,6 +87,8 @@ agent::start() {
                 2>&1 | tee "$agent_log"
             exit_code="${PIPESTATUS[0]}"
         else
+            # Keep the OpenRouter key away from local/custom endpoints
+            [[ "$TURINGOS_MODEL_PROVIDER" != "openrouter" ]] && unset OPENROUTER_API_KEY
             # OpenCode model ids are provider/model, e.g. ollama/llama3.2
             "$agent_bin" run \
                 ${TURINGOS_MODEL_NAME:+--model "${TURINGOS_MODEL_PROVIDER}/${TURINGOS_MODEL_NAME}"} \
