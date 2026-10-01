@@ -120,6 +120,11 @@ TURINGOS_AGENT_BINARY=claude
 TURINGOS_SANDBOX_BACKEND=btrfs
 TURINGOS_GAME_RENICE_LEVEL=10
 TURINGOS_LOG_LEVEL=info
+
+# Model provider: claude | ollama | openrouter | custom
+# Set with: turingos model set <provider> [endpoint] [model]
+TURINGOS_MODEL_PROVIDER=claude
+# OPENROUTER_API_KEY=sk-or-...
 EOF
 
 # ─── Desktop entry (optional — puts turingos in app launcher) ─────────────────

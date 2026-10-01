@@ -28,6 +28,12 @@ Merge
 
 We ship it as a bootable Debian live ISO with the UI and all tooling pre-installed.
 
+### Why it exists
+
+TuringOS is built for AI-first consumer hardware: a laptop, tablet, or phone whose whole job is working with Claude. You boot straight into Claude. The agent sandbox is the environment, not an app you open, and help is always one cursor shake away. We want a distro that a hardware maker could put on a Claude-dedicated device and ship.
+
+It also runs on hardware without a cloud connection. If the device has a decent GPU, you can point TuringOS at a local model and keep working (see [Models](#models)).
+
 ---
 
 ## Preview
@@ -57,6 +63,27 @@ When you launch a game, TuringOS drops agent and build processes to low priority
 ### Live desktop UI
 
 An Electron desktop shell that shows agent state, sandbox status, system stats, and MCP connections in real time. It launches fullscreen on boot.
+
+### Models
+
+Claude is the default. You can also run agents on open models through [OpenCode](https://opencode.ai):
+
+```bash
+turingos model set ollama "" llama3.2                    # local Ollama (default http://localhost:11434)
+turingos model set openrouter "" meta-llama/llama-3.3-70b-instruct   # needs OPENROUTER_API_KEY
+turingos model set custom http://localhost:8080 my-model # any OpenAI-compatible server
+turingos model set claude                                # back to Claude
+turingos model status                                    # show provider, ping endpoint
+```
+
+For a non-Claude provider, `turingos agent start` runs `opencode run --model <provider>/<model>` inside the sandbox instead of `claude`. Install the tools yourself first, since the live ISO doesn't bundle them (Ollama's GPU libraries are too big for it):
+
+```bash
+curl -fsSL https://ollama.com/install.sh | sh
+curl -fsSL https://opencode.ai/install | bash
+```
+
+The `custom` provider needs a matching `custom` provider entry in OpenCode's `opencode.json`. Put `OPENROUTER_API_KEY` in `~/.turingos/config.env` or your shell. TuringOS only sends it to OpenRouter.
 
 ### System monitor
 
@@ -183,6 +210,10 @@ turingos game watch                     Auto-detect game launches
 turingos status                         System + agent HUD
 turingos monitor watch                  Live refreshing dashboard
 turingos monitor spend                  API token usage + cost estimate
+
+turingos model status                   Show model provider + ping endpoint
+turingos model set <provider> [endpoint] [model]
+                                        claude | ollama | openrouter | custom
 
 turingos init                           First-time setup
 turingos dashboard                      Interactive menu

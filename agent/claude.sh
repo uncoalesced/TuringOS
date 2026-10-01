@@ -59,9 +59,13 @@ agent::start() {
     log::section "AGENT START — task: ${task}"
     log::info "sandbox=${sandbox_path} log=${agent_log}"
 
+    # Non-Claude providers run through OpenCode
+    local agent_bin="$TURINGOS_AGENT_BINARY"
+    [[ "$TURINGOS_MODEL_PROVIDER" != "claude" ]] && agent_bin="$TURINGOS_OPENCODE_BINARY"
+
     # Check the agent binary exists
-    if ! command -v "$TURINGOS_AGENT_BINARY" &>/dev/null; then
-        ui::fail "Agent binary not found: ${TURINGOS_AGENT_BINARY}"
+    if ! command -v "$agent_bin" &>/dev/null; then
+        ui::fail "Agent binary not found: ${agent_bin}"
         ui::info "Set TURINGOS_AGENT_BINARY in ~/.turingos/config.env"
         log::error "agent binary missing: ${TURINGOS_AGENT_BINARY}"
         return 1
@@ -74,13 +78,22 @@ agent::start() {
     # Launch agent in background, captured to log
     (
         cd "$sandbox_path" || exit 1
-        "$TURINGOS_AGENT_BINARY" \
-            --print \
-            --output-format stream-json \
-            < "$prompt_file" \
-            2>&1 | tee "$agent_log"
-
-        local exit_code="${PIPESTATUS[0]}"
+        local exit_code
+        if [[ "$TURINGOS_MODEL_PROVIDER" == "claude" ]]; then
+            "$agent_bin" \
+                --print \
+                --output-format stream-json \
+                < "$prompt_file" \
+                2>&1 | tee "$agent_log"
+            exit_code="${PIPESTATUS[0]}"
+        else
+            # OpenCode model ids are provider/model, e.g. ollama/llama3.2
+            "$agent_bin" run \
+                ${TURINGOS_MODEL_NAME:+--model "${TURINGOS_MODEL_PROVIDER}/${TURINGOS_MODEL_NAME}"} \
+                "$(cat "$prompt_file")" \
+                2>&1 | tee "$agent_log"
+            exit_code="${PIPESTATUS[0]}"
+        fi
 
         # Write test result if detectable
         agent::_capture_test_result "$sandbox_path" "$agent_log"

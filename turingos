@@ -184,6 +184,44 @@ cmd::init() {
     echo ""
 }
 
+# ─── Model Provider ───────────────────────────────────────────────────────────
+
+cmd::model() {
+    local sub="${1:-status}"; shift 2>/dev/null || true
+    case "$sub" in
+        set)
+            local provider="${1:-}" endpoint="${2:-}" name="${3:-}"
+            case "$provider" in
+                claude | ollama | openrouter | custom) ;;
+                *) ui::fail "Usage: turingos model set <claude|ollama|openrouter|custom> [endpoint] [model]"; return 1 ;;
+            esac
+            [[ "$provider" == "ollama" && -z "$endpoint" ]] && endpoint="http://localhost:11434"
+            [[ "$provider" == "openrouter" && -z "$endpoint" ]] && endpoint="https://openrouter.ai/api/v1"
+            config::set TURINGOS_MODEL_PROVIDER "$provider"
+            config::set TURINGOS_MODEL_ENDPOINT "$endpoint"
+            config::set TURINGOS_MODEL_NAME "$name"
+            ui::ok "Model provider set to ${provider}${name:+ (${name})}"
+            ;;
+        status)
+            ui::info "Provider: ${TURINGOS_MODEL_PROVIDER}"
+            ui::info "Endpoint: ${TURINGOS_MODEL_ENDPOINT:-<default>}"
+            ui::info "Model:    ${TURINGOS_MODEL_NAME:-<default>}"
+            [[ "$TURINGOS_MODEL_PROVIDER" == "claude" || -z "$TURINGOS_MODEL_ENDPOINT" ]] && return 0
+            local url="${TURINGOS_MODEL_ENDPOINT%/}/v1/models"
+            [[ "$TURINGOS_MODEL_PROVIDER" == "ollama" ]] && url="${TURINGOS_MODEL_ENDPOINT%/}/api/tags"
+            local auth=()
+            [[ "$TURINGOS_MODEL_PROVIDER" == "openrouter" && -n "${OPENROUTER_API_KEY:-}" ]]                 && auth=(-H "Authorization: Bearer ${OPENROUTER_API_KEY}")
+            if curl -fsS --max-time 5 "${auth[@]}" "$url" >/dev/null; then
+                ui::ok "Endpoint reachable"
+            else
+                ui::fail "Endpoint unreachable: ${url}"
+                return 1
+            fi
+            ;;
+        *) ui::fail "Unknown model subcommand: ${sub}"; return 1 ;;
+    esac
+}
+
 # ─── Dashboard (interactive gum/fzf menu) ────────────────────────────────────
 
 cmd::dashboard() {
@@ -281,6 +319,11 @@ cmd::help() {
     monitor                        Same as status
     monitor watch                  Live refreshing dashboard
     monitor spend                  API token usage + cost estimate
+
+  MODELS
+    model status                   Show provider + ping endpoint
+    model set <provider> [endpoint] [model]
+                                   claude | ollama | openrouter | custom
 
   OTHER
     init                           First-time setup + dependency check
@@ -394,6 +437,11 @@ main() {
                 "")     monitor::status ;;
                 *)      ui::fail "Unknown monitor subcommand: ${sub}"; exit 1 ;;
             esac
+            ;;
+
+        # ── Model Provider ────────────────────────────────────────────────────
+        model)
+            cmd::model ${sub:+"$sub"} "$@"
             ;;
 
         # ── Logs ──────────────────────────────────────────────────────────────
