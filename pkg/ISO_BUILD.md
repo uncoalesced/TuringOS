@@ -158,6 +158,7 @@ dpkg-scanpackages . /dev/null | gzip -9c > Packages.gz
 │   ├── ui.sh
 │   └── logging.sh
 ├── agent/claude.sh
+├── agent/nim.sh
 ├── sandbox/
 │   ├── btrfs.sh
 │   └── diff.sh

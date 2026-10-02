@@ -61,6 +61,7 @@ check() {
         "${_reporoot}/core/ui.sh"
         "${_reporoot}/core/logging.sh"
         "${_reporoot}/agent/claude.sh"
+        "${_reporoot}/agent/nim.sh"
         "${_reporoot}/sandbox/btrfs.sh"
         "${_reporoot}/sandbox/diff.sh"
         "${_reporoot}/bazaar/registry.sh"
@@ -104,6 +105,8 @@ package() {
     # ── Agent ─────────────────────────────────────────────────────────────────
     install -Dm644 "${_reporoot}/agent/claude.sh" \
         "${pkgdir}/usr/lib/turingos/agent/claude.sh"
+    install -Dm644 "${_reporoot}/agent/nim.sh" \
+        "${pkgdir}/usr/lib/turingos/agent/nim.sh"
 
     # ── Sandbox ───────────────────────────────────────────────────────────────
     install -Dm644 "${_reporoot}/sandbox/btrfs.sh" \

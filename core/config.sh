@@ -52,7 +52,7 @@ TURINGOS_GAME_RENICE_LEVEL="${TURINGOS_GAME_RENICE_LEVEL:-10}"  # nice value for
 TURINGOS_LOG_LEVEL="${TURINGOS_LOG_LEVEL:-info}"                # debug | info | warn | error
 
 # Model provider. Anything other than claude runs through OpenCode.
-TURINGOS_MODEL_PROVIDER="${TURINGOS_MODEL_PROVIDER:-claude}"    # claude | ollama | openrouter | custom
+TURINGOS_MODEL_PROVIDER="${TURINGOS_MODEL_PROVIDER:-claude}"    # claude | nvidia | ollama | openrouter | custom
 TURINGOS_MODEL_ENDPOINT="${TURINGOS_MODEL_ENDPOINT:-}"          # e.g. http://localhost:11434
 TURINGOS_MODEL_NAME="${TURINGOS_MODEL_NAME:-}"                  # e.g. llama3.2
 TURINGOS_OPENCODE_BINARY="${TURINGOS_OPENCODE_BINARY:-opencode}"
