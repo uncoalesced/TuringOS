@@ -128,17 +128,41 @@ ui::choose() {
     if command -v gum &>/dev/null; then
         gum choose --header="$prompt" "$@"
     else
-        echo -e "  ${BOLD_CYAN}${prompt}${RESET}"
+        # Menu goes to stderr so $(ui::choose ...) captures only the answer
+        echo -e "  ${BOLD_CYAN}${prompt}${RESET}" >&2
         local i=1
         for opt in "$@"; do
-            echo "    [$i] $opt"
+            echo "    [$i] $opt" >&2
             (( i++ ))
         done
-        echo -en "  Choice: "
+        echo -en "  Choice: " >&2
         read -r choice
         # Return chosen option by index
         local opts=("$@")
         echo "${opts[$((choice-1))]}"
+    fi
+}
+
+ui::choose_many() {
+    # Usage: ui::choose_many "Pick some" "opt1" "opt2" — prints one choice per line
+    local prompt="$1"
+    shift
+    if command -v gum &>/dev/null; then
+        gum choose --no-limit --header="$prompt" "$@"
+    else
+        echo -e "  ${BOLD_CYAN}${prompt}${RESET}" >&2
+        local i=1
+        for opt in "$@"; do
+            echo "    [$i] $opt" >&2
+            (( i++ ))
+        done
+        echo -en "  Choices (space-separated numbers): " >&2
+        local reply n opts=("$@")
+        read -r reply
+        for n in $reply; do
+            [[ "$n" =~ ^[0-9]+$ ]] && (( n >= 1 && n <= ${#opts[@]} )) && echo "${opts[$((n-1))]}"
+        done
+        return 0
     fi
 }
 
@@ -149,7 +173,7 @@ ui::input() {
     if command -v gum &>/dev/null; then
         gum input --placeholder="${default}" --prompt="  ❯ " --header="$prompt"
     else
-        echo -en "  ${BOLD_CYAN}${prompt}${RESET}${default:+ [${default}]}: "
+        echo -en "  ${BOLD_CYAN}${prompt}${RESET}${default:+ [${default}]}: " >&2
         read -r val
         echo "${val:-$default}"
     fi

@@ -40,8 +40,9 @@ sandbox::create() {
     # Normalize path
     project="$(cd "$project" && pwd)"
 
+    # Status output goes to stderr: callers capture stdout for the path
     if [[ ! -d "$project" ]]; then
-        ui::fail "Project directory not found: $project"
+        ui::fail "Project directory not found: $project" >&2
         log::error "sandbox::create — directory not found: $project"
         return 1
     fi
@@ -56,23 +57,25 @@ sandbox::create() {
     local backend
     backend=$(sandbox::_backend "$project")
 
-    ui::info "Creating agent sandbox..."
-    ui::label "Project"  "$project"
-    ui::label "Sandbox"  "$sandbox_path"
-    ui::label "Backend"  "$backend"
-    echo ""
+    {
+        ui::info "Creating agent sandbox..."
+        ui::label "Project"  "$project"
+        ui::label "Sandbox"  "$sandbox_path"
+        ui::label "Backend"  "$backend"
+        echo ""
+    } >&2
 
     log::section "SANDBOX CREATE — ${sandbox_name}"
     log::info "project=${project} sandbox=${sandbox_path} backend=${backend}"
 
+    local exit_code=0
     case "$backend" in
-        btrfs) sandbox::_create_btrfs "$project" "$sandbox_path" ;;
-        copy)  sandbox::_create_copy  "$project" "$sandbox_path" ;;
+        btrfs) sandbox::_create_btrfs "$project" "$sandbox_path" >&2 || exit_code=$? ;;
+        copy)  sandbox::_create_copy  "$project" "$sandbox_path" >&2 || exit_code=$? ;;
     esac
 
-    local exit_code=$?
     if [[ $exit_code -ne 0 ]]; then
-        ui::fail "Failed to create sandbox"
+        ui::fail "Failed to create sandbox" >&2
         log::error "sandbox creation failed (exit ${exit_code})"
         return 1
     fi
@@ -96,10 +99,12 @@ EOF
         "backend=${backend}" \
         "label=${label}"
 
-    ui::ok  "Original project protected"
-    ui::ok  "Sandbox created: ${sandbox_path}"
-    ui::ok  "Claude execution authorized"
-    echo ""
+    {
+        ui::ok  "Original project protected"
+        ui::ok  "Sandbox created: ${sandbox_path}"
+        ui::ok  "Claude execution authorized"
+        echo ""
+    } >&2
 
     # Return the path for callers
     echo "$sandbox_path"

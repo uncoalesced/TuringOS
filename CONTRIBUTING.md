@@ -47,6 +47,7 @@ Claude is the default, but TuringOS also runs agents on open models through [Ope
 | Provider | Setup | Notes |
 |---|---|---|
 | `claude` | `turingos model set claude` | Default. Runs the Claude CLI. |
+| `nvidia` | `turingos model set nvidia` | NVIDIA NIM. Interactive picker for models, up to 3 backups, image model and `NVIDIA_API_KEY`. Model list lives in `agent/nim.sh`. |
 | `ollama` | `turingos model set ollama "" llama3.2` | Local. Default endpoint `http://localhost:11434`. Needs a decent GPU. |
 | `openrouter` | `turingos model set openrouter "" <model>` | Needs `OPENROUTER_API_KEY` in `~/.turingos/config.env` or your shell. |
 | `custom` | `turingos model set custom <url> <model>` | Any OpenAI-compatible server (llama.cpp, LM Studio, vLLM). Needs a matching `custom` provider in `opencode.json`. |
@@ -58,7 +59,7 @@ curl -fsSL https://ollama.com/install.sh | sh
 curl -fsSL https://opencode.ai/install | bash
 ```
 
-Run `turingos model status` to check the provider and ping its endpoint. In your PR, say which provider and model you tested with. Never commit API keys. TuringOS unsets `OPENROUTER_API_KEY` for any provider other than `openrouter`, so keep it that way if you touch the launch code.
+Run `turingos model status` to check the provider and ping its endpoint. In your PR, say which provider and model you tested with. Never commit API keys. TuringOS unsets `OPENROUTER_API_KEY` for any provider other than `openrouter`, and `NVIDIA_API_KEY` for any provider other than `nvidia`, so keep it that way if you touch the launch code. Adding an NVIDIA model means adding it to `NIM_CHAT_MODELS` in `agent/nim.sh`. Keep the list to general text, code and vision models.
 
 ## Finding work
 

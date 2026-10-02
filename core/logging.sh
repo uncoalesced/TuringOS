@@ -76,7 +76,7 @@ _log::_print_terminal() {
         info)  printf "  \033[0;36m→\033[0m  \033[2m[%s]\033[0m %s\n" "$ts" "$msg" ;;
         warn)  printf "  \033[0;33m⚠\033[0m  \033[2m[%s]\033[0m %s\n" "$ts" "$msg" ;;
         error) printf "  \033[1;31m✗\033[0m  \033[2m[%s]\033[0m \033[1;31m%s\033[0m\n" "$ts" "$msg" ;;
-    esac
+    esac >&2   # stderr, so $(func) captures only real results
 }
 
 # ─── Public API ───────────────────────────────────────────────────────────────

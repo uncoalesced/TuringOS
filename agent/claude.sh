@@ -77,8 +77,14 @@ agent::start() {
 
     # Launch agent in background, captured to log
     (
+        # This job reads exit codes itself; inherited `set -e` would kill it
+        # on the first failed run, before the fallback or completion handler
+        set +e
         cd "$sandbox_path" || exit 1
         local exit_code
+        # Each API key only goes to its own provider
+        [[ "$TURINGOS_MODEL_PROVIDER" != "openrouter" ]] && unset OPENROUTER_API_KEY
+        [[ "$TURINGOS_MODEL_PROVIDER" != "nvidia" ]] && unset NVIDIA_API_KEY
         if [[ "$TURINGOS_MODEL_PROVIDER" == "claude" ]]; then
             "$agent_bin" \
                 --print \
@@ -86,9 +92,31 @@ agent::start() {
                 < "$prompt_file" \
                 2>&1 | tee "$agent_log"
             exit_code="${PIPESTATUS[0]}"
+        elif [[ "$TURINGOS_MODEL_PROVIDER" == "nvidia" ]]; then
+            if ! nim::opencode_config; then
+                echo "[turingos] ERROR: could not write ${NIM_OPENCODE_CONFIG} (is jq installed?)" | tee -a "$agent_log"
+                exit 1
+            fi
+            export OPENCODE_CONFIG="$NIM_OPENCODE_CONFIG"
+            # Default model first, then each backup until one succeeds.
+            # ponytail: retries on any non-zero exit, so a failed task also
+            # moves on to the next model, in the same sandbox.
+            exit_code=1
+            local model chain=()
+            mapfile -t chain < <(nim::model_chain)
+            for model in "${chain[@]}"; do
+                echo "[turingos] trying nvidia/${model}" | tee -a "$agent_log"
+                "$agent_bin" run --model "nvidia/${model}" \
+                    "$(cat "$prompt_file")" \
+                    2>&1 | tee -a "$agent_log"
+                exit_code="${PIPESTATUS[0]}"
+                [[ "$exit_code" -eq 0 ]] && break
+                echo "[turingos] nvidia/${model} failed (exit ${exit_code})" | tee -a "$agent_log"
+            done
+            if [[ "$exit_code" -ne 0 ]]; then
+                echo "[turingos] ERROR: default and all backup NVIDIA models failed" | tee -a "$agent_log"
+            fi
         else
-            # Keep the OpenRouter key away from local/custom endpoints
-            [[ "$TURINGOS_MODEL_PROVIDER" != "openrouter" ]] && unset OPENROUTER_API_KEY
             # OpenCode model ids are provider/model, e.g. ollama/llama3.2
             "$agent_bin" run \
                 ${TURINGOS_MODEL_NAME:+--model "${TURINGOS_MODEL_PROVIDER}/${TURINGOS_MODEL_NAME}"} \

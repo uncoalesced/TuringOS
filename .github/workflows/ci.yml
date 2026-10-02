@@ -17,3 +17,6 @@ jobs:
 
       - name: ShellCheck (errors only)
         run: git ls-files '*.sh' '*.hook.chroot' turingos | xargs shellcheck --shell=bash --severity=error
+
+      - name: NVIDIA NIM smoke test
+        run: bash tests/nim.sh

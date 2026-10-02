@@ -69,6 +69,7 @@ An Electron desktop shell that shows agent state, sandbox status, system stats, 
 Claude is the default. You can also run agents on open models through [OpenCode](https://opencode.ai):
 
 ```bash
+turingos model set nvidia                                # NVIDIA NIM: pick models, backups, API key
 turingos model set ollama "" llama3.2                    # local Ollama (default http://localhost:11434)
 turingos model set openrouter "" meta-llama/llama-3.3-70b-instruct   # needs OPENROUTER_API_KEY
 turingos model set custom http://localhost:8080 my-model # any OpenAI-compatible server
@@ -84,6 +85,23 @@ curl -fsSL https://opencode.ai/install | bash
 ```
 
 The `custom` provider needs a matching `custom` provider entry in OpenCode's `opencode.json`. Put `OPENROUTER_API_KEY` in `~/.turingos/config.env` or your shell. TuringOS unsets it for every other provider before launching OpenCode, and `model status` only sends it to OpenRouter.
+
+#### NVIDIA NIM
+
+`turingos model set nvidia` (also offered during `turingos init`) sets up [NVIDIA's hosted models](https://build.nvidia.com/models):
+
+1. Pick the models you want from a curated list of text, code and vision models (Nemotron, Kimi, GLM, DeepSeek, gpt-oss, Gemma, Mistral, Codestral, Llama Vision and more). You can also type any other model ID from build.nvidia.com.
+2. Choose a default model and up to 3 backups. If the default fails, `turingos agent start` tries each backup in order and only reports an error once all of them have failed.
+3. Choose the image model for `turingos image` (FLUX.1 dev or schnell).
+4. Paste your API key (`nvapi-...`, free at build.nvidia.com). It's saved as `NVIDIA_API_KEY` in `~/.turingos/config.env`, readable only by you.
+
+```bash
+turingos model use moonshotai/kimi-k3                    # switch the default model
+turingos image "a lighthouse at dusk, oil painting"      # saves image-<time>.jpg
+turingos image "app icon, flat style" icon.jpg
+```
+
+TuringOS points OpenCode at your picked models with its own config file (`~/.turingos/opencode-nvidia.json`), so your `opencode.json` stays untouched. `NVIDIA_API_KEY` is unset for every other provider.
 
 ### System monitor
 
@@ -213,7 +231,9 @@ turingos monitor spend                  API token usage + cost estimate
 
 turingos model status                   Show model provider + ping endpoint
 turingos model set <provider> [endpoint] [model]
-                                        claude | ollama | openrouter | custom
+                                        claude | nvidia | ollama | openrouter | custom
+turingos model use <model>              Change the default model
+turingos image "<prompt>" [out.jpg]     Generate an image with NVIDIA FLUX
 
 turingos init                           First-time setup
 turingos dashboard                      Interactive menu

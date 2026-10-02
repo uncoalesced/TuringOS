@@ -28,6 +28,10 @@
 #   turingos monitor
 #   turingos monitor watch
 #   turingos monitor spend
+#   turingos model status
+#   turingos model set <provider> [endpoint] [model]
+#   turingos model use <model>
+#   turingos image "<prompt>" [output.jpg]
 #   turingos logs [lines]
 #   turingos version
 #   turingos help
@@ -59,6 +63,7 @@ source "${_LIB_DIR}/core/logging.sh"
 source "${_LIB_DIR}/sandbox/btrfs.sh"
 source "${_LIB_DIR}/sandbox/diff.sh"
 source "${_LIB_DIR}/agent/claude.sh"
+source "${_LIB_DIR}/agent/nim.sh"
 source "${_LIB_DIR}/bazaar/registry.sh"
 source "${_LIB_DIR}/bazaar/install.sh"
 source "${_LIB_DIR}/game/gamemode.sh"
@@ -152,12 +157,26 @@ cmd::init() {
     else
         # Check config.env
         local key_in_config
-        key_in_config=$(grep '^ANTHROPIC_API_KEY=' "${TURINGOS_CONFIG_FILE}" 2>/dev/null | cut -d= -f2-)
+        key_in_config=$(grep '^ANTHROPIC_API_KEY=' "${TURINGOS_CONFIG_FILE}" 2>/dev/null | cut -d= -f2-) || true
         if [[ -n "$key_in_config" ]]; then
             ui::status_row "ANTHROPIC_API_KEY" "set (in config.env)" "ok"
         else
             ui::status_row "ANTHROPIC_API_KEY" "not set" "warn"
             ui::info "Set it: echo 'export ANTHROPIC_API_KEY=sk-ant-...' >> ~/.bashrc"
+        fi
+    fi
+
+    # ── Model provider (optional) ─────────────────────────────────────────────
+    echo ""
+    if ui::confirm "Configure a model provider now? (Claude is the default)"; then
+        local provider endpoint="" name=""
+        provider=$(ui::choose "Model provider" claude nvidia ollama openrouter custom) || true
+        case "$provider" in
+            custom) endpoint=$(ui::input "Endpoint URL" "http://localhost:8080") || true ;;&
+            ollama | openrouter | custom) name=$(ui::input "Model name" "") || true ;;
+        esac
+        if [[ -n "$provider" ]]; then
+            cmd::model set "$provider" "$endpoint" "$name" || ui::warn "Model provider not configured"
         fi
     fi
 
@@ -192,26 +211,59 @@ cmd::model() {
         set)
             local provider="${1:-}" endpoint="${2:-}" name="${3:-}"
             case "$provider" in
-                claude | ollama | openrouter | custom) ;;
-                *) ui::fail "Usage: turingos model set <claude|ollama|openrouter|custom> [endpoint] [model]"; return 1 ;;
+                claude | nvidia | ollama | openrouter | custom) ;;
+                *) ui::fail "Usage: turingos model set <claude|nvidia|ollama|openrouter|custom> [endpoint] [model]"; return 1 ;;
             esac
+            # `model set nvidia kimi` means the model, not an endpoint
+            if [[ -n "$endpoint" && "$endpoint" != *://* && -z "$name" ]]; then
+                name="$endpoint"
+                endpoint=""
+            fi
             [[ "$provider" == "ollama" && -z "$endpoint" ]] && endpoint="http://localhost:11434"
             [[ "$provider" == "openrouter" && -z "$endpoint" ]] && endpoint="https://openrouter.ai/api/v1"
+            [[ "$provider" == "nvidia" && -z "$endpoint" ]] && endpoint="$NIM_DEFAULT_ENDPOINT"
             config::set TURINGOS_MODEL_PROVIDER "$provider"
             config::set TURINGOS_MODEL_ENDPOINT "$endpoint"
-            config::set TURINGOS_MODEL_NAME "$name"
-            ui::ok "Model provider set to ${provider}${name:+ (${name})}"
+            if [[ "$provider" == "nvidia" ]]; then
+                nim::setup "$name" || return 1
+            else
+                config::set TURINGOS_MODEL_NAME "$name"
+            fi
+            ui::ok "Model provider set to ${provider}${TURINGOS_MODEL_NAME:+ (${TURINGOS_MODEL_NAME})}"
+            ;;
+        use)
+            local id="${1:-}"
+            if [[ -z "$id" ]]; then
+                ui::fail "Usage: turingos model use <model>"
+                return 1
+            fi
+            config::set TURINGOS_MODEL_NAME "$id"
+            if [[ "$TURINGOS_MODEL_PROVIDER" == "nvidia" && ",${TURINGOS_NIM_MODELS:-}," != *",${id},"* ]]; then
+                config::set TURINGOS_NIM_MODELS "${TURINGOS_NIM_MODELS:+${TURINGOS_NIM_MODELS},}${id}"
+            fi
+            ui::ok "Default model: ${id}"
             ;;
         status)
             ui::info "Provider: ${TURINGOS_MODEL_PROVIDER}"
             ui::info "Endpoint: ${TURINGOS_MODEL_ENDPOINT:-<default>}"
             ui::info "Model:    ${TURINGOS_MODEL_NAME:-<default>}"
+            if [[ "$TURINGOS_MODEL_PROVIDER" == "nvidia" ]]; then
+                ui::info "Backups:  ${TURINGOS_NIM_FALLBACKS:-<none>}"
+                ui::info "Picked:   ${TURINGOS_NIM_MODELS:-<none>}"
+                ui::info "Image:    ${TURINGOS_NIM_IMAGE_MODEL:-${NIM_IMAGE_MODELS[0]}}"
+            fi
             [[ "$TURINGOS_MODEL_PROVIDER" == "claude" || -z "$TURINGOS_MODEL_ENDPOINT" ]] && return 0
-            local url="${TURINGOS_MODEL_ENDPOINT%/}/v1/models"
-            [[ "$TURINGOS_MODEL_PROVIDER" == "ollama" ]] && url="${TURINGOS_MODEL_ENDPOINT%/}/api/tags"
-            local auth=()
-            [[ "$TURINGOS_MODEL_PROVIDER" == "openrouter" && -n "${OPENROUTER_API_KEY:-}" ]]                 && auth=(-H "Authorization: Bearer ${OPENROUTER_API_KEY}")
-            if curl -fsS --max-time 5 "${auth[@]}" "$url" >/dev/null; then
+            local url key=""
+            case "$TURINGOS_MODEL_PROVIDER" in
+                ollama)              url="${TURINGOS_MODEL_ENDPOINT%/}/api/tags" ;;
+                openrouter | nvidia) url="${TURINGOS_MODEL_ENDPOINT%/}/models" ;;   # endpoint already ends in /v1
+                *)                   url="${TURINGOS_MODEL_ENDPOINT%/}/v1/models" ;;
+            esac
+            [[ "$TURINGOS_MODEL_PROVIDER" == "openrouter" ]] && key="${OPENROUTER_API_KEY:-}"
+            [[ "$TURINGOS_MODEL_PROVIDER" == "nvidia" ]] && key="${NVIDIA_API_KEY:-}"
+            # Key goes to curl as config on stdin, not argv, so ps can't see it
+            if { [[ -z "$key" ]] || printf 'header = "Authorization: Bearer %s"\n' "$key"; } \
+                | curl -fsS --max-time 5 -K - "$url" >/dev/null; then
                 ui::ok "Endpoint reachable"
             else
                 ui::fail "Endpoint unreachable: ${url}"
@@ -323,7 +375,10 @@ cmd::help() {
   MODELS
     model status                   Show provider + ping endpoint
     model set <provider> [endpoint] [model]
-                                   claude | ollama | openrouter | custom
+                                   claude | nvidia | ollama | openrouter | custom
+                                   (nvidia with no model opens the model picker)
+    model use <model>              Change the default model
+    image "<prompt>" [out.jpg]     Generate an image with NVIDIA FLUX
 
   OTHER
     init                           First-time setup + dependency check
@@ -442,6 +497,11 @@ main() {
         # ── Model Provider ────────────────────────────────────────────────────
         model)
             cmd::model ${sub:+"$sub"} "$@"
+            ;;
+
+        # ── Image (NVIDIA NIM) ────────────────────────────────────────────────
+        image)
+            nim::image "$sub" "$@"
             ;;
 
         # ── Logs ──────────────────────────────────────────────────────────────

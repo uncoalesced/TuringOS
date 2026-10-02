@@ -68,6 +68,7 @@ install -m644 "${TURINGOS_SRC}/core/ui.sh"         /usr/lib/turingos/core/
 install -m644 "${TURINGOS_SRC}/core/logging.sh"    /usr/lib/turingos/core/
 
 install -m644 "${TURINGOS_SRC}/agent/claude.sh"    /usr/lib/turingos/agent/
+install -m644 "${TURINGOS_SRC}/agent/nim.sh"       /usr/lib/turingos/agent/
 
 install -m644 "${TURINGOS_SRC}/sandbox/btrfs.sh"   /usr/lib/turingos/sandbox/
 install -m644 "${TURINGOS_SRC}/sandbox/diff.sh"    /usr/lib/turingos/sandbox/
@@ -121,10 +122,12 @@ TURINGOS_SANDBOX_BACKEND=btrfs
 TURINGOS_GAME_RENICE_LEVEL=10
 TURINGOS_LOG_LEVEL=info
 
-# Model provider: claude | ollama | openrouter | custom
+# Model provider: claude | nvidia | ollama | openrouter | custom
 # Set with: turingos model set <provider> [endpoint] [model]
+# (turingos model set nvidia opens a model picker and asks for the key)
 TURINGOS_MODEL_PROVIDER=claude
 # OPENROUTER_API_KEY=sk-or-...
+# NVIDIA_API_KEY=nvapi-...
 EOF
 
 # ─── Desktop entry (optional — puts turingos in app launcher) ─────────────────
