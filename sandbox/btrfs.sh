@@ -2,189 +2,142 @@
 # sandbox/btrfs.sh — TuringOS Agent Sandbox
 #
 # Creates ephemeral Btrfs CoW snapshots of a project directory before handing
-# it to an agent. If Btrfs is unavailable, falls back to a plain rsync copy.
+# it to an agent. Falls back to a plain copy when the snapshot can't be made.
 #
 # Depends on: core/config.sh, core/logging.sh, core/ui.sh
 
-log::set_module "sandbox"
+# Files that belong to TuringOS or git, never merged back into the project
+SANDBOX_EXCLUDES=(--exclude=.git --exclude='.turingos_*')
 
-# ─── Backend Detection ────────────────────────────────────────────────────────
+# ─── Helpers ──────────────────────────────────────────────────────────────────
 
-sandbox::_is_btrfs() {
-    # Returns 0 if the given path lives on a Btrfs filesystem
-    local path="$1"
-    local fs_type
-    fs_type=$(stat -f -c '%T' "$path" 2>/dev/null || stat -f "$path" 2>/dev/null | awk '/Type:/{print $NF}')
-    [[ "$fs_type" == "btrfs" ]]
+sandbox::_meta() {
+    # Usage: sandbox::_meta SANDBOX KEY — value from the sandbox metadata file
+    local meta="$1/.turingos_sandbox"
+    [[ -f "$meta" ]] || return 0
+    sed -n "s/^$2=//p" "$meta" | head -1
 }
 
-sandbox::_backend() {
-    local project="$1"
-    if [[ "${TURINGOS_SANDBOX_BACKEND:-btrfs}" == "btrfs" ]] && \
-       command -v btrfs &>/dev/null && \
-       sandbox::_is_btrfs "$project"; then
-        echo "btrfs"
-    else
-        echo "copy"
+sandbox::_resolve() {
+    # Usage: path=$(sandbox::_resolve [SANDBOX]) — argument or active sandbox
+    local path="${1:-}"
+    [[ -z "$path" ]] && path=$(config::state_get "$STATE_KEY_ACTIVE_SANDBOX")
+    if [[ -z "$path" || ! -f "${path}/.turingos_sandbox" ]]; then
+        ui::fail "No sandbox found${path:+ at ${path}}. Run: turingos sandbox create" >&2
+        return 1
     fi
+    echo "$path"
+}
+
+sandbox::_sudo() {
+    # Run unprivileged first, then via passwordless sudo (live ISO user)
+    "$@" 2>/dev/null || sudo -n "$@"
 }
 
 # ─── Create Sandbox ───────────────────────────────────────────────────────────
 
 sandbox::create() {
     # Usage: sandbox::create [PROJECT_DIR] [TASK_LABEL]
-    # Prints the sandbox path to stdout on success.
+    # Prints the sandbox path to stdout; all status output goes to stderr.
     local project="${1:-$PWD}"
     local label="${2:-task}"
 
-    # Normalize path
-    project="$(cd "$project" && pwd)"
-
-    # Status output goes to stderr: callers capture stdout for the path
     if [[ ! -d "$project" ]]; then
         ui::fail "Project directory not found: $project" >&2
-        log::error "sandbox::create — directory not found: $project"
+        log::error "directory not found: $project"
         return 1
     fi
+    project="$(cd "$project" && pwd)"
 
-    local ts
-    ts=$(date +%s)
-    local safe_label
-    safe_label=$(echo "$label" | tr ' /' '__' | tr -cd '[:alnum:]_-' | cut -c1-32)
-    local sandbox_name="${safe_label}-${ts}"
-    local sandbox_path="${TURINGOS_SANDBOX_DIR}/${sandbox_name}"
+    local safe_label sandbox_name sandbox_path backend="copy"
+    safe_label=$(tr ' /' '__' <<< "$label" | tr -cd '[:alnum:]_-' | cut -c1-32)
+    sandbox_name="${safe_label:-task}-$(date +%s)"
+    sandbox_path="${TURINGOS_SANDBOX_DIR}/${sandbox_name}"
+    mkdir -p "$TURINGOS_SANDBOX_DIR"
 
-    local backend
-    backend=$(sandbox::_backend "$project")
+    log::section "SANDBOX CREATE — ${sandbox_name}"
+
+    # A snapshot needs btrfs tools, a btrfs project that is a subvolume, and
+    # the sandbox dir on the same filesystem. Anything else falls back to copy.
+    if [[ "$TURINGOS_SANDBOX_BACKEND" == "btrfs" ]] && command -v btrfs &>/dev/null \
+        && [[ "$(stat -f -c %T "$project" 2>/dev/null)" == "btrfs" ]] \
+        && sandbox::_sudo btrfs subvolume snapshot "$project" "$sandbox_path" >/dev/null; then
+        backend="btrfs"
+    elif ! sandbox::_create_copy "$project" "$sandbox_path"; then
+        ui::fail "Failed to create sandbox" >&2
+        log::error "sandbox copy failed: ${project} -> ${sandbox_path}"
+        rm -rf "$sandbox_path"
+        return 1
+    fi
 
     {
         ui::info "Creating agent sandbox..."
-        ui::label "Project"  "$project"
-        ui::label "Sandbox"  "$sandbox_path"
-        ui::label "Backend"  "$backend"
+        ui::label "Project" "$project"
+        ui::label "Sandbox" "$sandbox_path"
+        ui::label "Backend" "$backend"
         echo ""
     } >&2
-
-    log::section "SANDBOX CREATE — ${sandbox_name}"
     log::info "project=${project} sandbox=${sandbox_path} backend=${backend}"
 
-    local exit_code=0
-    case "$backend" in
-        btrfs) sandbox::_create_btrfs "$project" "$sandbox_path" >&2 || exit_code=$? ;;
-        copy)  sandbox::_create_copy  "$project" "$sandbox_path" >&2 || exit_code=$? ;;
-    esac
-
-    if [[ $exit_code -ne 0 ]]; then
-        ui::fail "Failed to create sandbox" >&2
-        log::error "sandbox creation failed (exit ${exit_code})"
-        return 1
-    fi
-
-    # Write metadata file inside sandbox
     cat > "${sandbox_path}/.turingos_sandbox" <<EOF
 SANDBOX_NAME=${sandbox_name}
 SANDBOX_PATH=${sandbox_path}
 SOURCE_PROJECT=${project}
 CREATED_AT=$(date '+%Y-%m-%dT%H:%M:%S')
 BACKEND=${backend}
-LABEL=${label}
+LABEL=${label//$'\n'/ }
 EOF
 
-    # Persist active sandbox in state
     config::state_set "$STATE_KEY_ACTIVE_SANDBOX" "$sandbox_path"
-
-    log::audit SANDBOX_CREATE \
-        "sandbox=${sandbox_path}" \
-        "project=${project}" \
-        "backend=${backend}" \
-        "label=${label}"
+    log::audit SANDBOX_CREATE "sandbox=${sandbox_path}" "project=${project}" "backend=${backend}" "label=${label}"
 
     {
-        ui::ok  "Original project protected"
-        ui::ok  "Sandbox created: ${sandbox_path}"
-        ui::ok  "Claude execution authorized"
+        ui::ok "Original project protected"
+        ui::ok "Sandbox created: ${sandbox_path}"
         echo ""
     } >&2
-
-    # Return the path for callers
     echo "$sandbox_path"
 }
 
-sandbox::_create_btrfs() {
-    local source="$1"
-    local dest="$2"
-    mkdir -p "$(dirname "$dest")"
-    sudo btrfs subvolume snapshot "$source" "$dest"
-}
-
 sandbox::_create_copy() {
-    local source="$1"
-    local dest="$2"
-    mkdir -p "$dest"
-    rsync -a --exclude='.git/' "$source/" "$dest/"
-    # Copy .git separately so git commands work inside the sandbox
-    if [[ -d "${source}/.git" ]]; then
-        cp -r "${source}/.git" "${dest}/.git"
+    # .git comes along so git works inside the sandbox
+    if command -v rsync &>/dev/null; then
+        rsync -a "$1/" "$2/"
+    else
+        cp -a "$1" "$2"
     fi
 }
 
 # ─── List Sandboxes ───────────────────────────────────────────────────────────
 
 sandbox::list() {
-    local sandboxes=()
-    while IFS= read -r -d '' dir; do
-        sandboxes+=("$dir")
-    done < <(find "$TURINGOS_SANDBOX_DIR" -maxdepth 1 -mindepth 1 -type d -print0 2>/dev/null)
-
-    if [[ ${#sandboxes[@]} -eq 0 ]]; then
-        ui::info "No sandboxes found"
-        return 0
-    fi
-
-    ui::header "Active Sandboxes"
-    for sb in "${sandboxes[@]}"; do
-        local meta="${sb}/.turingos_sandbox"
-        if [[ -f "$meta" ]]; then
-            local name created label project
-            name=$(grep '^SANDBOX_NAME=' "$meta" | cut -d= -f2-)
-            created=$(grep '^CREATED_AT=' "$meta" | cut -d= -f2-)
-            label=$(grep '^LABEL=' "$meta" | cut -d= -f2-)
-            project=$(grep '^SOURCE_PROJECT=' "$meta" | cut -d= -f2-)
-            printf "  %-36s  %s\n" "$name" "$created"
-            printf "  ${DIM:-}  %-34s  %s${RESET:-}\n" "$project" "$label"
-            echo ""
+    local sb found=0
+    for sb in "$TURINGOS_SANDBOX_DIR"/*/; do
+        [[ -d "$sb" ]] || continue
+        sb="${sb%/}"
+        [[ "$found" -eq 0 ]] && ui::header "Sandboxes"
+        found=1
+        if [[ -f "${sb}/.turingos_sandbox" ]]; then
+            printf '  %-36s  %s\n' "$(sandbox::_meta "$sb" SANDBOX_NAME)" "$(sandbox::_meta "$sb" CREATED_AT)"
+            printf '  %b  %-34s  %s%b\n\n' "$DIM" "$(sandbox::_meta "$sb" SOURCE_PROJECT)" \
+                "$(sandbox::_meta "$sb" LABEL)" "$RESET"
         else
             echo "  $(basename "$sb")"
         fi
     done
+    [[ "$found" -eq 1 ]] || ui::info "No sandboxes found"
 }
 
 # ─── Rollback (destroy sandbox) ───────────────────────────────────────────────
 
 sandbox::rollback() {
-    # Usage: sandbox::rollback [SANDBOX_PATH]
-    # If no path given, uses the active sandbox from state.
-    local sandbox_path="${1:-}"
-
-    if [[ -z "$sandbox_path" ]]; then
-        sandbox_path=$(config::state_get "$STATE_KEY_ACTIVE_SANDBOX")
-    fi
-
-    if [[ -z "$sandbox_path" || ! -d "$sandbox_path" ]]; then
-        ui::fail "No sandbox to rollback. Path: ${sandbox_path:-<none>}"
-        log::warn "sandbox::rollback — no valid sandbox path"
-        return 1
-    fi
+    # Usage: sandbox::rollback [SANDBOX_PATH] — default: the active sandbox
+    local sandbox_path
+    sandbox_path=$(sandbox::_resolve "${1:-}") || return 1
 
     ui::warn "Rolling back sandbox: $sandbox_path"
-
-    local meta="${sandbox_path}/.turingos_sandbox"
-    local backend="copy"
-    [[ -f "$meta" ]] && backend=$(grep '^BACKEND=' "$meta" | cut -d= -f2-)
-
     if ui::confirm "Destroy sandbox and discard all agent changes?"; then
-        sandbox::_destroy "$sandbox_path" "$backend"
-        config::state_del "$STATE_KEY_ACTIVE_SANDBOX"
+        sandbox::_destroy "$sandbox_path"
         log::audit SANDBOX_ROLLBACK "sandbox=${sandbox_path}"
         ui::ok "Sandbox destroyed. Original project untouched."
     else
@@ -194,37 +147,49 @@ sandbox::rollback() {
 
 sandbox::_destroy() {
     local path="$1"
-    local backend="${2:-copy}"
-    case "$backend" in
-        btrfs) sudo btrfs subvolume delete "$path" ;;
-        copy)  rm -rf "$path" ;;
-    esac
+    if [[ "$(sandbox::_meta "$path" BACKEND)" == "btrfs" ]]; then
+        sandbox::_sudo btrfs subvolume delete "$path" >/dev/null || rm -rf "$path"
+    else
+        rm -rf "$path"
+    fi
+    if [[ "$(config::state_get "$STATE_KEY_ACTIVE_SANDBOX")" == "$path" ]]; then
+        config::state_del "$STATE_KEY_ACTIVE_SANDBOX"
+    fi
+}
+
+# ─── Changes (shared by merge and diff) ──────────────────────────────────────
+
+sandbox::changes() {
+    # Usage: sandbox::changes SANDBOX SOURCE — one "A|M|D<TAB>path" line per
+    # file that merge would add, modify or delete in SOURCE
+    rsync -rcni --delete "${SANDBOX_EXCLUDES[@]}" "$1/" "$2/" 2>/dev/null \
+        | awk '/^\*deleting / { sub(/^\*deleting +/, ""); if ($0 !~ /\/$/) print "D\t" $0; next }
+               /^>f\+/        { print "A\t" substr($0, 13); next }
+               /^>f/          { print "M\t" substr($0, 13) }'
+}
+
+sandbox::patch() {
+    # Usage: sandbox::patch SANDBOX SOURCE — unified diff, project -> sandbox
+    diff -ruN -x .git -x '.turingos_*' "$2" "$1" || true
+}
+
+sandbox::_show_summary() {
+    local sandbox="$1" source="$2" changes added removed
+    changes=$(sandbox::changes "$sandbox" "$source")
+    read -r added removed < <(sandbox::patch "$sandbox" "$source" \
+        | awk '/^\+\+\+|^---/ {next} /^\+/ {a++} /^-/ {r++} END {print a+0, r+0}')
+    ui::label "Files changed" "$(grep -c . <<< "$changes" || true)"
+    ui::label "Lines added"   "+${added}"
+    ui::label "Lines removed" "-${removed}"
 }
 
 # ─── Merge (apply changes back to source) ────────────────────────────────────
 
 sandbox::merge() {
     # Usage: sandbox::merge [SANDBOX_PATH]
-    local sandbox_path="${1:-}"
-
-    if [[ -z "$sandbox_path" ]]; then
-        sandbox_path=$(config::state_get "$STATE_KEY_ACTIVE_SANDBOX")
-    fi
-
-    if [[ -z "$sandbox_path" || ! -d "$sandbox_path" ]]; then
-        ui::fail "No sandbox to merge. Path: ${sandbox_path:-<none>}"
-        return 1
-    fi
-
-    local meta="${sandbox_path}/.turingos_sandbox"
-    if [[ ! -f "$meta" ]]; then
-        ui::fail "Sandbox metadata not found: ${meta}"
-        return 1
-    fi
-
-    local source_project backend
-    source_project=$(grep '^SOURCE_PROJECT=' "$meta" | cut -d= -f2-)
-    backend=$(grep '^BACKEND=' "$meta" | cut -d= -f2-)
+    local sandbox_path source_project
+    sandbox_path=$(sandbox::_resolve "${1:-}") || return 1
+    source_project=$(sandbox::_meta "$sandbox_path" SOURCE_PROJECT)
 
     ui::info "Merging sandbox → original project"
     ui::label "From" "$sandbox_path"
@@ -237,55 +202,22 @@ sandbox::merge() {
         return 1
     fi
 
-    # Show a summary diff before asking
     sandbox::_show_summary "$sandbox_path" "$source_project"
     echo ""
-
-    if ! ui::confirm "Apply these changes to the original project?"; then
+    if ! ui::confirm "Apply these changes to the original project? (files the agent deleted are deleted too)"; then
         ui::info "Merge cancelled."
         return 0
     fi
 
-    # Apply: rsync sandbox → source, then clean up sandbox
-    rsync -a --exclude='.turingos_sandbox' --exclude='.git/' \
-        "${sandbox_path}/" "${source_project}/"
-
-    log::audit SANDBOX_MERGE \
-        "sandbox=${sandbox_path}" \
-        "project=${source_project}"
-
-    # Optionally destroy sandbox after merge
-    if ui::confirm "Destroy sandbox after merge?"; then
-        sandbox::_destroy "$sandbox_path" "$backend"
-        config::state_del "$STATE_KEY_ACTIVE_SANDBOX"
-        ui::ok "Sandbox destroyed."
-    fi
-
+    # .git stays excluded: the project's history is never overwritten.
+    # --checksum: a same-size edit in the same second must not be skipped.
+    rsync -a --checksum --delete "${SANDBOX_EXCLUDES[@]}" "${sandbox_path}/" "${source_project}/"
+    log::audit SANDBOX_MERGE "sandbox=${sandbox_path}" "project=${source_project}"
     ui::ok "Changes merged into: $source_project"
-}
 
-# ─── Summary Helper (used by diff.sh too) ────────────────────────────────────
-
-sandbox::_show_summary() {
-    local sandbox="$1"
-    local source="$2"
-
-    # If sandbox has a git repo, use git diff for a clean summary
-    if [[ -d "${sandbox}/.git" ]]; then
-        local changed added removed
-        changed=$(git -C "$sandbox" diff --name-only 2>/dev/null | wc -l | tr -d ' ')
-        added=$(git -C "$sandbox" diff --shortstat 2>/dev/null | grep -oP '\d+(?= insertion)' || echo 0)
-        removed=$(git -C "$sandbox" diff --shortstat 2>/dev/null | grep -oP '\d+(?= deletion)' || echo 0)
-
-        ui::label "Files changed" "$changed"
-        ui::label "Lines added"   "+${added}"
-        ui::label "Lines removed" "-${removed}"
-    else
-        # Fallback: rsync dry-run diff
-        local diff_count
-        diff_count=$(rsync -a --dry-run --exclude='.turingos_sandbox' \
-            "${sandbox}/" "${source}/" 2>/dev/null | grep -c '^>' || echo 0)
-        ui::label "Files to sync" "$diff_count"
+    if ui::confirm "Destroy sandbox after merge?"; then
+        sandbox::_destroy "$sandbox_path"
+        ui::ok "Sandbox destroyed."
     fi
 }
 
@@ -296,23 +228,14 @@ sandbox::status() {
     active=$(config::state_get "$STATE_KEY_ACTIVE_SANDBOX")
 
     ui::header "Sandbox Status"
-
     if [[ -z "$active" ]]; then
         ui::status_row "Active Sandbox" "none" "warn"
     elif [[ -d "$active" ]]; then
-        local meta="${active}/.turingos_sandbox"
         ui::status_row "Active Sandbox" "$(basename "$active")" "ok"
-        if [[ -f "$meta" ]]; then
-            local created label project backend
-            created=$(grep '^CREATED_AT=' "$meta" | cut -d= -f2-)
-            label=$(grep '^LABEL='   "$meta" | cut -d= -f2-)
-            project=$(grep '^SOURCE_PROJECT=' "$meta" | cut -d= -f2-)
-            backend=$(grep '^BACKEND=' "$meta" | cut -d= -f2-)
-            ui::label "  Task"    "$label"
-            ui::label "  Project" "$project"
-            ui::label "  Created" "$created"
-            ui::label "  Backend" "$backend"
-        fi
+        ui::label "  Task"    "$(sandbox::_meta "$active" LABEL)"
+        ui::label "  Project" "$(sandbox::_meta "$active" SOURCE_PROJECT)"
+        ui::label "  Created" "$(sandbox::_meta "$active" CREATED_AT)"
+        ui::label "  Backend" "$(sandbox::_meta "$active" BACKEND)"
     else
         ui::status_row "Active Sandbox" "missing (stale state)" "fail"
         config::state_del "$STATE_KEY_ACTIVE_SANDBOX"
