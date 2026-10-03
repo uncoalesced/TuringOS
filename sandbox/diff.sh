@@ -91,7 +91,7 @@ diff::full() {
     # Usage: diff::full [SANDBOX_PATH] — full unified diff, paged
     local sandbox_path source_project pager=(less -RFX)
     sandbox_path=$(sandbox::_resolve "${1:-}") || return 1
-    source_project=$(sandbox::_meta "$sandbox_path" SOURCE_PROJECT)
+    source_project=$(sandbox::_source "$sandbox_path") || return 1
     command -v delta &>/dev/null && pager=(delta)
 
     ui::header "Full Diff"
@@ -100,10 +100,11 @@ diff::full() {
 
 diff::save() {
     # Usage: diff::save [SANDBOX_PATH] — write the patch to the log dir
-    local sandbox_path outfile
+    local sandbox_path source_project outfile
     sandbox_path=$(sandbox::_resolve "${1:-}") || return 1
+    source_project=$(sandbox::_source "$sandbox_path") || return 1
     outfile="${TURINGOS_LOG_DIR}/diff-$(date +%Y%m%dT%H%M%S).patch"
-    sandbox::patch "$sandbox_path" "$(sandbox::_meta "$sandbox_path" SOURCE_PROJECT)" > "$outfile"
+    sandbox::patch "$sandbox_path" "$source_project" > "$outfile"
     ui::ok "Diff saved to: $outfile"
     log::info "diff saved: $outfile"
 }
