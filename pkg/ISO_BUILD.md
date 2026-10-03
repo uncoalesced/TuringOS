@@ -23,6 +23,7 @@ The ISO is the only install target: there is no separate .deb or Arch package.
 | `0450-build-ui` | Builds the Tauri UI (`ui/src-tauri`) with Debian's Rust, installs `/usr/bin/turingos-ui`, removes the toolchain and source |
 | `0470-autologin-kiosk` | lightdm autologin into openbox, ordered after live-config |
 | `0500-install-claude-cli` | Installs Claude Code (native installer, npm fallback) and OpenCode; first-login API key prompt |
+| `0900-boot-timeout` (binary) | Boot menus (isolinux and GRUB) start the live entry after 3 seconds |
 
 On boot, lightdm logs `user` into openbox, and
 `includes.chroot/etc/xdg/openbox/autostart` starts `turingos-ui` fullscreen.
@@ -84,7 +85,7 @@ Live login: `user` / `live` (live-config's default).
 1. lightdm autologins `user`; openbox starts `turingos-ui` in kiosk mode
 2. The first interactive terminal shows the welcome banner
    (`/etc/profile.d/turingos-first-run.sh`) and asks for an Anthropic API key
-   once (`/etc/profile.d/turingos-apikey.sh`)
+   once (`/etc/profile.d/turingos-setup-apikey.sh`)
 3. `turingos init` checks dependencies and offers to pick a model provider
 
 ---
@@ -105,7 +106,7 @@ Live login: `user` / `live` (live-config's default).
 ├── voice/     voice.sh wispr_transcribe.py
 └── pkg/       turingos-install-claude-cli.sh
 /usr/share/doc/turingos/      copyright, WORKFLOW.md
-/etc/profile.d/               turingos-first-run.sh, turingos-apikey.sh
+/etc/profile.d/               turingos-first-run.sh, turingos-setup-apikey.sh
 /usr/local/bin/               claude, opencode
 ```
 

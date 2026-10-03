@@ -63,7 +63,7 @@ PURGE_PRINT=(
     hplip
     foomatic-db-compressed-ppds
     ghostscript
-    libgs10
+    # not libgs10: openbox needs it (openbox -> libimlib2 -> libspectre -> libgs10)
 )
 
 # ─── Bluetooth ────────────────────────────────────────────────────────────────
@@ -106,9 +106,12 @@ PURGE_GPU=(
 )
 
 # ─── Firmware blobs not needed in VM ─────────────────────────────────────────
-# Keep: firmware-linux (core), firmware-linux-free, firmware-linux-nonfree
-# Drop: hardware-specific blobs that are dead weight in a VM
+# live-build's firmware stage installs these. Keep: firmware-linux-free.
+# Drop: hardware-specific blobs that are dead weight in a VM, and the
+# firmware-linux(-nonfree) metapackages that depend on them
 PURGE_FIRMWARE=(
+    firmware-linux
+    firmware-linux-nonfree
     firmware-amd-graphics
     firmware-nvidia-graphics
     firmware-realtek
@@ -192,19 +195,24 @@ ALL_PURGE=(
     "${PURGE_MISC[@]}"
 )
 
-# ─── Purge (ignore packages not installed — they may not be in every profile) ─
-echo "==> [0200-trim] Purging $(echo "${ALL_PURGE[@]}" | wc -w) package targets..."
+# ─── Purge only what's installed (most targets aren't in this profile) ───────
+mapfile -t INSTALLED < <(dpkg-query -W -f='${Package} ${db:Status-Status}\n' "${ALL_PURGE[@]}" 2>/dev/null \
+    | awk '$2 == "installed" { print $1 }')
+echo "==> [0200-trim] ${#INSTALLED[@]} of ${#ALL_PURGE[@]} targets installed: ${INSTALLED[*]:-none}"
 
-apt-get purge -y --auto-remove "${ALL_PURGE[@]}" 2>/dev/null || {
-    # Purge each individually so one missing package doesn't abort the whole run
-    echo "==> [0200-trim] Bulk purge hit an error — retrying individually..."
-    for pkg in "${ALL_PURGE[@]}"; do
-        apt-get purge -y "$pkg" 2>/dev/null || true
-    done
-    apt-get autoremove -y --purge 2>/dev/null || true
-}
-
+# Packages from turingos.list.chroot are marked manual: a purge must never
+# take one of them down as a reverse dependency
+manual_before=$(apt-mark showmanual | sort)
+if (( ${#INSTALLED[@]} )); then
+    apt-get purge -y "${INSTALLED[@]}"
+fi
 apt-get autoremove -y --purge
+lost=$(comm -23 <(echo "$manual_before") <(apt-mark showmanual | sort) \
+    | grep -vxF -f <(printf '%s\n' "${INSTALLED[@]}") || true)
+if [[ -n "$lost" ]]; then
+    echo "ERROR: [0200-trim] purge removed listed packages: ${lost//$'\n'/ }"
+    exit 1
+fi
 apt-get clean
 
 echo "==> [0200-trim] Done. Chroot size: $(du -sh / --exclude=/proc --exclude=/sys 2>/dev/null | cut -f1)"

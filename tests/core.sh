@@ -20,6 +20,9 @@ tos logs >/dev/null || fail "turingos logs with no log file"
 # ─── status / monitor (arithmetic used to abort here) ────────────────────────
 out=$(tos status 2>&1) || fail "turingos status: ${out}"
 grep -q "RAM" <<< "$out" || fail "status has no RAM row"
+# Every boxed row is the same width in characters (icons like ◈ used to shift the border)
+widths=$(LC_ALL=C.UTF-8 bash -c 'grep "│" | while IFS= read -r l; do echo "${#l}"; done | sort -u' <<< "$out")
+[[ $(wc -l <<< "$widths") -eq 1 ]] || fail "status box rows differ in width: $(tr '\n' ' ' <<< "$widths")"
 
 # ─── bazaar search / installed (counters used to abort on the first hit) ─────
 out=$(tos bazaar search memory 2>&1) || fail "bazaar search: ${out}"
@@ -34,6 +37,11 @@ for k in memory-mcp github-mcp; do
 done
 out=$(tos bazaar installed 2>&1) || fail "bazaar installed: ${out}"
 [[ $(grep -c "●" <<< "$out") -eq 2 ]] || fail "bazaar installed should list 2: ${out}"
+bash -c 'source "$1/core/config.sh"; source "$1/core/ui.sh"; source "$1/core/logging.sh"
+    source "$1/bazaar/registry.sh"; source "$1/bazaar/install.sh"; bazaar::_register_mcp memory-mcp' _ "$ROOT" \
+    >/dev/null 2>&1 || fail "bazaar MCP registration"
+jq -e '.mcpServers["memory-mcp"].args[0] == "-y"' "${HOME}/.claude.json" >/dev/null \
+    || fail "MCP args (a leading -y used to be read as a jq option): $(cat "${HOME}/.claude.json")"
 mkdir -p "${HOME}/victim"
 if echo y | tos bazaar uninstall ../../victim >/dev/null 2>&1; then fail "bazaar uninstall took a path"; fi
 [[ -d "${HOME}/victim" ]] || fail "bazaar uninstall deleted outside the Bazaar dir"

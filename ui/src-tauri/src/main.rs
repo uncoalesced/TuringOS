@@ -1,4 +1,4 @@
-// turingos-ui — the TuringOS desktop shell. The page (ui/index.html) draws;
+// turingos-ui — the TuringOS desktop shell. The page (ui/web/index.html) draws;
 // this process reads ~/.turingos and the machine, and does everything that
 // touches the system. KIOSK=1: fullscreen, as on the live ISO.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]

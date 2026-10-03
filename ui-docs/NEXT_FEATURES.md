@@ -14,7 +14,7 @@ This is a research doc, not a spec. It came out of a planning pass over the
 codebase before any of this was built. Two facts shape every section below,
 and both were confirmed by reading the code, not assumed:
 
-1. **The renderer can't touch the network at all.** `ui/index.html`'s CSP
+1. **The renderer can't touch the network at all.** `ui/web/index.html`'s CSP
    (`default-src 'self'`) and `ui/preload.js`'s five exposed methods
    (`getState`, `onState`, `listProjects`, `startAgent`, `launchApp`) mean
    every new network call (Anthropic, `gh`, Google) has to live in

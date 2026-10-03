@@ -6,19 +6,25 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::Mutex;
 
-/// VMs without 3D acceleration have no render node: draw in software, or
-/// WebKitGTK shows a black window. Must run before the webview starts.
+/// WebKitGTK's DMA-BUF renderer draws a blurred page with no text on VMware's
+/// vmwgfx (render node present, 3D on), so it is always off unless the user
+/// sets the variable; GPU compositing stays on. VMs without 3D acceleration
+/// have no render node at all: draw fully in software there, or WebKitGTK
+/// shows a black window. Must run before the webview starts.
 pub fn prepare_webview_env() {
+    if !cfg!(target_os = "linux") {
+        return;
+    }
+    if std::env::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").is_none() {
+        std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+    }
     let has_render_node = std::fs::read_dir("/dev/dri")
         .map(|d| {
             d.flatten()
                 .any(|e| e.file_name().to_string_lossy().starts_with("renderD"))
         })
         .unwrap_or(false);
-    if cfg!(target_os = "linux")
-        && (!has_render_node || std::env::var("LITE").as_deref() == Ok("1"))
-    {
-        std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+    if !has_render_node || std::env::var("LITE").as_deref() == Ok("1") {
         std::env::set_var("WEBKIT_DISABLE_COMPOSITING_MODE", "1");
     }
 }

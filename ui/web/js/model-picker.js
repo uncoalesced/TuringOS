@@ -8,7 +8,7 @@
 const MODELS = [
   { id: 'claude-fable-5-1', label: 'Fable 5.1', desc: 'For your toughest challenges' },
   { id: 'claude-opus-5-5', label: 'Opus 5.5', desc: 'Most capable for ambitious work' },
-  { id: 'claude-sonnet-5', label: 'Sonnet 5', desc: 'Most efficient for everyday tasks' },
+  { id: 'claude-sonnet-5-5', label: 'Sonnet 5.5', desc: 'Most efficient for everyday tasks' },
   { id: 'claude-haiku-4-5', label: 'Haiku 4.5', desc: 'Fastest for quick answers' },
 ];
 const EFFORTS = [
@@ -19,9 +19,9 @@ const EFFORTS = [
   { id: 'max', label: 'Max' },
 ];
 
-let modelChoice = localStorage.getItem('model') || 'claude-sonnet-5';
+let modelChoice = localStorage.getItem('model') || 'claude-sonnet-5-5';
 let effortChoice = localStorage.getItem('effort') || 'medium';
-if (!MODELS.some((m) => m.id === modelChoice)) modelChoice = 'claude-sonnet-5';
+if (!MODELS.some((m) => m.id === modelChoice)) modelChoice = 'claude-sonnet-5-5';
 if (!EFFORTS.some((e) => e.id === effortChoice)) effortChoice = 'medium';
 
 const modelMenu = $('#model-menu');

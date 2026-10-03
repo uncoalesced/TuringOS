@@ -8,7 +8,7 @@ use std::time::Duration;
 
 const DEFAULT_MODEL: &str = "claude-haiku-4-5";
 // Haiku doesn't take an effort setting
-const EFFORT_MODELS: [&str; 3] = ["claude-sonnet-5", "claude-opus-5-5", "claude-fable-5-1"];
+const EFFORT_MODELS: [&str; 3] = ["claude-sonnet-5-5", "claude-opus-5-5", "claude-fable-5-1"];
 const CLAWD_SYSTEM_PROMPT: &str = "You are Clawd, a small, friendly pixel mascot that lives on the TuringOS desktop. Answer questions briefly and helpfully, in a couple of sentences unless more detail is clearly needed.";
 
 struct Ask<'a> {

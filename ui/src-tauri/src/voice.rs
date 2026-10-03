@@ -103,7 +103,8 @@ pub async fn voice_stop(app: AppHandle, recorder: tauri::State<'_, Recorder>) ->
         Err(e) => return Ok(fail(&e)),
     };
     let samples = resample(&samples, rate);
-    if samples.len() < (RATE / 4) as usize {
+    // Whisper "hears" words like "you" in silence: don't transcribe it
+    if samples.len() < (RATE / 4) as usize || is_silent(&samples) {
         return Ok(ok_text(""));
     }
 
@@ -325,9 +326,22 @@ fn write_wav(path: &Path, samples: &[f32]) -> std::io::Result<()> {
     std::fs::write(path, out)
 }
 
+/// Peak below about -40 dBFS: nothing a speaker said reached the mic
+fn is_silent(samples: &[f32]) -> bool {
+    samples.iter().all(|s| s.abs() < 0.01)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn silence_is_not_transcribed() {
+        assert!(is_silent(&vec![0.002f32; 16_000]));
+        let mut speech = vec![0.0f32; 16_000];
+        speech[8_000] = 0.3;
+        assert!(!is_silent(&speech));
+    }
 
     #[test]
     fn resamples_to_16k() {

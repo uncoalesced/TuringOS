@@ -69,9 +69,16 @@ done
 
 # ─── 6. Strip /usr/share/i18n/locales except en_* ────────────────────────────
 find /usr/share/i18n/locales -type f \
-    ! -name 'en_US' ! -name 'en_GB' ! -name 'en_*' \
-    ! -name 'i18n' ! -name 'iso14651_t1*' ! -name 'translit_*' \
+    ! -name 'en_*' ! -name 'i18n*' ! -name 'iso14651_t1*' ! -name 'translit_*' \
     -delete 2>/dev/null || true
+
+# The live session runs with LANG=en_US.UTF-8, but nothing generated that
+# locale, so GTK and the terminal fell back to C. Build it into the image
+# (this also proves the kept sources are enough).
+sed -i 's/^# *\(en_US.UTF-8 UTF-8\)/\1/' /etc/locale.gen
+grep -qx 'en_US.UTF-8 UTF-8' /etc/locale.gen || echo 'en_US.UTF-8 UTF-8' >> /etc/locale.gen
+locale-gen
+locale -a | grep -qx 'en_US.utf8'
 
 # ─── 7. apt cache clean ───────────────────────────────────────────────────────
 apt-get clean
