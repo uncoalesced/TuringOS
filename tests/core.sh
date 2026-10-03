@@ -34,6 +34,11 @@ for k in memory-mcp github-mcp; do
 done
 out=$(tos bazaar installed 2>&1) || fail "bazaar installed: ${out}"
 [[ $(grep -c "●" <<< "$out") -eq 2 ]] || fail "bazaar installed should list 2: ${out}"
+bash -c 'source "$1/core/config.sh"; source "$1/core/ui.sh"; source "$1/core/logging.sh"
+    source "$1/bazaar/registry.sh"; source "$1/bazaar/install.sh"; bazaar::_register_mcp memory-mcp' _ "$ROOT" \
+    >/dev/null 2>&1 || fail "bazaar MCP registration"
+jq -e '.mcpServers["memory-mcp"].args[0] == "-y"' "${HOME}/.claude.json" >/dev/null \
+    || fail "MCP args (a leading -y used to be read as a jq option): $(cat "${HOME}/.claude.json")"
 mkdir -p "${HOME}/victim"
 if echo y | tos bazaar uninstall ../../victim >/dev/null 2>&1; then fail "bazaar uninstall took a path"; fi
 [[ -d "${HOME}/victim" ]] || fail "bazaar uninstall deleted outside the Bazaar dir"
