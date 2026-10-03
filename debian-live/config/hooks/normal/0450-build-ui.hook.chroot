@@ -9,14 +9,16 @@
 # list, so purging the -dev packages below keeps them. The ldd check at the
 # end fails the build if that ever stops being true.
 #
-# Needs network: cargo fetches crates (versions pinned by Cargo.lock).
+# Toolchain: rustc-web/cargo-web, Debian 13's security-updated Rust (the one
+# Firefox/Chromium build with). Plain rustc 1.85 is below the crate's
+# rust-version. Needs network: cargo fetches crates (pinned by Cargo.lock).
 
 set -euo pipefail
 
 export DEBIAN_FRONTEND=noninteractive
 
 SRC=/opt/turingos-ui
-BUILD_DEPS=(cargo rustc build-essential pkg-config cmake clang libclang-dev
+BUILD_DEPS=(cargo-web rustc-web build-essential pkg-config cmake clang libclang-dev
     libwebkit2gtk-4.1-dev libasound2-dev libxdo-dev)
 
 echo "==> [0450-build-ui] Installing build dependencies..."
