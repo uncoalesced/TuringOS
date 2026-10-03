@@ -13,10 +13,10 @@ jobs:
 
       - name: Syntax check
         run: |
-          for f in $(git ls-files '*.sh' '*.hook.chroot' turingos); do bash -n "$f" || exit 1; done
+          for f in $(git ls-files '*.sh' '*.hook.chroot' '*.hook.binary' turingos); do bash -n "$f" || exit 1; done
 
       - name: ShellCheck
-        run: git ls-files '*.sh' '*.hook.chroot' turingos | xargs shellcheck --shell=bash
+        run: git ls-files '*.sh' '*.hook.chroot' '*.hook.binary' turingos | xargs shellcheck --shell=bash
 
       - name: Tests
         run: |
