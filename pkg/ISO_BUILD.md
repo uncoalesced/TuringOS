@@ -85,7 +85,7 @@ Live login: `user` / `live` (live-config's default).
 1. lightdm autologins `user`; openbox starts `turingos-ui` in kiosk mode
 2. The first interactive terminal shows the welcome banner
    (`/etc/profile.d/turingos-first-run.sh`) and asks for an Anthropic API key
-   once (`/etc/profile.d/turingos-apikey.sh`)
+   once (`/etc/profile.d/turingos-setup-apikey.sh`)
 3. `turingos init` checks dependencies and offers to pick a model provider
 
 ---
@@ -106,7 +106,7 @@ Live login: `user` / `live` (live-config's default).
 ├── voice/     voice.sh wispr_transcribe.py
 └── pkg/       turingos-install-claude-cli.sh
 /usr/share/doc/turingos/      copyright, WORKFLOW.md
-/etc/profile.d/               turingos-first-run.sh, turingos-apikey.sh
+/etc/profile.d/               turingos-first-run.sh, turingos-setup-apikey.sh
 /usr/local/bin/               claude, opencode
 ```
 
