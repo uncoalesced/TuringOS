@@ -90,13 +90,17 @@ monitor::_rule() {
 
 monitor::_row() {
     # Usage: monitor::_row LABEL VALUE — VALUE may contain ANSI colors
-    local value plain pad
+    # Widths in characters, not bytes (printf %-Ns pads bytes, so icons
+    # like ◈ broke the border), whatever the caller's locale
+    local LC_ALL=C.UTF-8 value plain pad lpad
     value=$(echo -e "$2")
     # shellcheck disable=SC2001  # a regex, which ${var//} can't express
     plain=$(sed 's/\x1b\[[0-9;]*m//g' <<< "$value")
     pad=$(( 24 - ${#plain} ))
+    lpad=$(( 18 - ${#1} ))
     (( pad < 0 )) && pad=0
-    printf '  %b│%b  %b%-18s%b  %s%*s%b│%b\n' "$BOLD_CYAN" "$RESET" "$DIM" "$1" "$RESET" \
+    (( lpad < 0 )) && lpad=0
+    printf '  %b│%b  %b%s%*s%b  %s%*s%b│%b\n' "$BOLD_CYAN" "$RESET" "$DIM" "$1" "$lpad" '' "$RESET" \
         "$value" "$pad" '' "$BOLD_CYAN" "$RESET"
 }
 
