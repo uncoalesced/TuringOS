@@ -20,7 +20,7 @@ OPENCODE_VERSION="1.18.34"
 
 _install_claude_native() {
     echo "==> Trying Anthropic's native installer..."
-    curl -fsSL https://claude.ai/install.sh | bash || return 1
+    curl -fsSL --retry 3 --retry-all-errors https://claude.ai/install.sh | bash || return 1
     # As root it lands in /root/.local; move the real binary system-wide
     local bin
     bin=$(readlink -f /root/.local/bin/claude 2>/dev/null) || return 1
