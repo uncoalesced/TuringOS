@@ -1,0 +1,20 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "TuringOS",
+  "version": "0.1.0",
+  "identifier": "dev.turingos.shell",
+  "build": {
+    "frontendDist": ["../index.html", "../css", "../js", "../assets", "../fonts"]
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": false,
+    "icon": ["icons/icon.png", "icons/icon.ico"]
+  }
+}
