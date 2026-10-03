@@ -41,7 +41,7 @@ KIOSK=1 ./turingos ui      # fullscreen, use this for the demo
 LITE=1 ./turingos ui       # software drawing, for VMs without 3D (auto-detected)
 ```
 
-To preview on a Mac without the OS, run the same command or open `ui/index.html` in Chrome.
+To preview on a Mac without the OS, run the same command or open `ui/web/index.html` in Chrome.
 
 ### Safety rules (hard rules for this project)
 
@@ -84,7 +84,7 @@ To preview on a Mac without the OS, run the same command or open `ui/index.html`
 
 ## 3. Connecting the backend
 
-The page never touches the system. The Rust backend (`ui/src-tauri`) is the only part that does, and it hands the page one snapshot at a time over a bridge (`ui/js/bridge.js`, which defines `window.shell`).
+The page never touches the system. The Rust backend (`ui/src-tauri`) is the only part that does, and it hands the page one snapshot at a time over a bridge (`ui/web/js/bridge.js`, which defines `window.shell`).
 
 ### What's wired today
 
@@ -156,7 +156,7 @@ The backend uses GitHub's official CLI, `gh`. Run `gh auth login` once on the ma
 
 ### Color
 
-Claude's brand colours, used as tokens in `ui/css/tokens.css`.
+Claude's brand colours, used as tokens in `ui/web/css/tokens.css`.
 
 | Brand colour | Hex |
 |---|---|
@@ -182,16 +182,16 @@ Light/dark follows the system. The half-circle icon in the menu bar overrides it
 
 ### Typography
 
-- Timeless Sans (`--sans`, weights 300–800) for the UI and Timeless Serif (`--serif`, 200–700) for the greeting and "Your day". Both are variable fonts bundled in `ui/fonts/`, so they work offline in the VM.
+- Timeless Sans (`--sans`, weights 300–800) for the UI and Timeless Serif (`--serif`, 200–700) for the greeting and "Your day". Both are variable fonts bundled in `ui/web/fonts/`, so they work offline in the VM.
 - `--mono` (system mono) for eyebrow labels, commands and code.
 - Big numbers (clock, stats) use light weights (250–300) with tight letter spacing.
 - Eyebrow labels use the mono font, uppercase, with wide letter spacing.
 
 ### Icons
 
-[Feather](https://feathericons.com) (MIT), 24×24, 2px stroke, round caps. Only the glyphs in use ship (inline, in the sprite); `ui/assets/icons/feather/LICENSE` covers them. To add one, add it to the sprite in `ui/index.html` as `<symbol id="ic-name">`, with shape data only (no `width`/`height`/`stroke`; those come from `.icon`/`.wx`). Weather glyphs (`wx-*`) are Feather paths too. The "partly cloudy" symbols combine a small sun or moon (scaled down, shifted top-left) with Feather's cloud so they read at both 26px (menu bar) and 52px (weather card). If Feather doesn't have an icon for something, Lucide and Phosphor match its style.
+[Feather](https://feathericons.com) (MIT), 24×24, 2px stroke, round caps. Only the glyphs in use ship (inline, in the sprite); `ui/web/assets/icons/feather/LICENSE` covers them. To add one, add it to the sprite in `ui/web/index.html` as `<symbol id="ic-name">`, with shape data only (no `width`/`height`/`stroke`; those come from `.icon`/`.wx`). Weather glyphs (`wx-*`) are Feather paths too. The "partly cloudy" symbols combine a small sun or moon (scaled down, shifted top-left) with Feather's cloud so they read at both 26px (menu bar) and 52px (weather card). If Feather doesn't have an icon for something, Lucide and Phosphor match its style.
 
-Brand: official Claude assets live in `ui/assets/brand/`. The Claude spark is the menu bar mark. `app-icon.png` is the window and launcher icon (squircle; `ui/src-tauri/icons/` holds the copies Tauri builds with). Don't use GitHub's logo.
+Brand: official Claude assets live in `ui/web/assets/brand/`. The Claude spark is the menu bar mark. `app-icon.png` is the window and launcher icon (squircle; `ui/src-tauri/icons/` holds the copies Tauri builds with). Don't use GitHub's logo.
 
 ### Motion
 
@@ -234,14 +234,14 @@ Backup: record the full run once as a video before presenting.
 |---|---|
 | `ui/run.sh` | Launcher for a checkout: builds and opens the app |
 | `ui/src-tauri/src/` | Rust backend, one module per job: `state` (snapshots), `system`, `projects`, `agent`, `launch` (dock, links), `weather`, `github`, `google` (Calendar OAuth), `anthropic` (Clawd, chat), `voice` |
-| `ui/js/bridge.js` | `window.shell`: the only bridge between the page and the system |
-| `ui/index.html` | Markup, the icon sprite (`<symbol>`s), and the script/style load order |
-| `ui/css/` | Design tokens (`tokens.css`), then one stylesheet per feature |
-| `ui/js/` | One classic script per feature (weather, widgets, composer, model picker, voice, dock, Clawd, palette, Bazaar...), sharing one global scope |
-| `ui/js/theme.js` | Picks the theme before first paint |
-| `ui/fonts/` | Timeless Sans and Serif (variable, bundled) |
-| `ui/assets/brand/` | Claude symbol, logo, app icon |
-| `ui/assets/icons/feather/LICENSE` | License for the inline Feather glyphs |
+| `ui/web/js/bridge.js` | `window.shell`: the only bridge between the page and the system |
+| `ui/web/index.html` | Markup, the icon sprite (`<symbol>`s), and the script/style load order |
+| `ui/web/css/` | Design tokens (`tokens.css`), then one stylesheet per feature |
+| `ui/web/js/` | One classic script per feature (weather, widgets, composer, model picker, voice, dock, Clawd, palette, Bazaar...), sharing one global scope |
+| `ui/web/js/theme.js` | Picks the theme before first paint |
+| `ui/web/fonts/` | Timeless Sans and Serif (variable, bundled) |
+| `ui/web/assets/brand/` | Claude symbol, logo, app icon |
+| `ui/web/assets/icons/feather/LICENSE` | License for the inline Feather glyphs |
 | `ui-docs/SETUP.md` | Running it in the VM, troubleshooting |
 | `ui-docs/UI_SHELL.md` | This document |
 | `ui-docs/NEXT_FEATURES.md` | The plan these features were built from, kept as a record of what was decided and why |
