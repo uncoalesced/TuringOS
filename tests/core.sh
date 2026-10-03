@@ -60,7 +60,7 @@ evil='a b $(touch '"${HOME}"'/pwned) "q"'
 got=$(bash -c 'source "$1/core/config.sh"; printenv TEST_VALUE' _ "$ROOT")
 [[ "$got" == "$evil" ]] || fail "config value round-trip / export: ${got}"
 [[ ! -e "${HOME}/pwned" ]] || fail "config value was executed"
-[[ "$(stat -c %a "${HOME}/.turingos")" == 700 ]] || fail "~/.turingos not mode 700"
+[[ "$(stat -c %a "${HOME}/.turingos")" == 700 ]] || fail ".turingos dir not mode 700"
 bash -c 'source "$1/core/config.sh"
     config::valid_secret "sk-ant-api03-Ab_9.x-Y" || exit 1
     for bad in "short" $'"'"'sk-ant-xxxxxxxx\ntouch /tmp/x'"'"' "sk-ant-\"xxxxxxxx" "sk-ant xxxxxxxx" "sk-ant-\$(id)xx"; do
