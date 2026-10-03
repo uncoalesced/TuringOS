@@ -1,30 +1,14 @@
 #!/usr/bin/env bash
 # core/ui.sh — TuringOS UI primitives
-# Colors, box drawing, status indicators, prompts
-# Requires: gum (optional but preferred), tput
+# Colors, boxes, status indicators, prompts. gum is used when installed.
 
 # ─── Color Codes ──────────────────────────────────────────────────────────────
-
-RESET="\033[0m"
-BOLD="\033[1m"
-DIM="\033[2m"
-
-BLACK="\033[0;30m"
-RED="\033[0;31m"
-GREEN="\033[0;32m"
-YELLOW="\033[0;33m"
-BLUE="\033[0;34m"
-MAGENTA="\033[0;35m"
-CYAN="\033[0;36m"
-WHITE="\033[0;37m"
-
-BOLD_RED="\033[1;31m"
-BOLD_GREEN="\033[1;32m"
-BOLD_YELLOW="\033[1;33m"
-BOLD_BLUE="\033[1;34m"
-BOLD_MAGENTA="\033[1;35m"
-BOLD_CYAN="\033[1;36m"
-BOLD_WHITE="\033[1;37m"
+# shellcheck disable=SC2034  # used by the modules that source this file
+declare -g \
+    RESET="\033[0m" DIM="\033[2m" WHITE="\033[0;37m" \
+    RED="\033[0;31m" GREEN="\033[0;32m" YELLOW="\033[0;33m" \
+    BOLD_RED="\033[1;31m" BOLD_GREEN="\033[1;32m" BOLD_YELLOW="\033[1;33m" \
+    BOLD_CYAN="\033[1;36m" BOLD_WHITE="\033[1;37m"
 
 # ─── Status Symbols ───────────────────────────────────────────────────────────
 
@@ -33,9 +17,6 @@ SYM_FAIL="${BOLD_RED}✗${RESET}"
 SYM_WARN="${BOLD_YELLOW}⚠${RESET}"
 SYM_INFO="${BOLD_CYAN}→${RESET}"
 SYM_WAIT="${BOLD_YELLOW}◌${RESET}"
-SYM_AGENT="${BOLD_MAGENTA}◈${RESET}"
-SYM_GAME="${BOLD_GREEN}🎮${RESET}"
-SYM_SANDBOX="${BOLD_BLUE}⬡${RESET}"
 
 # ─── Print Helpers ────────────────────────────────────────────────────────────
 
@@ -45,101 +26,107 @@ ui::warn() { echo -e "  ${SYM_WARN}  $*"; }
 ui::info() { echo -e "  ${SYM_INFO}  $*"; }
 ui::wait() { echo -e "  ${SYM_WAIT}  $*"; }
 
+ui::_line() {
+    # Usage: ui::_line CHAR WIDTH — prints CHAR repeated WIDTH times
+    local out
+    printf -v out '%*s' "$2" ''
+    printf '%s' "${out// /$1}"
+}
+
 ui::header() {
-    local title="$1"
-    local width=${2:-44}
+    local title="$1" width="${2:-44}"
     local pad=$(( (width - ${#title} - 2) / 2 ))
     local line
-    line=$(printf '─%.0s' $(seq 1 "$width"))
-
-    echo -e ""
+    line=$(ui::_line '─' "$width")
+    echo ""
     echo -e "  ${BOLD_CYAN}╭${line}╮${RESET}"
-    echo -e "  ${BOLD_CYAN}│${RESET}$(printf '%*s' "$((pad))" '')${BOLD_WHITE} ${title} ${RESET}$(printf '%*s' "$((pad))" '')${BOLD_CYAN}│${RESET}"
+    printf '  %b│%b%*s%b %s %b%*s%b│%b\n' "$BOLD_CYAN" "$RESET" "$pad" '' "$BOLD_WHITE" "$title" "$RESET" \
+        "$(( width - pad - ${#title} - 2 ))" '' "$BOLD_CYAN" "$RESET"
     echo -e "  ${BOLD_CYAN}╰${line}╯${RESET}"
-    echo -e ""
+    echo ""
 }
 
 ui::box() {
-    # Usage: ui::box "Title" "line1" "line2" ...
-    local title="$1"
-    shift
-    local width=42
-    local line
-    line=$(printf '─%.0s' $(seq 1 "$width"))
-
-    echo -e ""
-    echo -e "  ${BOLD_CYAN}╭─ ${BOLD_WHITE}${title}${BOLD_CYAN} $(printf '─%.0s' $(seq 1 $((width - ${#title} - 2))))╮${RESET}"
+    # Usage: ui::box COLOR "Title" "line1" "line2" ... — plain-text lines, 42 wide
+    local color="$1" title="$2"
+    shift 2
+    local width=42 entry
+    echo ""
+    printf '  %b╭─ %b%s%b %s╮%b\n' "$color" "$BOLD_WHITE" "$title" "$color" \
+        "$(ui::_line '─' $(( width - ${#title} - 3 )))" "$RESET"
     for entry in "$@"; do
-        # Pad entry to fill box width
-        printf "  ${BOLD_CYAN}│${RESET}  %-${width}s${BOLD_CYAN}│${RESET}\n" "$entry"
+        printf '  %b│%b  %-*s%b│%b\n' "$color" "$RESET" $(( width - 2 )) "$entry" "$color" "$RESET"
     done
-    echo -e "  ${BOLD_CYAN}╰${line}╯${RESET}"
-    echo -e ""
+    printf '  %b╰%s╯%b\n' "$color" "$(ui::_line '─' "$width")" "$RESET"
+    echo ""
 }
 
 ui::divider() {
-    local width=${1:-44}
-    local line
-    line=$(printf '─%.0s' $(seq 1 "$width"))
-    echo -e "  ${DIM}${line}${RESET}"
+    echo -e "  ${DIM}$(ui::_line '─' "${1:-44}")${RESET}"
 }
 
 ui::label() {
     # ui::label "KEY" "VALUE" [color]
-    local key="$1"
-    local val="$2"
-    local col="${3:-$WHITE}"
-    printf "  ${DIM}%-22s${RESET} ${col}%s${RESET}\n" "$key" "$val"
+    printf '  %b%-22s%b %b%s%b\n' "$DIM" "$1" "$RESET" "${3:-$WHITE}" "$2" "$RESET"
 }
 
 ui::status_row() {
     # ui::status_row "Label" "value" "ok|warn|fail"
-    local label="$1"
-    local value="$2"
-    local state="${3:-ok}"
     local sym
-    case "$state" in
-        ok)   sym="${SYM_OK}"   ;;
-        warn) sym="${SYM_WARN}" ;;
-        fail) sym="${SYM_FAIL}" ;;
-        *)    sym="${SYM_INFO}" ;;
+    case "${3:-ok}" in
+        ok)   sym="$SYM_OK"   ;;
+        warn) sym="$SYM_WARN" ;;
+        fail) sym="$SYM_FAIL" ;;
+        *)    sym="$SYM_INFO" ;;
     esac
-    printf "  %-28s %s  %s\n" "$label" "$sym" "$value"
+    printf '  %-28s %b  %s\n' "$1" "$sym" "$2"
 }
 
 # ─── Interactive Prompts ──────────────────────────────────────────────────────
+# Prompts go to stderr so $(ui::choose ...) captures only the answer.
+# TURINGOS_NO_GUM=1 forces the plain prompts even when gum is installed.
+
+ui::_gum() {
+    [[ -z "${TURINGOS_NO_GUM:-}" ]] && command -v gum &>/dev/null
+}
 
 ui::confirm() {
     # Usage: ui::confirm "Are you sure?" && do_thing
-    local prompt="${1:-Continue?}"
-    if command -v gum &>/dev/null; then
-        gum confirm "$prompt"
+    local prompt="${1:-Continue?}" reply
+    if ui::_gum; then
+        gum confirm --default=false "$prompt"
     else
-        echo -en "  ${BOLD_YELLOW}?${RESET}  ${prompt} [y/N] "
+        echo -en "  ${BOLD_YELLOW}?${RESET}  ${prompt} [y/N] " >&2
         read -r reply
         [[ "$reply" =~ ^[Yy]$ ]]
     fi
+}
+
+ui::_menu() {
+    # Usage: ui::_menu PROMPT ASK OPTIONS... — numbered fallback menu, prints chosen options
+    local prompt="$1" ask="$2" reply n i=1 opt
+    shift 2
+    echo -e "  ${BOLD_CYAN}${prompt}${RESET}" >&2
+    for opt in "$@"; do
+        echo "    [$i] $opt" >&2
+        i=$(( i + 1 ))
+    done
+    echo -en "  ${ask}: " >&2
+    read -r reply
+    for n in $reply; do
+        [[ "$n" =~ ^[0-9]+$ ]] && (( n >= 1 && n <= $# )) && echo "${!n}"
+    done
+    return 0
 }
 
 ui::choose() {
     # Usage: result=$(ui::choose "Pick one" "opt1" "opt2" "opt3")
     local prompt="$1"
     shift
-    if command -v gum &>/dev/null; then
+    if ui::_gum; then
         gum choose --header="$prompt" "$@"
     else
-        # Menu goes to stderr so $(ui::choose ...) captures only the answer
-        echo -e "  ${BOLD_CYAN}${prompt}${RESET}" >&2
-        local i=1
-        for opt in "$@"; do
-            echo "    [$i] $opt" >&2
-            (( i++ ))
-        done
-        echo -en "  Choice: " >&2
-        read -r choice
-        # Return chosen option by index
-        local opts=("$@")
-        echo "${opts[$((choice-1))]}"
+        ui::_menu "$prompt" "Choice" "$@" | head -1
     fi
 }
 
@@ -147,31 +134,18 @@ ui::choose_many() {
     # Usage: ui::choose_many "Pick some" "opt1" "opt2" — prints one choice per line
     local prompt="$1"
     shift
-    if command -v gum &>/dev/null; then
+    if ui::_gum; then
         gum choose --no-limit --header="$prompt" "$@"
     else
-        echo -e "  ${BOLD_CYAN}${prompt}${RESET}" >&2
-        local i=1
-        for opt in "$@"; do
-            echo "    [$i] $opt" >&2
-            (( i++ ))
-        done
-        echo -en "  Choices (space-separated numbers): " >&2
-        local reply n opts=("$@")
-        read -r reply
-        for n in $reply; do
-            [[ "$n" =~ ^[0-9]+$ ]] && (( n >= 1 && n <= ${#opts[@]} )) && echo "${opts[$((n-1))]}"
-        done
-        return 0
+        ui::_menu "$prompt" "Choices (space-separated numbers)" "$@"
     fi
 }
 
 ui::input() {
-    # Usage: result=$(ui::input "Enter project path")
-    local prompt="$1"
-    local default="${2:-}"
-    if command -v gum &>/dev/null; then
-        gum input --placeholder="${default}" --prompt="  ❯ " --header="$prompt"
+    # Usage: result=$(ui::input "Enter project path" [default])
+    local prompt="$1" default="${2:-}" val
+    if ui::_gum; then
+        gum input --placeholder="$default" --prompt="  ❯ " --header="$prompt"
     else
         echo -en "  ${BOLD_CYAN}${prompt}${RESET}${default:+ [${default}]}: " >&2
         read -r val
@@ -179,53 +153,57 @@ ui::input() {
     fi
 }
 
+ui::secret() {
+    # Usage: key=$(ui::secret "API key (blank to skip)") — input is not echoed
+    local prompt="$1" val=""
+    if ui::_gum; then
+        gum input --password --prompt="  ❯ " --header="$prompt" || true
+    else
+        echo -en "  ${prompt}: " >&2
+        read -rs val || true
+        echo "" >&2
+        echo "$val"
+    fi
+}
+
 # ─── TuringOS Banner ─────────────────────────────────────────────────────────
 
 ui::banner() {
-    echo -e ""
-    echo -e "  ${BOLD_CYAN}╔═══════════════════════════════════════════╗${RESET}"
-    echo -e "  ${BOLD_CYAN}║${RESET}  ${BOLD_WHITE}  ██████╗██╗      █████╗ ██╗   ██╗██████╗ ${BOLD_CYAN}║${RESET}"
-    echo -e "  ${BOLD_CYAN}║${RESET}  ${BOLD_WHITE} ██╔════╝██║     ██╔══██╗██║   ██║██╔══██╗${BOLD_CYAN}║${RESET}"
-    echo -e "  ${BOLD_CYAN}║${RESET}  ${BOLD_WHITE} ██║     ██║     ███████║██║   ██║██║  ██║${BOLD_CYAN}║${RESET}"
-    echo -e "  ${BOLD_CYAN}║${RESET}  ${BOLD_WHITE} ██║     ██║     ██╔══██║██║   ██║██║  ██║${BOLD_CYAN}║${RESET}"
-    echo -e "  ${BOLD_CYAN}║${RESET}  ${BOLD_WHITE} ╚██████╗███████╗██║  ██║╚██████╔╝██████╔╝${BOLD_CYAN}║${RESET}"
-    echo -e "  ${BOLD_CYAN}║${RESET}  ${BOLD_WHITE}  ╚═════╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═════╝ ${BOLD_CYAN}║${RESET}"
-    echo -e "  ${BOLD_CYAN}║${RESET}  ${DIM}  Agentic Substrate · CachyOS Edition   ${BOLD_CYAN}║${RESET}"
-    echo -e "  ${BOLD_CYAN}╚═══════════════════════════════════════════╝${RESET}"
-    echo -e ""
-}
-
-ui::spinner() {
-    # Usage: ui::spinner "Loading..." &  SPIN_PID=$!  ...  kill $SPIN_PID
-    local msg="${1:-Working...}"
-    local frames=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
-    local i=0
-    while true; do
-        printf "\r  ${BOLD_CYAN}%s${RESET}  %s  " "${frames[$((i % ${#frames[@]}))]}" "$msg"
-        (( i++ ))
-        sleep 0.1
+    local row
+    echo ""
+    echo -e "  ${BOLD_CYAN}╔$(ui::_line '═' 69)╗${RESET}"
+    for row in \
+        "████████╗██╗   ██╗██████╗ ██╗███╗   ██╗ ██████╗  ██████╗ ███████╗" \
+        "╚══██╔══╝██║   ██║██╔══██╗██║████╗  ██║██╔════╝ ██╔═══██╗██╔════╝" \
+        "   ██║   ██║   ██║██████╔╝██║██╔██╗ ██║██║  ███╗██║   ██║███████╗" \
+        "   ██║   ██║   ██║██╔══██╗██║██║╚██╗██║██║   ██║██║   ██║╚════██║" \
+        "   ██║   ╚██████╔╝██║  ██║██║██║ ╚████║╚██████╔╝╚██████╔╝███████║" \
+        "   ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝ ╚═════╝  ╚═════╝ ╚══════╝"; do
+        echo -e "  ${BOLD_CYAN}║${RESET}  ${BOLD_WHITE}${row}${RESET}  ${BOLD_CYAN}║${RESET}"
     done
-}
-
-ui::spinner_stop() {
-    local pid="$1"
-    local msg="${2:-Done}"
-    kill "$pid" 2>/dev/null
-    wait "$pid" 2>/dev/null
-    printf "\r  ${SYM_OK}  %-40s\n" "$msg"
+    printf '  %b║%b  %b%-65s%b  %b║%b\n' "$BOLD_CYAN" "$RESET" "$DIM" "Agentic Substrate - Debian Edition" \
+        "$RESET" "$BOLD_CYAN" "$RESET"
+    echo -e "  ${BOLD_CYAN}╚$(ui::_line '═' 69)╝${RESET}"
+    echo ""
 }
 
 # ─── Dependency Check ─────────────────────────────────────────────────────────
 
 ui::check_deps() {
-    local missing=()
+    # Usage: ui::check_deps required|optional CMD... — status row per command;
+    # returns 1 if any is missing
+    local kind="$1" cmd missing=0
+    shift
     for cmd in "$@"; do
-        command -v "$cmd" &>/dev/null || missing+=("$cmd")
+        if command -v "$cmd" &>/dev/null; then
+            ui::status_row "$cmd" "found" "ok"
+        elif [[ "$kind" == required ]]; then
+            ui::status_row "$cmd" "MISSING (required)" "fail"
+            missing=1
+        else
+            ui::status_row "$cmd" "not found (optional)" "warn"
+            missing=1
+        fi
     done
-    if [[ ${#missing[@]} -gt 0 ]]; then
-        ui::warn "Missing optional tools: ${missing[*]}"
-        ui::info "Install with: sudo apt install ${missing[*]}"
-        return 1
-    fi
-    return 0
+    return "$missing"
 }
