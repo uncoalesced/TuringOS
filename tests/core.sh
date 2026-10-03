@@ -34,6 +34,9 @@ for k in memory-mcp github-mcp; do
 done
 out=$(tos bazaar installed 2>&1) || fail "bazaar installed: ${out}"
 [[ $(grep -c "●" <<< "$out") -eq 2 ]] || fail "bazaar installed should list 2: ${out}"
+mkdir -p "${HOME}/victim"
+if echo y | tos bazaar uninstall ../../victim >/dev/null 2>&1; then fail "bazaar uninstall took a path"; fi
+[[ -d "${HOME}/victim" ]] || fail "bazaar uninstall deleted outside the Bazaar dir"
 
 # ─── monitor spend (counter used to abort on the first log) ──────────────────
 for n in 1 2; do
@@ -57,6 +60,12 @@ evil='a b $(touch '"${HOME}"'/pwned) "q"'
 got=$(bash -c 'source "$1/core/config.sh"; printenv TEST_VALUE' _ "$ROOT")
 [[ "$got" == "$evil" ]] || fail "config value round-trip / export: ${got}"
 [[ ! -e "${HOME}/pwned" ]] || fail "config value was executed"
+[[ "$(stat -c %a "${HOME}/.turingos")" == 700 ]] || fail "~/.turingos not mode 700"
+bash -c 'source "$1/core/config.sh"
+    config::valid_secret "sk-ant-api03-Ab_9.x-Y" || exit 1
+    for bad in "short" $'"'"'sk-ant-xxxxxxxx\ntouch /tmp/x'"'"' "sk-ant-\"xxxxxxxx" "sk-ant xxxxxxxx" "sk-ant-\$(id)xx"; do
+        config::valid_secret "$bad" && exit 1
+    done; exit 0' _ "$ROOT" || fail "config::valid_secret accepts/rejects the wrong keys"
 
 # ─── game mode on/off (off used to abort after the first restore) ────────────
 printf '#!/bin/sh\nsleep 30\n' > "${STUBS}/ninja"
@@ -100,6 +109,13 @@ printf 'y\nn\n' | tos sandbox merge >/dev/null 2>&1 || fail "sandbox merge"
 [[ -f "${proj}/c.txt" ]] || fail "merge: new file missing"
 if compgen -G "${proj}/.turingos_*" >/dev/null; then fail "merge leaked .turingos_* files"; fi
 [[ "$(git -C "$proj" rev-parse HEAD)" == "$head_before" ]] || fail "merge touched the project's .git"
+
+# Metadata lives outside the sandbox; a tampered or foreign target is refused
+[[ -f "${sb}.meta" && ! -e "${sb}/.turingos_sandbox" ]] || fail "sandbox metadata inside the sandbox"
+sed -i 's|^SOURCE_PROJECT=.*|SOURCE_PROJECT=/|' "${sb}.meta"
+if printf 'y\nn\n' | tos sandbox merge >/dev/null 2>&1; then fail "merge into / was allowed"; fi
+if printf 'y\nn\n' | tos sandbox merge "$proj" >/dev/null 2>&1; then fail "merge from a non-sandbox path was allowed"; fi
+if tos sandbox create "$HOME" x >/dev/null 2>&1; then fail "sandbox of a dir containing the sandbox root was allowed"; fi
 
 # ─── model set ollama → OpenCode provider config ─────────────────────────────
 tos model set ollama "" llama3.2 >/dev/null || fail "model set ollama"
