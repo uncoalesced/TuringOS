@@ -87,7 +87,11 @@ ui::status_row() {
 # TURINGOS_NO_GUM=1 forces the plain prompts even when gum is installed.
 
 ui::_gum() {
-    [[ -z "${TURINGOS_NO_GUM:-}" ]] && command -v gum &>/dev/null
+    [[ -z "${TURINGOS_NO_GUM:-}" ]] && command -v gum &>/dev/null || return 1
+    # gum needs a real terminal: stdin a tty with a size (it panics on a
+    # 0-column pty, and can't read piped input)
+    local size
+    [[ -t 0 ]] && size=$(stty size 2>/dev/null) && (( ${size#* } > 0 ))
 }
 
 ui::confirm() {
@@ -156,14 +160,15 @@ ui::input() {
 ui::secret() {
     # Usage: key=$(ui::secret "API key (blank to skip)") — input is not echoed
     local prompt="$1" val=""
-    if ui::_gum; then
-        gum input --password --prompt="  ❯ " --header="$prompt" || true
-    else
-        echo -en "  ${prompt}: " >&2
-        read -rs val || true
-        echo "" >&2
+    if ui::_gum && val=$(gum input --password --prompt="  ❯ " --header="$prompt"); then
         echo "$val"
+        return 0
     fi
+    # No gum, or gum failed: plain hidden prompt
+    echo -en "  ${prompt}: " >&2
+    read -rs val || true
+    echo "" >&2
+    echo "$val"
 }
 
 # ─── TuringOS Banner ─────────────────────────────────────────────────────────
