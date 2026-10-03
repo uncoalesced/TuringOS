@@ -61,6 +61,14 @@ declare -g \
 config::init_dirs() {
     mkdir -p "$TURINGOS_DATA_DIR" "$TURINGOS_SANDBOX_DIR" "$TURINGOS_LOG_DIR" \
              "$TURINGOS_BAZAAR_DIR" "$TURINGOS_PID_DIR"
+    # Keys, logs and sandboxes: owner only
+    chmod 700 "$TURINGOS_DATA_DIR" 2>/dev/null || true
+}
+
+config::valid_secret() {
+    # Usage: config::valid_secret VALUE — API keys/tokens: one line of
+    # base64/URL-safe characters, nothing a shell or curl config could act on
+    [[ "$1" =~ ^[A-Za-z0-9._~+/=-]{8,512}$ ]]
 }
 
 # ─── Load User Config Overrides ───────────────────────────────────────────────
