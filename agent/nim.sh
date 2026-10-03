@@ -4,7 +4,7 @@
 # Model picker for `turingos model set nvidia`, the OpenCode provider config
 # used when agents run on NIM, and `turingos image` (FLUX text-to-image).
 #
-# Depends on: core/config.sh, core/ui.sh
+# Depends on: core/config.sh, core/ui.sh, agent/model.sh
 
 # ─── Catalog ──────────────────────────────────────────────────────────────────
 # Chat models from https://integrate.api.nvidia.com/v1/models, "id|category".
@@ -41,7 +41,6 @@ NIM_IMAGE_MODELS=(
 
 NIM_DEFAULT_ENDPOINT="https://integrate.api.nvidia.com/v1"
 NIM_MAX_FALLBACKS=3
-NIM_OPENCODE_CONFIG="${TURINGOS_DATA_DIR}/opencode-nvidia.json"
 
 # ─── Setup ────────────────────────────────────────────────────────────────────
 
@@ -113,21 +112,14 @@ nim::pick() {
 
 nim::_ask_key() {
     [[ -n "${NVIDIA_API_KEY:-}" ]] && return 0
-    local key=""
+    local key
     ui::info "Get a key at https://build.nvidia.com (starts with nvapi-)"
-    if command -v gum &>/dev/null; then
-        key=$(gum input --password --prompt="  ❯ " --header="NVIDIA API key (blank to skip)") || true
-    else
-        echo -en "  NVIDIA API key (blank to skip): " >&2
-        read -rs key || true
-        echo "" >&2
-    fi
+    key=$(ui::secret "NVIDIA API key (blank to skip)")
     if [[ -z "$key" ]]; then
         ui::warn "No key saved. Add NVIDIA_API_KEY to ${TURINGOS_CONFIG_FILE} before starting an agent."
         return 0
     fi
     config::set NVIDIA_API_KEY "$key"
-    chmod 600 "$TURINGOS_CONFIG_FILE"
     ui::ok "NVIDIA_API_KEY saved to ${TURINGOS_CONFIG_FILE}"
 }
 
@@ -146,24 +138,12 @@ nim::model_chain() {
 }
 
 # ─── OpenCode Provider Config ─────────────────────────────────────────────────
-# OpenCode merges the file named by OPENCODE_CONFIG into its own config, so the
-# picked models show up as provider "nvidia" without touching the user's files.
 
 nim::opencode_config() {
-    jq -n \
-        --arg url "${TURINGOS_MODEL_ENDPOINT:-$NIM_DEFAULT_ENDPOINT}" \
-        --arg models "${TURINGOS_NIM_MODELS:-},${TURINGOS_MODEL_NAME:-},${TURINGOS_NIM_FALLBACKS:-}" \
-        '{
-            "$schema": "https://opencode.ai/config.json",
-            provider: {
-                nvidia: {
-                    npm: "@ai-sdk/openai-compatible",
-                    name: "NVIDIA NIM",
-                    options: { baseURL: $url, apiKey: "{env:NVIDIA_API_KEY}" },
-                    models: ($models | split(",") | map(select(length > 0) | {key: ., value: {name: .}}) | from_entries)
-                }
-            }
-        }' > "$NIM_OPENCODE_CONFIG"
+    # Every picked model (plus default and backups) shows up as nvidia/<id>
+    model::write_opencode_config nvidia "NVIDIA NIM" \
+        "${TURINGOS_MODEL_ENDPOINT:-$NIM_DEFAULT_ENDPOINT}" NVIDIA_API_KEY \
+        "${TURINGOS_NIM_MODELS:-},${TURINGOS_MODEL_NAME:-},${TURINGOS_NIM_FALLBACKS:-}"
 }
 
 # ─── Image Generation ─────────────────────────────────────────────────────────
@@ -186,11 +166,9 @@ nim::image() {
     ui::wait "Generating with ${model}..."
     local resp body
     body=$(jq -n --arg p "$prompt" '{prompt: $p}')
-    # Key goes to curl as config on stdin, not argv, so ps can't see it
-    if ! resp=$(printf 'header = "Authorization: Bearer %s"\n' "$NVIDIA_API_KEY" \
-            | curl -fsS --max-time 180 -K - \
-                -H "Content-Type: application/json" -H "Accept: application/json" \
-                -d "$body" "https://ai.api.nvidia.com/v1/genai/${model}"); then
+    if ! resp=$(model::curl_bearer "$NVIDIA_API_KEY" -fsS --max-time 180 \
+            -H "Content-Type: application/json" -H "Accept: application/json" \
+            -d "$body" "https://ai.api.nvidia.com/v1/genai/${model}"); then
         ui::fail "Request to NVIDIA failed (model ${model})"
         return 1
     fi
