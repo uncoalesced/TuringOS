@@ -3,12 +3,12 @@
 ## Kiosk UI doesn't auto-launch on boot
 
 Symptom: the ISO boots to a lightdm login screen instead of going straight
-to the fullscreen Electron UI. After logging in manually as `user`/`live`,
+to the fullscreen TuringOS UI. After logging in manually as `user`/`live`,
 the desktop comes up, but the TuringOS UI still doesn't appear. It only
 launches if you run this by hand:
 
 ```bash
-KIOSK=1 /usr/local/bin/turingos-ui
+KIOSK=1 /usr/bin/turingos-ui
 ```
 
 ### Why a manual run is needed right now
@@ -26,8 +26,7 @@ isn't firing.
    runs if the session that actually starts *is* openbox. If the greeter
    falls back to some other default session, this file is never read.
 
-So the manual command isn't a fix. It only proves the binary and the
-Electron bundle work. The launch *mechanism* is what's broken.
+So the manual command isn't a fix. It only proves the UI binary works. The launch *mechanism* is what's broken.
 
 ### Plausible causes
 
@@ -45,6 +44,14 @@ Electron bundle work. The launch *mechanism* is what's broken.
   `/usr/lib/live/config/0100-lightdm` module configures lightdm at boot
   and may overwrite or race with our `50-autologin.conf` drop-in,
   depending on systemd unit ordering.
+
+### Attempted fix (unverified)
+
+Hook `0470-autologin-kiosk` now adds
+`/etc/systemd/system/lightdm.service.d/10-after-live-config.conf`
+(`After=`/`Wants=live-config.service`), fix 1 below, and fails the build
+if `/usr/share/xsessions/openbox.desktop` is missing (fix 2). Nobody has
+booted an ISO with it yet: if the greeter still appears, move on to fix 3.
 
 ### Fixes to try (next build)
 
