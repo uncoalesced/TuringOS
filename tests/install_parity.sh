@@ -14,7 +14,10 @@ fail() { echo "FAIL: $*" >&2; exit 1; }
 mapfile -t modules < <(sed -n '/^for _module in/,/; do$/p' "${ROOT}/turingos" | grep -oE '[a-z]+/[a-z_]+\.sh')
 (( ${#modules[@]} >= 10 )) || fail "could not read the module list from turingos (${#modules[@]} found)"
 
-rsync -a --exclude=.git --exclude='/iso' --exclude='target/' "${ROOT}/" "${WORK}/repo/"
+# Not the live-build output either: a checkout that has built an ISO holds GBs there
+rsync -a --exclude=.git --exclude='/iso' --exclude='target/' \
+    --exclude='/debian-live/'{cache,chroot,binary,.build,local} --exclude='*.iso' \
+    "${ROOT}/" "${WORK}/repo/"
 bash "${WORK}/repo/debian-live/sync-scripts.sh" >/dev/null
 INC="${WORK}/repo/debian-live/config/includes.chroot"
 
