@@ -106,7 +106,8 @@ monitor::_row() {
 
 monitor::_bar() {
     # Usage: monitor::_bar USED TOTAL [WIDTH]
-    local used="$1" total="$2" width="${3:-16}"
+    # 14 wide: bar + " 12345MB" still fits the HUD's 24-character value column
+    local used="$1" total="$2" width="${3:-14}"
     if ! [[ "$used" =~ ^[0-9]+$ && "$total" =~ ^[0-9]+$ ]] || (( total == 0 )); then
         printf '[%-*s]' "$width" "?"
         return 0
