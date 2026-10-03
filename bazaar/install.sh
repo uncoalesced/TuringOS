@@ -207,9 +207,13 @@ bazaar::_register_mcp() {
         env_args+=(--arg "$var" "${!var:-}")
     done
 
-    local server
+    # Via stdin, not --args: jq reads an arg like "-y" as its own option
+    local server args_json='[]'
+    if (( ${#args[@]} )); then
+        args_json=$(printf '%s\0' "${args[@]}" | jq -Rs 'split("\u0000")[:-1]')
+    fi
     server=$(jq -n --arg cmd "$(registry::get_field "$key" mcp_command)" \
-        --argjson args "$(jq -n '$ARGS.positional' --args "${args[@]}")" \
+        --argjson args "$args_json" \
         --argjson env "$(jq -n "${env_args[@]}" '$ARGS.named')" \
         '{type: "stdio", command: $cmd, args: $args, env: $env}') || return 1
 
