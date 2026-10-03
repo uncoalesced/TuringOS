@@ -44,7 +44,7 @@ jobs:
         run: |
           apt-get update -qq
           apt-get install -y --no-install-recommends git ca-certificates \
-            cargo rustc rustfmt rust-clippy build-essential pkg-config cmake clang libclang-dev \
+            cargo-web rustc-web rustfmt-web rust-web-clippy build-essential pkg-config cmake clang libclang-dev \
             libwebkit2gtk-4.1-dev libasound2-dev libxdo-dev
 
       - uses: actions/checkout@v4
