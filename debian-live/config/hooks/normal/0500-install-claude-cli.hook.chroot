@@ -37,9 +37,10 @@ _install_claude_npm() {
 # ─── First-login API key prompt ───────────────────────────────────────────────
 
 _write_firstboot_prompt() {
-    cat > /etc/profile.d/turingos-apikey.sh <<'APIKEY_HOOK'
-# /etc/profile.d/turingos-apikey.sh
-# Asks for ANTHROPIC_API_KEY once, on the first interactive login.
+    cat > /etc/profile.d/turingos-setup-apikey.sh <<'APIKEY_HOOK'
+# /etc/profile.d/turingos-setup-apikey.sh
+# Asks for ANTHROPIC_API_KEY once, on the first interactive login. Named to
+# sort after turingos-first-run.sh: the welcome banner shows first.
 # Sourced: no shebang, no set -e.
 
 [[ $- == *i* ]] || return 0
@@ -47,13 +48,14 @@ command -v claude &>/dev/null || return 0
 [[ -f "${HOME}/.turingos/.apikey-configured" ]] && return 0
 
 if [[ -z "${ANTHROPIC_API_KEY:-}" ]] && ! grep -q '^ANTHROPIC_API_KEY=' "${HOME}/.turingos/config.env" 2>/dev/null; then
-    # Saves to ~/.turingos/config.env (mode 600)
-    bash /usr/lib/turingos/pkg/turingos-install-claude-cli.sh --api-key
+    # Saves to ~/.turingos/config.env (mode 600). Blank input skips (exit 0);
+    # a rejected key or a crash asks again at the next login.
+    bash /usr/lib/turingos/pkg/turingos-install-claude-cli.sh --api-key || return 0
 fi
 mkdir -p "${HOME}/.turingos"
 touch "${HOME}/.turingos/.apikey-configured"
 APIKEY_HOOK
-    chmod 644 /etc/profile.d/turingos-apikey.sh
+    chmod 644 /etc/profile.d/turingos-setup-apikey.sh
 }
 
 # ─── Run ──────────────────────────────────────────────────────────────────────
