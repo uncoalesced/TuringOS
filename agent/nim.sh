@@ -119,6 +119,10 @@ nim::_ask_key() {
         ui::warn "No key saved. Add NVIDIA_API_KEY to ${TURINGOS_CONFIG_FILE} before starting an agent."
         return 0
     fi
+    if ! config::valid_secret "$key"; then
+        ui::fail "That doesn't look like an API key (letters, digits and -_. only). Nothing saved."
+        return 1
+    fi
     config::set NVIDIA_API_KEY "$key"
     ui::ok "NVIDIA_API_KEY saved to ${TURINGOS_CONFIG_FILE}"
 }
