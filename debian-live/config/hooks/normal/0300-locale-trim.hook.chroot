@@ -4,7 +4,8 @@
 # Keeps: en_US.UTF-8, en_GB.UTF-8 (safe for demo audiences).
 # Expected savings: 150–300MB
 #
-# Runs AFTER 0200-trim, BEFORE turingos install hooks.
+# Runs AFTER 0200-trim, BEFORE the TuringOS hooks (0400+). includes.chroot
+# is already in place, so /usr/share/doc/turingos is deliberately kept.
 
 set -euo pipefail
 
@@ -34,11 +35,12 @@ localepurge
 
 # ─── 2. Remove /usr/share/doc ─────────────────────────────────────────────────
 # Debian packages install docs here. Useless in a live demo image.
-# Keep copyright files — required by Debian policy even in live images.
+# Keep copyright files — required by Debian policy even in live images — and
+# TuringOS's own docs (staged by sync-scripts.sh, referenced by first-run).
 
 echo "==> [0300-locale-trim] Stripping /usr/share/doc..."
 find /usr/share/doc -depth -not -name "copyright" -not -path "/usr/share/doc" \
-    -delete 2>/dev/null || true
+    -not -path "/usr/share/doc/turingos*" -delete 2>/dev/null || true
 
 # ─── 3. Remove /usr/share/man ─────────────────────────────────────────────────
 # Man pages — not needed in a demo image.
@@ -88,7 +90,6 @@ find /usr/share/bash-completion/completions -type f \
 # ─── 9. Compress remaining man pages that survive (from keep list) ────────────
 # Nothing should survive the man purge above, but if something is regenerated
 # by a subsequent hook, gzip it.
-find /usr/share/man -type f -name '*.1' -o -name '*.8' 2>/dev/null \
-    | xargs -r gzip -9 2>/dev/null || true
+find /usr/share/man -type f \( -name '*.1' -o -name '*.8' \) -exec gzip -9 {} + 2>/dev/null || true
 
 echo "==> [0300-locale-trim] Done. Chroot size: $(du -sh / --exclude=/proc --exclude=/sys 2>/dev/null | cut -f1)"
