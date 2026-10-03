@@ -6,27 +6,12 @@ This guide walks through the scripts in order: first install, running an agent, 
 
 ## Prerequisites
 
-**macOS**
+On the TuringOS live ISO everything is already installed. On another Debian
+or Ubuntu machine:
+
 ```bash
-# Required
-brew install git jq
-
-# Strongly recommended (UI quality depends on these)
-brew install gum fzf
-
-# Optional but useful
-brew install node
-```
-
-**Arch / CachyOS**
-```bash
-sudo pacman -S git jq gum fzf rsync nodejs npm
-```
-
-**Ubuntu / Debian**
-```bash
-sudo apt install git jq fzf rsync nodejs npm
-# gum: https://github.com/charmbracelet/gum#installation
+sudo apt install git jq curl rsync fzf nodejs npm
+# gum (prettier prompts): https://github.com/charmbracelet/gum#installation
 ```
 
 ---
@@ -205,7 +190,7 @@ Then pick what to do:
 turingos sandbox merge
 ```
 
-This copies the agent's changes back into your original project with rsync. It asks you to confirm first, then offers to destroy the sandbox.
+This copies the agent's changes back into your original project with rsync, including deletions: a file the agent removed is removed from your project too. Your project's `.git` is never touched (commit the result yourself), and TuringOS's own `.turingos_*` files stay in the sandbox. It asks you to confirm first, then offers to destroy the sandbox.
 
 ### Rollback
 
@@ -240,9 +225,9 @@ turingos bazaar install filesystem-mcp
 During install, TuringOS:
 1. Checks that required env vars are set (e.g. `GITHUB_PERSONAL_ACCESS_TOKEN`)
 2. Verifies the npx package can be downloaded
-3. Adds a server entry to `~/.config/Claude/claude_desktop_config.json`
+3. Registers the server with Claude Code: a user-scope entry under `mcpServers` in `~/.claude.json` (mode 600), with `${HOME}`-style placeholders in the registry filled in
 
-Restart Claude Desktop afterwards so it picks up the new MCP server.
+New Claude Code sessions, including every agent run, pick it up automatically.
 
 To see what's installed:
 
@@ -443,18 +428,16 @@ tail -f ~/.turingos/logs/audit.log
 Set `TURINGOS_AGENT_BINARY` in `~/.turingos/config.env` to the full path of your Claude Code CLI binary.
 
 **Sandbox creation fails with "not a btrfs subvolume"**
-Set `TURINGOS_SANDBOX_BACKEND=copy` in `~/.turingos/config.env`. The rsync copy fallback works on any filesystem, macOS APFS included.
+Set `TURINGOS_SANDBOX_BACKEND=copy` in `~/.turingos/config.env`. The copy backend works on any filesystem. TuringOS also falls back to it by itself when a snapshot can't be made.
 
 **`jq: command not found`**
-The Bazaar and state management both need `jq`. Install it with `sudo pacman -S jq`.
+The Bazaar and state management both need `jq`. Install it with `sudo apt install jq`.
 
-**MCP tool installed but not appearing in Claude Desktop**
-Claude Desktop only reads MCP config at startup, so restart it after any change. The config file lives at:
-- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- Linux: `~/.config/Claude/claude_desktop_config.json`
+**MCP tool installed but not appearing in Claude Code**
+Claude Code reads `~/.claude.json` when a session starts, so start a new session. Check the entry with `claude mcp list`.
 
 **Agent completed but diff shows no changes**
-The agent may have worked on untracked files. If the sandbox has no `.git`, the diff falls back to an rsync dry-run. Check `~/.turingos/logs/agent-session-*.log` to see what the agent actually did.
+The agent may have worked on untracked files. The diff compares the sandbox with your project's working tree (what merge would apply), untracked files included. Check `~/.turingos/logs/agent-session-*.log` to see what the agent actually did.
 
 **Game mode says "no processes found"**
 `turingos game on` only affects agents that are already running. Start the agent first, then turn on game mode.
