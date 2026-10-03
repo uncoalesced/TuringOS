@@ -1,0 +1,18 @@
+#!/bin/bash
+# 0900-boot-timeout.hook.binary
+#
+# live-build's boot menus wait for a key forever (isolinux `timeout 0`, no
+# GRUB timeout), so a kiosk boot stalls at the menu. Boot the default live
+# entry after 3 seconds instead. Runs in the binary tree before the ISO is
+# written; live-build has no option for this.
+
+set -euo pipefail
+
+# isolinux (BIOS): timeout is in tenths of a second
+sed -i 's/^timeout 0$/timeout 30/' isolinux/isolinux.cfg
+grep -qx 'timeout 30' isolinux/isolinux.cfg
+
+# GRUB (UEFI): grub.cfg sources config.cfg first
+echo 'set timeout=3' >> boot/grub/config.cfg
+
+echo "==> [0900-boot-timeout] Boot menus default after 3 seconds"
