@@ -1,0 +1,142 @@
+/* Dock. */
+
+/* ─── Dock ─────────────────────────────────────────────────────────────── */
+
+.dock-edge {
+  position: fixed;
+  inset: auto 0 0 0;
+  height: 8px;
+  z-index: 25;
+}
+
+/* Floating, detached from the screen edge — not a tray welded to the bottom. */
+.dock {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  z-index: 26;
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  /* Fixed height with no top padding: magnified icons grow up and out of
+     the tray (like the real dock), while their growing width pushes their
+     neighbours apart and widens the tray. */
+  height: 66px;
+  padding: 0 9px 9px;
+  border-radius: 22px;
+  corner-shape: squircle; /* continuous iOS/macOS-style corner, not a plain circular arc */
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  backdrop-filter: blur(24px) saturate(1.4);
+  border: 1px solid var(--line);
+  /* Hidden below the viewport edge; the dock's own height + bottom offset
+     + a little extra covers the shadow so nothing peeks. */
+  transform: translate(-50%, calc(100% + 32px));
+  transition: transform 260ms var(--ease-out);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.2);
+}
+
+.dock.is-visible {
+  transform: translate(-50%, 0);
+}
+
+/* Size is animated for real (width/height, set every frame by a spring in
+   app.js) rather than with transform: scale(). This is the one deliberate
+   exception to the transform-only rule — a scale doesn't take up space, so
+   magnified icons would overlap their neighbours instead of pushing them
+   apart. Everything inside is sized in % so it grows with the tile. */
+.dock-item {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 26%;
+  corner-shape: squircle;
+  background: var(--surface-strong);
+  color: var(--text);
+  transition: background-color 160ms var(--ease-out);
+}
+
+.dock-item:hover { background: color-mix(in srgb, var(--accent) 14%, var(--surface-strong)); }
+.dock-item:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.dock-item .icon {
+  width: 46%;
+  height: 46%;
+  transition: transform 140ms var(--ease-out);
+}
+
+.dock-item:active .icon { transform: scale(0.88); }
+
+.dock-error {
+  position: fixed;
+  left: 50%;
+  bottom: 104px;
+  z-index: 27;
+  padding: 7px 14px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 0.16);
+  color: var(--danger);
+  font-size: 13px;
+  transform: translate(-50%, 4px) scale(0.97);
+  filter: blur(4px);
+  transition: transform 180ms var(--ease-out), filter 180ms var(--ease-out), visibility 0s 180ms;
+  visibility: hidden;
+}
+
+.dock-error.is-visible {
+  transform: translate(-50%, 0) scale(1);
+  filter: none;
+  visibility: visible;
+  transition: transform 180ms var(--ease-out), filter 180ms var(--ease-out), visibility 0s;
+}
+
+/* Name label above the hovered icon — a fixed dark chrome bubble, like the
+   real dock's, not themed to light/dark since it's system-level chrome. */
+.dock-tooltip {
+  position: fixed;
+  z-index: 28;
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: var(--tuatara-deep);
+  color: #faf9f7;
+  font-size: 12.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: 0 6px 16px rgb(0 0 0 / 0.28);
+  /* left/bottom are set inline in JS to track the hovered icon exactly. */
+  transform: translate(-50%, 4px) scale(0.9);
+  filter: blur(3px);
+  visibility: hidden;
+  transition: transform 130ms var(--ease-out), filter 130ms var(--ease-out), visibility 0s 130ms;
+}
+
+.dock-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: 7px;
+  height: 7px;
+  background: inherit;
+  transform: translate(-50%, -55%) rotate(45deg);
+  border-radius: 0 0 2px 0;
+}
+
+.dock-tooltip.is-visible {
+  transform: translate(-50%, 0) scale(1);
+  filter: none;
+  visibility: visible;
+  transition: transform 130ms var(--ease-out), filter 130ms var(--ease-out), visibility 0s;
+}
+
+/* Bazaar tile: the store is built into the shell. */
+
+.dock-item--bazaar {
+  background: linear-gradient(160deg, var(--japonica-light), var(--accent) 55%, var(--japonica-dark));
+  color: var(--white);
+}
+.dock-item--bazaar:hover { background: linear-gradient(160deg, #eb967a, var(--accent) 55%, var(--japonica-dark)); }
