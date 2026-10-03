@@ -18,7 +18,7 @@ By taking part, you agree to follow our [Code of Conduct](CODE_OF_CONDUCT.md). T
 | `core/` | Policy layer and system integration | Linux, security, Bash |
 | `game/` | Game Mode (process and GPU handling) | Linux performance, GPU drivers |
 | `monitor/` | Status HUD and monitoring | Bash, system metrics |
-| `ui/`, `ui-docs/` | Electron desktop shell | JavaScript, Electron, UI design |
+| `ui/`, `ui-docs/` | Desktop shell: page (HTML/CSS/JS) + Tauri backend (`ui/src-tauri`) | JavaScript, Rust, UI design |
 | `debian-live/`, `iso/`, `pkg/` | Live ISO build and packaging | Debian, live-build, packaging |
 | Docs | README, guides, this file | Technical writing |
 
@@ -103,7 +103,8 @@ Run `turingos model status` to check the provider and ping its endpoint. In your
 - [ ] Post-test evidence attached (output, screenshots, or recording)
 - [ ] Test environment described
 - [ ] Commits follow Conventional Commits
-- [ ] `shellcheck` clean with no warnings on the files you changed (for Bash changes). CI only blocks on errors (`bash -n` + `shellcheck --severity=error`), so run `shellcheck <file>` yourself for warnings
+- [ ] `shellcheck` clean with no warnings (CI runs it on every shell file and hook, plus `bash tests/*.sh`)
+- [ ] For `ui/src-tauri` changes: `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass. CI builds it on `debian:trixie` with Debian's rustc (1.85), the same toolchain the ISO uses, so keep dependencies within `rust-version`
 - [ ] Model provider and model named (for agent changes)
 - [ ] Docs updated if behaviour changed
 - [ ] Linked the related issue (`Closes #123`)
