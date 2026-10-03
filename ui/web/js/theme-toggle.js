@@ -7,7 +7,10 @@ function setTheme(next, x, y) {
   const apply = () => {
     root.dataset.theme = next;
   };
-  if (!document.startViewTransition || reducedMotion.matches) return apply();
+  // WebKitGTK (the desktop app on Linux) leaves the view transition hanging:
+  // the page freezes on a blank snapshot and stops taking input
+  const webkitGtk = /Linux/.test(navigator.userAgent) && !/Chrome|Firefox/.test(navigator.userAgent);
+  if (!document.startViewTransition || reducedMotion.matches || webkitGtk) return apply();
 
   // Percentages, not pixels: on HiDPI screens Chromium can resolve pixel
   // clip-paths on the snapshot in device pixels, which moves the circle.
