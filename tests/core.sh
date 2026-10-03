@@ -20,6 +20,9 @@ tos logs >/dev/null || fail "turingos logs with no log file"
 # ─── status / monitor (arithmetic used to abort here) ────────────────────────
 out=$(tos status 2>&1) || fail "turingos status: ${out}"
 grep -q "RAM" <<< "$out" || fail "status has no RAM row"
+# Every boxed row is the same width in characters (icons like ◈ used to shift the border)
+widths=$(LC_ALL=C.UTF-8 bash -c 'grep "│" | while IFS= read -r l; do echo "${#l}"; done | sort -u' <<< "$out")
+[[ $(wc -l <<< "$widths") -eq 1 ]] || fail "status box rows differ in width: $(tr '\n' ' ' <<< "$widths")"
 
 # ─── bazaar search / installed (counters used to abort on the first hit) ─────
 out=$(tos bazaar search memory 2>&1) || fail "bazaar search: ${out}"
