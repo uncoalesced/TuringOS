@@ -16,7 +16,7 @@ set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 
 SRC=/opt/turingos-ui
-BUILD_DEPS=(cargo rustc pkg-config cmake clang libclang-dev
+BUILD_DEPS=(cargo rustc build-essential pkg-config cmake clang libclang-dev
     libwebkit2gtk-4.1-dev libasound2-dev libxdo-dev)
 
 echo "==> [0450-build-ui] Installing build dependencies..."
