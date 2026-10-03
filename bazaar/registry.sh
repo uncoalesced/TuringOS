@@ -6,9 +6,7 @@
 #
 # Depends on: core/config.sh, core/logging.sh, core/ui.sh
 
-log::set_module "bazaar"
-
-# ─── Registry Load ────────────────────────────────────────────────────────────
+# ─── Registry Access ──────────────────────────────────────────────────────────
 
 registry::_load() {
     if [[ ! -f "$TURINGOS_REGISTRY" ]]; then
@@ -17,107 +15,91 @@ registry::_load() {
         return 1
     fi
     if ! command -v jq &>/dev/null; then
-        ui::fail "jq is required for the Bazaar"
-        ui::info "Install: sudo apt install jq"
+        ui::fail "jq is required for the Bazaar. Install: sudo apt install jq"
         return 1
     fi
-    return 0
+}
+
+registry::get_field() {
+    # Usage: registry::get_field KEY FIELD — scalar field, or ", "-joined array
+    registry::_load || return 1
+    jq -r --arg k "$1" --arg f "$2" \
+        '.tools[$k][$f] // empty | if type == "array" then join(", ") else . end' \
+        "$TURINGOS_REGISTRY" 2>/dev/null
+}
+
+registry::get_array() {
+    # Usage: registry::get_array KEY FIELD — newline-separated values
+    registry::_load || return 1
+    jq -r --arg k "$1" --arg f "$2" '.tools[$k][$f][]? // empty' "$TURINGOS_REGISTRY" 2>/dev/null
+}
+
+registry::keys() {
+    registry::_load || return 1
+    jq -r '.tools | keys[]' "$TURINGOS_REGISTRY"
+}
+
+registry::_installed() {
+    [[ -f "${TURINGOS_BAZAAR_DIR}/$1/.installed" ]]
 }
 
 # ─── List All Tools ───────────────────────────────────────────────────────────
 
 registry::list() {
     registry::_load || return 1
-
     ui::header "Clawd Bazaar"
-    echo ""
 
-    local keys
-    keys=$(jq -r '.tools | keys[]' "$TURINGOS_REGISTRY" 2>/dev/null)
+    local key name type description tags dot
+    while IFS=$'\t' read -r key name type description tags; do
+        dot="${DIM}○${RESET}"
+        registry::_installed "$key" && dot="${GREEN}●${RESET}"
+        printf '  %b  %b%-22s%b  %b[%s]%b\n' "$dot" "$BOLD_WHITE" "$name" "$RESET" "$DIM" "$type" "$RESET"
+        printf '       %s\n' "$description"
+        printf '       %b%s  tags: %s%b\n\n' "$DIM" "$key" "$tags" "$RESET"
+    done < <(jq -r '.tools | to_entries[] | [.key, .value.name, .value.type, .value.description,
+        (.value.tags | join(", "))] | @tsv' "$TURINGOS_REGISTRY")
 
-    while IFS= read -r key; do
-        local name description tags type
-        name=$(        jq -r ".tools[\"${key}\"].name"        "$TURINGOS_REGISTRY")
-        description=$( jq -r ".tools[\"${key}\"].description" "$TURINGOS_REGISTRY")
-        type=$(        jq -r ".tools[\"${key}\"].type"        "$TURINGOS_REGISTRY")
-        tags=$(        jq -r ".tools[\"${key}\"].tags | join(\", \")" "$TURINGOS_REGISTRY" 2>/dev/null)
-
-        # Check if already installed
-        local installed_marker="${TURINGOS_BAZAAR_DIR}/${key}/.installed"
-        local status_sym
-        if [[ -f "$installed_marker" ]]; then
-            status_sym="\033[0;32m●\033[0m"  # green dot
-        else
-            status_sym="\033[2m○\033[0m"     # dim dot
-        fi
-
-        printf "  %b  \033[1;37m%-22s\033[0m  \033[2m[%s]\033[0m\n" \
-            "$status_sym" "$name" "$type"
-        printf "       \033[0m%-50s\033[0m\n" "$description"
-        printf "       \033[2m%s\033[0m  \033[2mtags: %s\033[0m\n\n" \
-            "$key" "$tags"
-    done <<< "$keys"
-
-    echo ""
-    printf "  \033[2m● installed   ○ available\033[0m\n"
-    echo ""
+    printf '  %b● installed   ○ available%b\n\n' "$DIM" "$RESET"
 }
 
 # ─── Get Tool Info ────────────────────────────────────────────────────────────
 
 registry::info() {
     # Usage: registry::info TOOL_KEY
-    local key="$1"
+    local key="${1:-}" name
     registry::_load || return 1
-
-    local exists
-    exists=$(jq -r ".tools[\"${key}\"] // empty" "$TURINGOS_REGISTRY" 2>/dev/null)
-    if [[ -z "$exists" ]]; then
+    name=$(registry::get_field "$key" name)
+    if [[ -z "$name" ]]; then
         ui::fail "Tool not found in registry: ${key}"
         registry::_suggest "$key"
         return 1
     fi
 
-    local name description repo type runtime package env_required tags
-    name=$(         jq -r ".tools[\"${key}\"].name"                           "$TURINGOS_REGISTRY")
-    description=$(  jq -r ".tools[\"${key}\"].description"                    "$TURINGOS_REGISTRY")
-    repo=$(         jq -r ".tools[\"${key}\"].repo"                           "$TURINGOS_REGISTRY")
-    type=$(         jq -r ".tools[\"${key}\"].type"                           "$TURINGOS_REGISTRY")
-    runtime=$(      jq -r ".tools[\"${key}\"].runtime"                        "$TURINGOS_REGISTRY")
-    package=$(      jq -r ".tools[\"${key}\"].package"                        "$TURINGOS_REGISTRY")
-    env_required=$( jq -r ".tools[\"${key}\"].env_required | join(\", \")"    "$TURINGOS_REGISTRY" 2>/dev/null)
-    tags=$(         jq -r ".tools[\"${key}\"].tags | join(\", \")"            "$TURINGOS_REGISTRY" 2>/dev/null)
-
     ui::header "$name"
-    ui::label "Key"          "$key"
-    ui::label "Type"         "$type"
-    ui::label "Runtime"      "$runtime"
-    ui::label "Package"      "$package"
-    ui::label "Repo"         "$repo"
-    ui::label "Description"  "$description"
-    ui::label "Tags"         "$tags"
+    ui::label "Key" "$key"
+    local field
+    for field in type runtime package repo description tags; do
+        ui::label "${field^}" "$(registry::get_field "$key" "$field")"
+    done
 
-    if [[ -n "$env_required" && "$env_required" != "null" ]]; then
+    local env_var env_vars=()
+    mapfile -t env_vars < <(registry::get_array "$key" env_required)
+    if (( ${#env_vars[@]} )); then
         echo ""
         ui::warn "Required environment variables:"
-        for env_var in $(jq -r ".tools[\"${key}\"].env_required[]" "$TURINGOS_REGISTRY" 2>/dev/null); do
-            local set_indicator
+        for env_var in "${env_vars[@]}"; do
             if [[ -n "${!env_var:-}" ]]; then
-                set_indicator="\033[0;32m(set)\033[0m"
+                printf '    %-36s %b(set)%b\n' "$env_var" "$GREEN" "$RESET"
             else
-                set_indicator="\033[0;31m(NOT SET)\033[0m"
+                printf '    %-36s %b(NOT SET)%b\n' "$env_var" "$RED" "$RESET"
             fi
-            printf "    %-36s %b\n" "$env_var" "$set_indicator"
         done
     fi
 
     echo ""
-    local installed_marker="${TURINGOS_BAZAAR_DIR}/${key}/.installed"
-    if [[ -f "$installed_marker" ]]; then
+    if registry::_installed "$key"; then
         ui::ok "Status: installed"
-        local installed_at
-        installed_at=$(cat "$installed_marker")
-        ui::label "Installed at" "$installed_at"
+        ui::label "Installed at" "$(cat "${TURINGOS_BAZAAR_DIR}/${key}/.installed")"
     else
         ui::info "Status: not installed"
         ui::info "Install: turingos bazaar install ${key}"
@@ -128,37 +110,26 @@ registry::info() {
 # ─── Search ───────────────────────────────────────────────────────────────────
 
 registry::search() {
-    # Usage: registry::search QUERY
+    # Usage: registry::search QUERY — case-insensitive over key, name, description, tags
     local query="${1:-}"
     registry::_load || return 1
-
     if [[ -z "$query" ]]; then
         ui::fail "Usage: turingos bazaar search <query>"
         return 1
     fi
 
     ui::header "Search: ${query}"
+    local found=0 key name description
+    while IFS=$'\t' read -r key name description; do
+        found=$(( found + 1 ))
+        printf '  %b%-22s%b  %b%s%b\n' "$BOLD_WHITE" "$name" "$RESET" "$DIM" "$key" "$RESET"
+        printf '  %s\n\n' "$description"
+    done < <(jq -r --arg q "$query" '.tools | to_entries[]
+        | select([.key, .value.name, .value.description, (.value.tags | join(" "))]
+                 | join(" ") | ascii_downcase | contains($q | ascii_downcase))
+        | [.key, .value.name, .value.description] | @tsv' "$TURINGOS_REGISTRY")
 
-    local keys
-    keys=$(jq -r '.tools | keys[]' "$TURINGOS_REGISTRY")
-
-    local found=0
-    while IFS= read -r key; do
-        local name description tags
-        name=$(        jq -r ".tools[\"${key}\"].name"                  "$TURINGOS_REGISTRY")
-        description=$( jq -r ".tools[\"${key}\"].description"           "$TURINGOS_REGISTRY")
-        tags=$(        jq -r ".tools[\"${key}\"].tags | join(\" \")"    "$TURINGOS_REGISTRY" 2>/dev/null)
-
-        # Case-insensitive match against key, name, description, tags
-        local haystack="${key} ${name} ${description} ${tags}"
-        if echo "$haystack" | grep -qi "$query"; then
-            (( found++ ))
-            printf "  \033[1;37m%-22s\033[0m  \033[2m%s\033[0m\n" "$name" "$key"
-            printf "  %-52s\n\n" "$description"
-        fi
-    done <<< "$keys"
-
-    if [[ $found -eq 0 ]]; then
+    if (( found == 0 )); then
         ui::info "No tools matched: ${query}"
     else
         ui::info "${found} result(s). Install with: turingos bazaar install <key>"
@@ -169,83 +140,38 @@ registry::search() {
 
 registry::browse() {
     registry::_load || return 1
-
     if ! command -v fzf &>/dev/null; then
         ui::warn "fzf not found — falling back to list"
         registry::list
         return 0
     fi
 
-    # Build fzf input: "KEY  NAME  —  description"
-    local fzf_input
-    fzf_input=$(jq -r '
-      .tools | to_entries[] |
-      "\(.key)  \(.value.name)  —  \(.value.description)"
-    ' "$TURINGOS_REGISTRY" 2>/dev/null)
-
     local selection
-    selection=$(echo "$fzf_input" | fzf \
-        --prompt="  Clawd Bazaar › " \
-        --header="  Select a tool to install (Enter=select, Esc=cancel)" \
-        --height=60% \
-        --reverse \
-        --border \
-        --ansi \
-    )
+    selection=$(jq -r '.tools | to_entries[] | "\(.key)  \(.value.name)  —  \(.value.description)"' \
+        "$TURINGOS_REGISTRY" | fzf \
+            --prompt="  Clawd Bazaar › " \
+            --header="  Select a tool to install (Enter=select, Esc=cancel)" \
+            --height=60% --reverse --border --ansi) || true
 
     if [[ -z "$selection" ]]; then
         ui::info "No tool selected"
         return 0
     fi
 
-    local selected_key
-    selected_key=$(echo "$selection" | awk '{print $1}')
-
-    registry::info "$selected_key"
-    echo ""
-
-    if ui::confirm "Install ${selected_key}?"; then
-        # Delegate to install module
-        bazaar::install "$selected_key"
+    local key="${selection%% *}"
+    registry::info "$key"
+    if ui::confirm "Install ${key}?"; then
+        bazaar::install "$key"
     fi
-}
-
-# ─── Keys List (for autocomplete / install.sh) ───────────────────────────────
-
-registry::keys() {
-    registry::_load || return 1
-    jq -r '.tools | keys[]' "$TURINGOS_REGISTRY" 2>/dev/null
-}
-
-registry::get_field() {
-    # Usage: registry::get_field KEY FIELD
-    local key="$1"
-    local field="$2"
-    registry::_load || return 1
-    jq -r ".tools[\"${key}\"].${field} // empty" "$TURINGOS_REGISTRY" 2>/dev/null
-}
-
-registry::get_array() {
-    # Usage: registry::get_array KEY FIELD  — returns newline-separated values
-    local key="$1"
-    local field="$2"
-    registry::_load || return 1
-    jq -r ".tools[\"${key}\"].${field}[]? // empty" "$TURINGOS_REGISTRY" 2>/dev/null
 }
 
 # ─── Fuzzy Suggestion ────────────────────────────────────────────────────────
 
 registry::_suggest() {
-    local query="$1"
-    local keys
-    keys=$(registry::keys 2>/dev/null)
-    local suggestions=()
-    while IFS= read -r k; do
-        echo "$k" | grep -qi "$query" && suggestions+=("$k")
-    done <<< "$keys"
-
-    if [[ ${#suggestions[@]} -gt 0 ]]; then
-        ui::info "Did you mean: ${suggestions[*]}"
+    local matches
+    matches=$(registry::keys | grep -i -- "$1" | tr '\n' ' ') || true
+    if [[ -n "$matches" ]]; then
+        ui::info "Did you mean: ${matches}"
     else
         ui::info "Available tools: $(registry::keys | tr '\n' ' ')"
     fi
@@ -255,23 +181,18 @@ registry::_suggest() {
 
 registry::installed() {
     registry::_load || return 1
-
     ui::header "Installed Tools"
 
-    local found=0
+    local found=0 marker key name
     for marker in "${TURINGOS_BAZAAR_DIR}"/*/.installed; do
         [[ -f "$marker" ]] || continue
-        local key
         key=$(basename "$(dirname "$marker")")
-        local name
-        name=$(registry::get_field "$key" "name" 2>/dev/null || echo "$key")
-        local installed_at
-        installed_at=$(cat "$marker")
-        printf "  \033[0;32m●\033[0m  %-24s  \033[2m%s\033[0m\n" "$name" "$installed_at"
-        (( found++ ))
+        name=$(registry::get_field "$key" name)
+        printf '  %b●%b  %-24s  %b%s%b\n' "$GREEN" "$RESET" "${name:-$key}" "$DIM" "$(cat "$marker")" "$RESET"
+        found=$(( found + 1 ))
     done
 
-    if [[ $found -eq 0 ]]; then
+    if (( found == 0 )); then
         ui::info "No tools installed yet"
         ui::info "Browse: turingos bazaar"
     fi
