@@ -1,0 +1,49 @@
+/* Desktop: hero clock and greeting. */
+
+/* ─── Desktop ──────────────────────────────────────────────────────────── */
+
+.desktop {
+  height: 100%;
+  padding: var(--menubar-h) 48px 72px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7vh;
+}
+
+.hero { text-align: center; }
+
+.focused-today {
+  margin-bottom: 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.hero-time {
+  font-size: clamp(96px, 13vw, 164px);
+  font-weight: 300;
+  letter-spacing: -0.045em;
+  line-height: 1;
+  margin: 0 0 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.hero-greeting {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35em;
+  font-size: clamp(30px, 3.6vw, 46px);
+  font-weight: 500;
+  letter-spacing: -0.025em;
+}
+
+.hero-greeting-spark {
+  width: 0.72em;
+  height: 0.72em;
+  color: var(--accent);
+}

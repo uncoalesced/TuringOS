@@ -23,7 +23,7 @@
       "package": "@modelcontextprotocol/server-filesystem",
       "env_required": [],
       "mcp_command": "npx",
-      "mcp_args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/allow"],
+      "mcp_args": ["-y", "@modelcontextprotocol/server-filesystem", "${HOME}"],
       "tags": ["filesystem", "files", "local"]
     },
     "postgres-mcp": {
@@ -36,7 +36,7 @@
       "package": "@modelcontextprotocol/server-postgres",
       "env_required": ["POSTGRES_CONNECTION_STRING"],
       "mcp_command": "npx",
-      "mcp_args": ["-y", "@modelcontextprotocol/server-postgres"],
+      "mcp_args": ["-y", "@modelcontextprotocol/server-postgres", "${POSTGRES_CONNECTION_STRING}"],
       "tags": ["database", "postgres", "sql"]
     },
     "brave-search-mcp": {

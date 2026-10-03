@@ -1,157 +1,55 @@
 #!/bin/bash
 # 0400-install-turingos.hook.chroot
 #
-# Installs TuringOS runtime dependencies via apt, then wires up the scripts
-# that were baked into the image via config/includes.chroot/opt/turingos/.
+# The TuringOS install itself is staged by ../../sync-scripts.sh into
+# config/includes.chroot (live-build copies it in before hooks run):
+#   /usr/bin/turingos -> /usr/lib/turingos/turingos, /usr/lib/turingos/,
+#   /etc/profile.d/turingos-first-run.sh, /usr/share/doc/turingos/
+# Runtime packages come from package-lists/turingos.list.chroot.
 #
-# Script source path in chroot build:
-#   config/includes.chroot/opt/turingos/  →  /opt/turingos/  (inside chroot)
-#
-# Final installed layout:
-#   /usr/bin/turingos                 ← symlink to /opt/turingos/turingos
-#   /usr/lib/turingos/                ← module tree (sourced at runtime)
-#   /usr/share/doc/turingos/          ← docs
-#   /usr/share/licenses/turingos/     ← LICENSE
-#   /etc/profile.d/turingos-first-run.sh
+# This hook adds what can't be staged as files: gum (Charm's apt repo), the
+# app-launcher entry, and a check that the install actually runs.
 
 set -euo pipefail
 
 export DEBIAN_FRONTEND=noninteractive
 
-echo "==> [0400-install-turingos] Installing TuringOS dependencies..."
+echo "==> [0400-install-turingos] Checking staged install..."
+for path in /usr/bin/turingos /usr/lib/turingos/core/config.sh /usr/lib/turingos/bazaar/registry.json; do
+    if [[ ! -e "$path" ]]; then
+        echo "ERROR: $path missing. Run debian-live/sync-scripts.sh before lb build."
+        exit 1
+    fi
+done
 
-# ─── Runtime deps (Debian package names) ─────────────────────────────────────
-apt-get install -y \
-    git \
-    jq \
-    curl \
-    rsync \
-    btrfs-progs \
-    libnotify-bin \
-    fzf \
-    bash-completion
-
-# gum is not in Debian repos — install via its official apt source
+# ─── gum: not in Debian, install from Charm's signed apt repo ────────────────
 if ! command -v gum &>/dev/null; then
     echo "==> [0400-install-turingos] Installing gum (Charm)..."
-    mkdir -p /etc/apt/keyrings
-    curl -fsSL https://repo.charm.sh/apt/gpg.key \
-        | gpg --dearmor -o /etc/apt/keyrings/charm.gpg
+    install -d -m755 /etc/apt/keyrings
+    curl -fsSL https://repo.charm.sh/apt/gpg.key | gpg --dearmor -o /etc/apt/keyrings/charm.gpg
     echo "deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *" \
         > /etc/apt/sources.list.d/charm.list
     apt-get update -qq
     apt-get install -y gum
 fi
 
-echo "==> [0400-install-turingos] Wiring TuringOS scripts..."
-
-# ─── Verify source exists ─────────────────────────────────────────────────────
-TURINGOS_SRC="/opt/turingos"
-
-if [[ ! -d "$TURINGOS_SRC" ]]; then
-    echo "ERROR: $TURINGOS_SRC not found in chroot."
-    echo "Make sure config/includes.chroot/opt/turingos/ exists and contains the scripts."
-    exit 1
-fi
-
-# ─── Install module tree to /usr/lib/turingos/ ───────────────────────────────
-install -d /usr/lib/turingos/core
-install -d /usr/lib/turingos/agent
-install -d /usr/lib/turingos/sandbox
-install -d /usr/lib/turingos/bazaar
-install -d /usr/lib/turingos/game
-install -d /usr/lib/turingos/monitor
-install -d /usr/lib/turingos/pkg
-
-install -m644 "${TURINGOS_SRC}/core/config.sh"    /usr/lib/turingos/core/
-install -m644 "${TURINGOS_SRC}/core/ui.sh"         /usr/lib/turingos/core/
-install -m644 "${TURINGOS_SRC}/core/logging.sh"    /usr/lib/turingos/core/
-
-install -m644 "${TURINGOS_SRC}/agent/claude.sh"    /usr/lib/turingos/agent/
-install -m644 "${TURINGOS_SRC}/agent/nim.sh"       /usr/lib/turingos/agent/
-
-install -m644 "${TURINGOS_SRC}/sandbox/btrfs.sh"   /usr/lib/turingos/sandbox/
-install -m644 "${TURINGOS_SRC}/sandbox/diff.sh"    /usr/lib/turingos/sandbox/
-
-install -m644 "${TURINGOS_SRC}/bazaar/registry.sh"   /usr/lib/turingos/bazaar/
-install -m644 "${TURINGOS_SRC}/bazaar/install.sh"    /usr/lib/turingos/bazaar/
-install -m644 "${TURINGOS_SRC}/bazaar/registry.json" /usr/lib/turingos/bazaar/
-
-install -m644 "${TURINGOS_SRC}/game/gamemode.sh"   /usr/lib/turingos/game/
-
-install -m644 "${TURINGOS_SRC}/monitor/system.sh"  /usr/lib/turingos/monitor/
-
-install -m755 "${TURINGOS_SRC}/pkg/turingos-install-claude-cli.sh" \
-    /usr/lib/turingos/pkg/
-
-# ─── Main executable → /usr/bin/ ─────────────────────────────────────────────
-install -m755 "${TURINGOS_SRC}/turingos" /usr/bin/turingos
-
-# ─── License ──────────────────────────────────────────────────────────────────
-install -d /usr/share/licenses/turingos
-install -m644 "${TURINGOS_SRC}/LICENSE" /usr/share/licenses/turingos/
-
-# ─── Docs ─────────────────────────────────────────────────────────────────────
-install -d /usr/share/doc/turingos
-for doc in WORKFLOW.md plan.md pkg/ISO_BUILD.md pkg/DEBIAN_BUILD.md; do
-    [[ -f "${TURINGOS_SRC}/${doc}" ]] && \
-        install -m644 "${TURINGOS_SRC}/${doc}" /usr/share/doc/turingos/
-done
-
-# ─── Profile.d first-run hook ─────────────────────────────────────────────────
-install -m644 "${TURINGOS_SRC}/pkg/turingos-first-run.sh" \
-    /etc/profile.d/turingos-first-run.sh
-
-# ─── Persistence dir for ~/.turingos ─────────────────────────────────────────
-# Create the skeleton so it exists in the default user's home on first boot.
-# live-build creates user 'user' by default — adjust if you've changed this.
-LIVE_USER_HOME="/etc/skel"
-mkdir -p "${LIVE_USER_HOME}/.turingos/logs"
-mkdir -p "${LIVE_USER_HOME}/.turingos/sandboxes"
-mkdir -p "${LIVE_USER_HOME}/.turingos/bazaar"
-mkdir -p "${LIVE_USER_HOME}/.turingos/pids"
-
-# Write a default config.env so first run has sensible defaults
-cat > "${LIVE_USER_HOME}/.turingos/config.env" <<'EOF'
-# TuringOS configuration
-# Set your Anthropic API key here or export ANTHROPIC_API_KEY in your shell
-# ANTHROPIC_API_KEY=sk-ant-...
-
-TURINGOS_AGENT_BINARY=claude
-TURINGOS_SANDBOX_BACKEND=btrfs
-TURINGOS_GAME_RENICE_LEVEL=10
-TURINGOS_LOG_LEVEL=info
-
-# Model provider: claude | nvidia | ollama | openrouter | custom
-# Set with: turingos model set <provider> [endpoint] [model]
-# (turingos model set nvidia opens a model picker and asks for the key)
-TURINGOS_MODEL_PROVIDER=claude
-# OPENROUTER_API_KEY=sk-or-...
-# NVIDIA_API_KEY=nvapi-...
-EOF
-
-# ─── Desktop entry (optional — puts turingos in app launcher) ─────────────────
+# ─── App launcher entry ───────────────────────────────────────────────────────
 install -d /usr/share/applications
 cat > /usr/share/applications/turingos.desktop <<'EOF'
 [Desktop Entry]
 Name=TuringOS Dashboard
 Comment=Agentic layer — Btrfs sandboxing, MCP registry, Game Mode
-Exec=bash -c 'turingos dashboard'
+Exec=turingos dashboard
 Terminal=true
 Type=Application
 Categories=Development;
 Keywords=claude;agent;ai;sandbox;
 EOF
 
-# ─── Verify install ───────────────────────────────────────────────────────────
-echo ""
-echo "==> [0400-install-turingos] Verifying install..."
-if command -v turingos &>/dev/null; then
-    turingos version
-    echo "==> [0400-install-turingos] TuringOS installed successfully."
-else
-    echo "ERROR: turingos not found in PATH after install"
-    exit 1
-fi
+# ─── Verify ───────────────────────────────────────────────────────────────────
+# Proves every module sources cleanly from the installed layout
+HOME=/tmp/turingos-verify turingos version
+rm -rf /tmp/turingos-verify
+apt-get clean
 
-echo "==> [0400-install-turingos] Chroot size: $(du -sh / --exclude=/proc --exclude=/sys 2>/dev/null | cut -f1)"
+echo "==> [0400-install-turingos] Done. Chroot size: $(du -sh / --exclude=/proc --exclude=/sys 2>/dev/null | cut -f1)"

@@ -1,0 +1,62 @@
+/* @ project picker. */
+
+/* ─── @ project picker ─────────────────────────────────────────────────── */
+
+.mention {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 380px;
+  max-height: 252px;
+  overflow-y: auto;
+  padding: 6px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: 0 16px 40px rgb(0 0 0 / 0.14);
+  transform-origin: 24px top;
+  animation: pop-in 200ms var(--ease-out) both;
+  z-index: 5;
+}
+
+.mention[hidden] { display: none; }
+
+.mention-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 9px;
+  color: var(--text);
+  font: 14px var(--sans);
+  text-align: left;
+}
+
+.mention-item[aria-selected="true"] { background: var(--surface-strong); }
+.mention-item .icon { color: var(--muted); }
+
+.mention-name { flex: none; font-weight: 500; }
+
+.mention-path {
+  flex: 1;
+  min-width: 0;
+  font: 11.5px var(--mono);
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  direction: rtl;
+  text-align: right;
+}
+
+.mention-empty {
+  padding: 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+@keyframes pop-in {
+  from { transform: translateY(-4px) scale(0.96); filter: blur(4px); }
+  to   { transform: none; filter: none; }
+}

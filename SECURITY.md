@@ -36,7 +36,7 @@ In the report, include:
 
 ## Out of scope
 
-- Vulnerabilities in upstream projects (Claude Code, Debian, Electron, third-party MCP servers). Report those upstream. If TuringOS makes the problem worse, tell us as well.
+- Vulnerabilities in upstream projects (Claude Code, Debian, Tauri/WebKitGTK, third-party MCP servers). Report those upstream. If TuringOS makes the problem worse, tell us as well.
 - Problems that need an already-compromised root account
 - Social engineering
 

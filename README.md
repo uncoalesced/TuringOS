@@ -54,7 +54,7 @@ The agent works in an instant copy-on-write snapshot of your project, isolated f
 
 ### Clawd Bazaar
 
-A terminal registry of MCP tools. You can browse tools, install them, and wire them into Claude Desktop's config with one command. It ships with GitHub, Postgres, Filesystem, Brave Search, and Memory servers.
+A terminal registry of MCP tools. You can browse tools, install them, and register them with Claude Code (`~/.claude.json`) with one command. It ships with GitHub, Postgres, Filesystem, Brave Search, and Memory servers.
 
 ### Game Mode
 
@@ -62,7 +62,7 @@ When you launch a game, TuringOS drops agent and build processes to low priority
 
 ### Live desktop UI
 
-An Electron desktop shell that shows agent state, sandbox status, system stats, and MCP connections in real time. It launches fullscreen on boot.
+A desktop shell (Tauri: the system's WebKitGTK plus a small Rust backend) that shows agent state, sandbox status, system stats, and MCP connections in real time. It launches fullscreen on boot. The mic button dictates into the composer with local Whisper (the model downloads on first use), or with Wispr Flow via `turingos voice wispr-import` (unofficial, opt-in).
 
 ### Models
 
@@ -77,14 +77,13 @@ turingos model set claude                                # back to Claude
 turingos model status                                    # show provider, ping endpoint
 ```
 
-For a non-Claude provider, `turingos agent start` runs `opencode run --model <provider>/<model>` inside the sandbox instead of `claude`. Install the tools yourself first, since the live ISO doesn't bundle them (Ollama's GPU libraries are too big for it):
+For a non-Claude provider, `turingos agent start` runs `opencode run --model <provider>/<model>` inside the sandbox instead of `claude`. The live ISO ships OpenCode; install Ollama yourself, since its GPU libraries are too big for the image:
 
 ```bash
 curl -fsSL https://ollama.com/install.sh | sh
-curl -fsSL https://opencode.ai/install | bash
 ```
 
-The `custom` provider needs a matching `custom` provider entry in OpenCode's `opencode.json`. Put `OPENROUTER_API_KEY` in `~/.turingos/config.env` or your shell. TuringOS unsets it for every other provider before launching OpenCode, and `model status` only sends it to OpenRouter.
+For `ollama` and `custom`, TuringOS writes the OpenCode provider config itself (`~/.turingos/opencode-<provider>.json`, pointed at `<endpoint>/v1`), so nothing needs adding to your `opencode.json`. Put `OPENROUTER_API_KEY` in `~/.turingos/config.env` or your shell. TuringOS unsets it for every other provider before launching OpenCode, and `model status` only sends it to OpenRouter.
 
 #### NVIDIA NIM
 
@@ -117,28 +116,33 @@ turingos/
 ├── core/
 │   ├── config.sh             # paths, state, PID files
 │   ├── ui.sh                 # terminal UI primitives
-│   └── logging.sh            # leveled logging + audit trail
+│   ├── logging.sh            # leveled logging + audit trail
+│   └── init.sh               # `turingos init`
 ├── agent/
-│   └── claude.sh             # start / stop / status / logs
+│   ├── claude.sh             # start / stop / status / logs
+│   ├── model.sh              # providers, `turingos model`, OpenCode configs
+│   └── nim.sh                # NVIDIA NIM picker + `turingos image`
 ├── sandbox/
 │   ├── btrfs.sh              # create / merge / rollback
 │   └── diff.sh               # diff inspector + action menu
 ├── bazaar/
 │   ├── registry.json         # MCP tool registry
 │   ├── registry.sh           # browse / search / info
-│   └── install.sh            # install + inject MCP config
+│   └── install.sh            # install + register with Claude Code
 ├── game/
 │   └── gamemode.sh           # renice / ionice + auto-detect
 ├── monitor/
 │   └── system.sh             # GPU / CPU / RAM / agent HUD
-├── ui/                       # Electron desktop shell
+├── voice/                    # `turingos voice` + Wispr Flow helper
+├── ui/                       # desktop shell: page (css/, js/) + Tauri app (src-tauri/)
 ├── assets/                   # branding, palette, UI preview media
-├── pkg/                      # Arch/CachyOS PKGBUILD + helpers
+├── pkg/                      # Claude CLI installer, first-run banner, ISO docs
 ├── debian-live/              # Debian live-build config + hooks
-│   ├── sync-scripts.sh       # copy repo into includes.chroot
+│   ├── sync-scripts.sh       # stage the install into includes.chroot
 │   └── config/
-│       ├── hooks/normal/     # build-time hooks (trim, install, Electron)
+│       ├── hooks/normal/     # build-time hooks (trim, install, UI build, kiosk)
 │       └── package-lists/    # explicit apt package list
+├── tests/                    # bash regression tests (run in CI)
 ├── WORKFLOW.md               # end-to-end usage guide
 └── plan.md                   # architecture + build plan
 ```
@@ -182,12 +186,13 @@ sudo apt install live-build
 
 # Clone the repo
 git clone https://github.com/uncoalesced/turingos
-cd turingos/debian-live
+cd turingos
 
-# Copy scripts + UI into the image
-./sync-scripts.sh
+# Stage TuringOS + the UI source into the image
+./debian-live/sync-scripts.sh
 
-# Build (takes 20–40 min, needs internet)
+# Build (takes 20–40 min, needs internet: crates, Claude Code, OpenCode)
+cd debian-live
 sudo lb clean --purge
 sudo lb build
 ```
@@ -200,7 +205,7 @@ sudo dd if=live-image-amd64.hybrid.iso of=/dev/sdX bs=4M status=progress
 
 On first boot the UI launches fullscreen. Open a terminal and run `turingos init` to configure your API key.
 
-Full build instructions: [`debian-live/pkg/DEBIAN_BUILD.md`](debian-live/pkg/DEBIAN_BUILD.md)
+Full build instructions: [`pkg/ISO_BUILD.md`](pkg/ISO_BUILD.md)
 
 ---
 
@@ -218,7 +223,7 @@ turingos sandbox merge                  Apply changes to original project
 turingos sandbox rollback               Discard sandbox
 
 turingos bazaar                         Browse MCP tools (fzf UI)
-turingos bazaar install <tool>          Install + wire into Claude Desktop
+turingos bazaar install <tool>          Install + register with Claude Code
 turingos bazaar installed               List installed tools
 
 turingos game on                        Deprioritize agents for gaming
@@ -235,6 +240,9 @@ turingos model set <provider> [endpoint] [model]
 turingos model use <model>              Change the default model
 turingos image "<prompt>" [out.jpg]     Generate an image with NVIDIA FLUX
 
+turingos voice                          Show the speech-to-text backend
+turingos voice backend whisper|wispr    Pick local Whisper or Wispr Flow
+
 turingos init                           First-time setup
 turingos dashboard                      Interactive menu
 turingos help                           Full command list
@@ -248,10 +256,10 @@ turingos help                           Full command list
 |---|---|
 | `0200-trim` | Purges LibreOffice, CUPS, Bluetooth, unused GPU drivers (~1GB) |
 | `0300-locale-trim` | Strips locale data, man pages, docs (~200MB) |
-| `0400-install-turingos` | Installs TuringOS CLI, gum, runtime deps |
-| `0450-install-electron-deps` | Installs Electron system libraries |
-| `0460-prebundle-electron` | Runs `npm install`, pre-caches Electron 44 |
-| `0500-install-claude-cli` | Installs Claude Code CLI via native installer |
+| `0400-install-turingos` | Checks the staged install, adds gum and the launcher entry |
+| `0450-build-ui` | Builds the Tauri UI against the image's libraries, then removes the toolchain |
+| `0470-autologin-kiosk` | lightdm autologin into openbox, ordered after live-config |
+| `0500-install-claude-cli` | Installs Claude Code (native installer, npm fallback) and OpenCode |
 
 ---
 
@@ -265,7 +273,8 @@ turingos help                           Full command list
 | `git` | Yes | Sandbox diff/merge |
 | `jq` | Yes | State, MCP config, registry |
 | `btrfs-progs` | Yes (Btrfs) | CoW snapshots |
-| `rsync` | Yes (non-Btrfs) | Copy sandbox fallback |
+| `rsync` | Yes | Sandbox copy, diff and merge |
+| `curl` | Yes | Model endpoints, installers |
 | `claude` CLI | Yes | Agent execution |
 | `gum` | Recommended | Interactive UI |
 | `fzf` | Recommended | Fuzzy search |
@@ -275,7 +284,7 @@ turingos help                           Full command list
 
 - Debian Trixie host
 - `live-build`
-- Internet access during build (downloads Electron, Claude CLI)
+- Internet access during build (Rust crates, Claude Code, OpenCode)
 
 ---
 

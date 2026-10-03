@@ -1,1 +1,7 @@
 /iso
+.DS_Store
+
+# Staged by debian-live/sync-scripts.sh before `lb build`
+/debian-live/config/includes.chroot/usr/
+/debian-live/config/includes.chroot/opt/
+/debian-live/config/includes.chroot/etc/profile.d/

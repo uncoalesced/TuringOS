@@ -1,0 +1,246 @@
+/* ─── Bazaar ────────────────────────────────────────────────────────────── */
+/* The store for skills and plugins, drawn as a window inside the shell. */
+
+/* ─── Sidebar ───────────────────────────────────────────────────────────── */
+
+.bz-sidebar {
+  flex: none;
+  width: 212px;
+  margin-top: -44px; /* runs up under the traffic lights, like macOS */
+  padding: 56px 12px 16px;
+  background: color-mix(in srgb, var(--surface-strong) 55%, transparent);
+  border-right: 1px solid var(--line);
+}
+
+.bz-brand { display: flex; align-items: center; gap: 10px; padding: 4px 6px 14px; }
+.bz-brand-tile {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 26%;
+  corner-shape: squircle;
+  background: linear-gradient(160deg, var(--japonica-light), var(--accent) 55%, var(--japonica-dark));
+  color: var(--white);
+}
+.bz-brand-tile .icon { width: 16px; height: 16px; }
+.bz-brand-name { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
+
+.bz-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 9px;
+  margin-bottom: 14px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  color: var(--muted);
+}
+.bz-search .icon { flex: none; width: 14px; height: 14px; }
+.bz-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+.bz-search input::-webkit-search-cancel-button { display: none; }
+.bz-search:focus-within { box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus) 60%, transparent); }
+
+.bz-nav { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.bz-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  text-align: left;
+}
+.bz-nav-item .icon { width: 16px; height: 16px; color: var(--accent); }
+.bz-nav-item:hover { background: color-mix(in srgb, var(--text) 6%, transparent); }
+.bz-nav-item.is-active { background: color-mix(in srgb, var(--accent) 16%, transparent); }
+.bz-count {
+  margin-left: auto;
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  color: var(--muted);
+  font-size: 11px;
+  text-align: center;
+}
+
+/* ─── Content ───────────────────────────────────────────────────────────── */
+
+.bz-main {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 8px 28px 32px;
+}
+
+.bz-head { margin: 22px 0 12px; }
+.bz-head:first-child { margin-top: 4px; }
+.bz-head h2 { font-size: 20px; font-weight: 600; letter-spacing: -0.015em; }
+.bz-head p { margin-top: 2px; color: var(--muted); font-size: 13px; }
+
+.bz-heroes { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+.bz-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 170px;
+  padding: 22px 24px;
+  border-radius: 20px;
+  corner-shape: squircle;
+  overflow: hidden;
+  color: var(--white);
+  background:
+    radial-gradient(120% 90% at 100% 0%, hsl(calc(var(--hue) + 25) 80% 70% / 0.55), transparent 60%),
+    linear-gradient(135deg, hsl(var(--hue) 55% 42%), hsl(calc(var(--hue) + 30) 60% 26%));
+}
+.bz-hero-eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.8; }
+.bz-hero h3 { margin-top: 4px; font-size: 26px; font-weight: 600; letter-spacing: -0.02em; }
+.bz-hero-desc { margin-top: 4px; max-width: 30ch; font-size: 13px; line-height: 1.45; opacity: 0.9; }
+
+.bz-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 4px 16px; }
+
+.bz-card {
+  display: grid;
+  grid-template-columns: 52px 1fr auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 8px;
+  border-bottom: 1px solid var(--line);
+  translate: 0 8px;
+  filter: blur(3px);
+  animation: bz-card-in 320ms var(--ease-out) forwards;
+  animation-delay: calc(min(var(--i, 0), 8) * 30ms);
+}
+@keyframes bz-card-in { to { translate: 0 0; filter: none; } }
+
+.bz-card-text { min-width: 0; }
+.bz-card-name { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; }
+.bz-card-desc {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.bz-card-by { margin-top: 3px; color: var(--muted); font-size: 11px; opacity: 0.8; }
+
+.bz-new {
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--white);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.bz-tile {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 26%;
+  corner-shape: squircle;
+  color: var(--white);
+  background: linear-gradient(150deg, hsl(var(--hue) 72% 62%), hsl(calc(var(--hue) + 18) 66% 44%));
+  box-shadow: inset 0 0 0 0.5px rgb(255 255 255 / 0.2), 0 2px 6px -2px rgb(0 0 0 / 0.3);
+}
+.bz-tile.is-mono { background: linear-gradient(150deg, #3a3936, #141413); }
+
+/* With a 3D icon: a soft tinted tile so the object carries the colour. */
+.bz-tile.has-img,
+.bz-tile.has-img.is-mono {
+  background: linear-gradient(160deg, hsl(var(--hue) 70% 95%), hsl(var(--hue) 55% 86%));
+  box-shadow: inset 0 0 0 0.5px hsl(var(--hue) 40% 50% / 0.18), 0 2px 8px -3px rgb(0 0 0 / 0.2);
+}
+:root[data-theme="dark"] .bz-tile.has-img {
+  background: linear-gradient(160deg, hsl(var(--hue) 28% 30%), hsl(var(--hue) 30% 18%));
+  box-shadow: inset 0 0 0 0.5px rgb(255 255 255 / 0.1), 0 2px 8px -3px rgb(0 0 0 / 0.4);
+}
+.bz-tile.has-logo {
+  background: linear-gradient(160deg, color-mix(in srgb, var(--brand) 82%, white), var(--brand) 60%);
+  box-shadow: inset 0 0 0 0.5px rgb(255 255 255 / 0.18), 0 2px 8px -3px rgb(0 0 0 / 0.3);
+}
+.bz-tile-logo {
+  width: 50%;
+  height: 50%;
+  background: var(--white);
+  -webkit-mask: var(--logo) center / contain no-repeat;
+  mask: var(--logo) center / contain no-repeat;
+}
+.bz-tile-img {
+  width: 72%;
+  height: 72%;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 4px rgb(0 0 0 / 0.18));
+  user-select: none;
+}
+.bz-tile--xl .bz-tile-img { width: 76%; height: 76%; filter: drop-shadow(0 8px 10px rgb(0 0 0 / 0.25)); }
+.bz-tile-letter { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; }
+.bz-tile-kind {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--accent);
+  box-shadow: 0 0 0 1.5px var(--surface);
+}
+.bz-tile-kind .icon { width: 10px; height: 10px; }
+.bz-tile--xl { flex: none; width: 104px; height: 104px; box-shadow: 0 12px 30px -10px rgb(0 0 0 / 0.5); }
+.bz-tile--xl .bz-tile-letter { font-size: 46px; }
+.bz-tile--xl .bz-tile-kind { width: 28px; height: 28px; right: -4px; bottom: -4px; }
+.bz-tile--xl .bz-tile-kind .icon { width: 15px; height: 15px; }
+
+.bz-get {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 72px;
+  height: 28px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+  transition: scale 140ms var(--ease-out);
+}
+.bz-get:active { scale: 0.96; }
+.bz-get .icon { width: 13px; height: 13px; }
+.bz-get.is-installed { background: color-mix(in srgb, var(--text) 7%, transparent); color: var(--muted); }
+.bz-get--hero { margin-top: 14px; background: rgb(255 255 255 / 0.92); color: var(--ink); }
+.bz-get--hero.is-installed { background: rgb(255 255 255 / 0.2); color: var(--white); }
+
+.bz-empty { padding: 40px 0; color: var(--muted); font-size: 14px; text-align: center; }
+
+@media (prefers-reduced-motion: reduce) {
+  .app-window, .app-window.is-opening, .app-window.is-closing { transition: none; scale: 1; filter: none; }
+  .app-window.is-closing { opacity: 0; }
+  .bz-card { animation: none; translate: 0 0; filter: none; }
+}

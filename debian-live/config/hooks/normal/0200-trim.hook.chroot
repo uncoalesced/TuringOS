@@ -130,13 +130,14 @@ PURGE_FIRMWARE=(
     firmware-zd1211
 )
 
-# ─── Unnecessary accessibility / AT ──────────────────────────────────────────
+# ─── Unused accessibility daemons ────────────────────────────────────────────
+# Keep at-spi2-core: it's the accessibility bus GTK/WebKitGTK (the desktop
+# UI) talk to, so screen readers can still be added later
 PURGE_A11Y=(
     brltty
     espeakup
     speech-dispatcher
     orca
-    at-spi2-core
     caribou
 )
 

@@ -2,7 +2,7 @@
 
 ## The concept
 
-TuringOS isn't a distro with Claude preinstalled. It's a model for how an agent interacts with a computer: a Bash orchestration layer that wraps CachyOS primitives into one safe execution environment for autonomous agents.
+TuringOS isn't a distro with Claude preinstalled. It's a model for how an agent interacts with a computer: a Bash orchestration layer that wraps Debian (Linux) primitives into one safe execution environment for autonomous agents.
 
 Here's the framing we want Anthropic to see.
 
@@ -50,7 +50,7 @@ Merge
        │               │       │               │
        └───────────────┴───────┼───────────────┘
                                ▼
-                         CACHYOS KERNEL
+                      DEBIAN / LINUX KERNEL
                                │
                          HARDWARE / GPU
 ```
@@ -208,7 +208,7 @@ Display:
 ╰────────────────────────────────────╯
 ```
 
-We're orchestrating CachyOS here, not reinventing its scheduler. Present it that way.
+We're orchestrating what Debian and the Linux kernel already have, not reinventing the scheduler. Present it that way.
 
 ---
 
@@ -329,7 +329,7 @@ Then the notification fires:
 
 ## What to say to Anthropic judges
 
-Don't pitch it as "We put Claude on CachyOS."
+Don't pitch it as "We put Claude on Debian."
 
 Pitch it as "We changed the execution model around autonomous agents."
 

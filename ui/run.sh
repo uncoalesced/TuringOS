@@ -1,64 +1,24 @@
 #!/usr/bin/env bash
-# run.sh — launch the ui-shell desktop UI
+# run.sh — launch the TuringOS desktop UI from a checkout
 #
 # Usage:
-#   ./ui/run.sh              app window
-#   KIOSK=1 ./ui/run.sh      fullscreen, for the demo
-#   LITE=1 ./ui/run.sh       no GPU (VMs without 3D acceleration)
+#   ./ui/run.sh              app window (builds it on first run)
+#   KIOSK=1 ./ui/run.sh      fullscreen, as on the live ISO
+#   LITE=1 ./ui/run.sh       software rendering (VMs without 3D acceleration)
+#
+# Building needs Rust plus the WebKitGTK/ALSA dev packages:
+#   sudo apt install cargo build-essential libwebkit2gtk-4.1-dev libasound2-dev libxdo-dev cmake clang libclang-dev pkg-config
 
 set -euo pipefail
 
 if [[ "${EUID}" -eq 0 ]]; then
-    echo "ui-shell must not run as root." >&2
+    echo "The TuringOS UI must not run as root." >&2
     exit 1
 fi
 
-cd "$(dirname "${BASH_SOURCE[0]}")"
+cd "$(dirname "${BASH_SOURCE[0]}")/src-tauri"
+# The checkout's turingos, not an installed one
+TURINGOS_ROOT="${TURINGOS_ROOT:-$(cd ../.. && pwd)}"
+export TURINGOS_ROOT TURINGOS_BIN="${TURINGOS_BIN:-${TURINGOS_ROOT}/turingos}"
 
-# ─── Find Node ────────────────────────────────────────────────────────────────
-
-if ! command -v npm &>/dev/null && [[ -s "${HOME}/.nvm/nvm.sh" ]]; then
-    set +u
-    # shellcheck disable=SC1091
-    source "${HOME}/.nvm/nvm.sh"
-    set -u
-fi
-
-if ! command -v npm &>/dev/null; then
-    echo "Node.js is required. On Debian: sudo apt install -y nodejs npm" >&2
-    exit 1
-fi
-
-# ─── Install on first run (or when package.json changes) ─────────────────────
-
-if [[ ! -x node_modules/.bin/electron || package.json -nt node_modules ]]; then
-    echo "Installing ui-shell (first run only)..."
-    npm install --no-audit --no-fund
-    touch node_modules
-fi
-
-# ─── Launch ───────────────────────────────────────────────────────────────────
-
-args=()
-if [[ "$(uname -s)" == "Linux" ]]; then
-    args+=(--ozone-platform-hint=auto)
-
-    # VMs without 3D acceleration have no render node; draw in software.
-    if ! compgen -G "/dev/dri/renderD*" >/dev/null; then
-        LITE=1
-    fi
-
-    # Electron's sandbox needs unprivileged user namespaces. Debian ships
-    # AppArmor enabled and, on some releases, restricts these by default.
-    # If the kernel blocks them, run without the sandbox instead of asking
-    # for sudo to fix chrome-sandbox permissions.
-    if [[ "$(cat /proc/sys/kernel/unprivileged_userns_clone 2>/dev/null)" == "0" ||
-          "$(cat /proc/sys/kernel/apparmor_restrict_unprivileged_userns 2>/dev/null)" == "1" ]]; then
-        args+=(--no-sandbox)
-    fi
-fi
-if [[ "${LITE:-0}" == "1" ]]; then
-    args+=(--disable-gpu)
-fi
-
-exec node_modules/.bin/electron . ${args[@]+"${args[@]}"} "$@"
+exec cargo run --release --quiet -- "$@"

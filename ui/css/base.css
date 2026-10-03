@@ -1,0 +1,44 @@
+/* Resets and shared primitives. */
+
+* { box-sizing: border-box; margin: 0; }
+
+/* Every button here sets its own fixed size + padding and centers its icon
+   via flex/grid — Chromium's default button padding (1px 6px) was never
+   meant to apply and can throw that centering off when an icon is bigger
+   than the padded content box (e.g. a 12px icon in a 20px button with 6px
+   default side padding leaves only an 8px box to center it in). */
+button { padding: 0; border: 0; background: none; font: inherit; color: inherit; }
+
+html, body { height: 100%; }
+
+body {
+  font-family: var(--sans);
+  color: var(--text);
+  background:
+    radial-gradient(150% 110% at 50% 125%, var(--glow), transparent 72%),
+    var(--bg);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+.icon {
+  display: block;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+.sprite { position: absolute; width: 0; height: 0; }

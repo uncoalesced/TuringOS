@@ -1,13 +1,13 @@
 # ui-shell
 
-**TuringOS** is the on-screen name. The codebase is still called TuringOS/ui-shell, and the CLI, data dir, branch and package name haven't changed. This is the assistant layer for our Claude-powered Linux OS (Debian base, KDE), and it's the part people see: a menu bar, a Raycast-style command bar, a permission sheet, notifications with Undo, and a side panel of widgets.
+**TuringOS** is the on-screen name. The codebase is still called TuringOS/ui-shell, and the CLI, data dir, branch and package name haven't changed. This is the assistant layer for our Claude-powered Linux OS (Debian base, Openbox kiosk session), and it's the part people see: a menu bar, a Raycast-style command bar, a permission sheet, notifications with Undo, and a side panel of widgets.
 
 
 ## Status
 
 | Built | Not built yet |
 |---|---|
-| Electron app in `ui/`, launched with `./turingos ui` | Command bar, PR views, Actions menu (Ctrl/⌘+K focuses the composer for now) |
+| Tauri app in `ui/` (page + Rust backend in `ui/src-tauri`), launched with `./turingos ui`, or `/usr/bin/turingos-ui` on the ISO | Command bar, PR views, Actions menu (Ctrl/⌘+K opens the command palette prototype) |
 | Menu bar: Claude spark + "TuringOS" brand, Wi-Fi, battery, light/dark toggle, clock (click to open the side panel) | Task view, permission sheet |
 | Desktop, vertically centred: clock, greeting with the user's first name, "What do you want to cook?" composer | Notifications with Undo |
 | @ (or +) project picker listing git repos; Enter runs `turingos agent start <project> <task>` | |
@@ -17,14 +17,14 @@
 | Light/dark in Claude brand colours, circular reveal | Spring engine, progressive blur |
 | macOS-style app icon (`assets/brand/app-icon.png`, squircle) | |
 | "Focused today", centred above the composer (placeholder; no focus-tracking backend yet) | |
-| Dock: hidden until the cursor hits the bottom edge. Floating (detached, all corners rounded, iOS-style continuous curvature via CSS `corner-shape: squircle`), tight resting spacing, macOS-style magnification toward the cursor with a name-label tooltip above the hovered icon. The magnification runs on a real spring (mass-spring-damper), not a CSS transition retargeting a JS value. Fixed set: Terminal, Files (wide fallback chain: xdg-open/dolphin/nautilus/pcmanfm/nemo/thunar), Browser, Settings, all launching real system commands via the main process | Auto-discovered/configurable icon list |
-| Model picker in the composer (Fable 5.1 / Opus 5.5 / Sonnet 5 / Haiku 4.5, Effort submenu Low–Max), defaults to Sonnet 5 / Medium, persisted locally. The selection is passed to the agent as `TURINGOS_AGENT_MODEL`/`TURINGOS_AGENT_EFFORT` env vars | `agent/claude.sh` doesn't read those env vars yet. The picker is fully wired on the UI side and does nothing on the backend until that's added |
+| Dock: hidden until the cursor hits the bottom edge. Floating (detached, all corners rounded, iOS-style continuous curvature via CSS `corner-shape: squircle`), tight resting spacing, macOS-style magnification toward the cursor with a name-label tooltip above the hovered icon. The magnification runs on a real spring (mass-spring-damper), not a CSS transition retargeting a JS value. Fixed set: Terminal, Files (wide fallback chain: xdg-open/dolphin/nautilus/pcmanfm/nemo/thunar), Browser, Settings, all launching real system commands via the Rust backend | Auto-discovered/configurable icon list |
+| Model picker in the composer (Fable 5.1 / Opus 5.5 / Sonnet 5 / Haiku 4.5, Effort submenu Low–Max), defaults to Sonnet 5 / Medium, persisted locally. The model is passed to Claude agents as `TURINGOS_AGENT_MODEL` (`claude --model`); chat answers use model and effort | Effort isn't passed to agent runs |
 | A composer message with no @project attached is a plain question, answered inline with one Claude call (the chosen model/effort). No sandbox, no agent. Attaching a project is what turns it into a real Claude Code task. That's the actual Claude-chat vs. Claude-Code distinction; there's no separate mode |
-| Mic button next to send, dictation via Chromium's built-in Web Speech API | Unverified on the real (offline-capable) Debian target. This API needs Chromium's own speech backend to be reachable, which is a known soft spot in Electron builds |
+| Mic button next to send: records on the machine and transcribes with local Whisper (model downloads on first use), or Wispr Flow via `turingos voice` (unofficial, falls back to Whisper) | Not yet verified with a real microphone on the ISO |
 | Clawd: patrols near the dock (slides only, no flip). Shake the cursor anywhere to open its chat (a real shake, meaning several quick reversals, not just fast motion). Ctrl/Cmd+Enter to send |
 | Side panel (Ctrl/⌘+J or click the clock): a right-edge slide-in shell | Calendar/"Your day"/Ask widgets beyond what's listed below |
 | GitHub widget in the side panel: My PRs + Review Requests via `gh` (assumes `gh auth login` already done), refreshed every 5 min, verified against a real authenticated account | |
-| Calendar widget in the side panel: real Google OAuth (system-browser consent + loopback redirect, `google-auth-library`). Shows the next event once connected, and an honest "Connect Google Calendar" empty state otherwise, not fake data | Needs a real Google Cloud OAuth "Desktop app" client (see §9 below) |
+| Calendar widget in the side panel: real Google OAuth (system-browser consent + loopback redirect, with `state` and PKCE). Shows the next event once connected, and an honest "Connect Google Calendar" empty state otherwise, not fake data | Needs a real Google Cloud OAuth "Desktop app" client (see §9 below) |
 | Clawd: a small pixel mascot that patrols a corner near the dock and answers one-off questions (Haiku, single question → single answer, no history) in a popover | |
 
 The spec below describes the full target. Where it differs from what's built, the Status table wins.
@@ -84,11 +84,11 @@ To preview on a Mac without the OS, run the same command or open `ui/index.html`
 
 ## 3. Connecting the backend
 
-The page never touches the system. `ui/main.js` is the only part that does, and it hands the page one snapshot at a time over a bridge (`ui/preload.js`).
+The page never touches the system. The Rust backend (`ui/src-tauri`) is the only part that does, and it hands the page one snapshot at a time over a bridge (`ui/js/bridge.js`, which defines `window.shell`).
 
 ### What's wired today
 
-`main.js` reads these and pushes a snapshot every 2 s and whenever `~/.turingos` changes:
+`src-tauri/src/state.rs` reads these and pushes a snapshot every second:
 
 | Snapshot field | Source |
 |---|---|
@@ -97,13 +97,13 @@ The page never touches the system. `ui/main.js` is the only part that does, and 
 | `agent.task` | `agent_task` in `state.json` |
 | `sandbox` | `active_sandbox` in `state.json` (folder name) |
 | `gameMode` | `game_mode == "on"` in `state.json` |
-| `system.cpu`, `system.mem`, `system.host` | Node `os` module |
+| `system.cpu`, `system.mem`, `system.host` | `/proc/stat`, `/proc/meminfo`, hostname |
 | `system.battery` | `/sys/class/power_supply/BAT*` (Linux) |
 | `system.wifi` | `nmcli` (Linux, NetworkManager) |
 
 ### Next: live agent steps
 
-`turingos agent start` runs Claude with `--output-format stream-json` and writes the output to `~/.turingos/logs/agent-*.log`. `main.js` will tail the newest log and translate its lines into the events below.
+`turingos agent start` runs Claude with `--output-format stream-json` and writes the output to `~/.turingos/logs/agent-*.log`. The backend will tail the newest log and translate its lines into the events below.
 
 ### Event protocol (target)
 
@@ -156,7 +156,7 @@ The backend uses GitHub's official CLI, `gh`. Run `gh auth login` once on the ma
 
 ### Color
 
-Claude's brand colours, used as tokens in `ui/styles.css`.
+Claude's brand colours, used as tokens in `ui/css/tokens.css`.
 
 | Brand colour | Hex |
 |---|---|
@@ -189,9 +189,9 @@ Light/dark follows the system. The half-circle icon in the menu bar overrides it
 
 ### Icons
 
-[Feather](https://feathericons.com) (MIT), 24×24, 2px stroke, round caps. The full set (all 287, plus `LICENSE`) is bundled in `ui/assets/icons/feather/` as a reference library. Only pull in a symbol when it's actually used: add it to the sprite in `ui/index.html` as `<symbol id="ic-name">`, with shape data only (no `width`/`height`/`stroke`; those come from `.icon`/`.wx`). Weather glyphs (`wx-*`) are Feather paths too. The "partly cloudy" symbols combine a small sun or moon (scaled down, shifted top-left) with Feather's cloud so they read at both 26px (menu bar) and 52px (weather card). If Feather doesn't have an icon for something, Lucide and Phosphor match its style.
+[Feather](https://feathericons.com) (MIT), 24×24, 2px stroke, round caps. Only the glyphs in use ship (inline, in the sprite); `ui/assets/icons/feather/LICENSE` covers them. To add one, add it to the sprite in `ui/index.html` as `<symbol id="ic-name">`, with shape data only (no `width`/`height`/`stroke`; those come from `.icon`/`.wx`). Weather glyphs (`wx-*`) are Feather paths too. The "partly cloudy" symbols combine a small sun or moon (scaled down, shifted top-left) with Feather's cloud so they read at both 26px (menu bar) and 52px (weather card). If Feather doesn't have an icon for something, Lucide and Phosphor match its style.
 
-Brand: official Claude assets live in `ui/assets/brand/`. The Claude spark is the menu bar mark. `app-icon.png` is the window and launcher icon (macOS-style squircle, built from `app-icon.svg`). Don't use GitHub's logo.
+Brand: official Claude assets live in `ui/assets/brand/`. The Claude spark is the menu bar mark. `app-icon.png` is the window and launcher icon (squircle; `ui/src-tauri/icons/` holds the copies Tauri builds with). Don't use GitHub's logo.
 
 ### Motion
 
@@ -224,7 +224,7 @@ Backup: record the full run once as a video before presenting.
 - **What leaves the machine?** Only the prompt and the context needed for the task. API keys stay local.
 - **Why an OS and not an app?** Sandboxes, process priorities and a permission layer need OS-level access that an app can't enforce.
 - **What happens offline?** The shell and system status still work; tasks that need Claude show an error instead of hanging.
-- **What did you build versus what already existed?** Debian and KDE are the base. We built the TuringOS control layer, the sandbox flow, and the ui-shell UI.
+- **What did you build versus what already existed?** Debian is the base. We built the TuringOS control layer, the sandbox flow, and the ui-shell UI.
 
 ---
 
@@ -232,16 +232,16 @@ Backup: record the full run once as a video before presenting.
 
 | File | Purpose |
 |---|---|
-| `ui/run.sh` | Launcher: installs Electron on first run, detects VM quirks, opens the app |
-| `ui/main.js` | Reads `~/.turingos`, system stats, weather, GitHub (`gh`), Google Calendar (OAuth), and answers Clawd's questions (Anthropic API); pushes snapshots to the page |
-| `ui/preload.js` | The only bridge between the page and the system |
-| `ui/index.html` | Markup, plus the icon sprite (`<symbol>`s) |
-| `ui/styles.css` | Design tokens and styles |
-| `ui/app.js` | Renders snapshots, clock, theme toggle, weather, side panel + its widgets, dock reveal/magnify, Clawd patrol + chat, sample data |
-| `ui/theme.js` | Picks the theme before first paint |
+| `ui/run.sh` | Launcher for a checkout: builds and opens the app |
+| `ui/src-tauri/src/` | Rust backend, one module per job: `state` (snapshots), `system`, `projects`, `agent`, `launch` (dock, links), `weather`, `github`, `google` (Calendar OAuth), `anthropic` (Clawd, chat), `voice` |
+| `ui/js/bridge.js` | `window.shell`: the only bridge between the page and the system |
+| `ui/index.html` | Markup, the icon sprite (`<symbol>`s), and the script/style load order |
+| `ui/css/` | Design tokens (`tokens.css`), then one stylesheet per feature |
+| `ui/js/` | One classic script per feature (weather, widgets, composer, model picker, voice, dock, Clawd, palette, Bazaar...), sharing one global scope |
+| `ui/js/theme.js` | Picks the theme before first paint |
 | `ui/fonts/` | Timeless Sans and Serif (variable, bundled) |
 | `ui/assets/brand/` | Claude symbol, logo, app icon |
-| `ui/assets/icons/feather/` | Feather icon set (reference library) and its `LICENSE` |
+| `ui/assets/icons/feather/LICENSE` | License for the inline Feather glyphs |
 | `ui-docs/SETUP.md` | Running it in the VM, troubleshooting |
 | `ui-docs/UI_SHELL.md` | This document |
 | `ui-docs/NEXT_FEATURES.md` | The plan these features were built from, kept as a record of what was decided and why |
@@ -249,9 +249,9 @@ Backup: record the full run once as a video before presenting.
 ## 9. Config keys (`~/.turingos/config.env`)
 
 The side panel's Calendar widget and Clawd need these. Use plain `KEY=VALUE`
-lines. `ui/main.js` parses this file itself instead of relying on
-`process.env`, because `./turingos ui` execs into `ui/run.sh`, and that
-doesn't inherit the non-exported shell variables `core/config.sh` sources.
+lines (`turingos` shell-quotes what it writes). The backend parses this file
+itself, because on the ISO the UI starts from the openbox session, not from a
+shell that sourced it. A real environment variable still wins.
 
 | Key | Used by | Where to get it |
 |---|---|---|

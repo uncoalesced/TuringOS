@@ -1,15 +1,13 @@
 #!/bin/bash
 # 0470-autologin-kiosk.hook.chroot
 #
-# Wires lightdm autologin into openbox so the TuringOS Electron UI (launched
-# by config/includes.chroot/etc/xdg/openbox/autostart) actually runs on boot
-# without sitting at a login prompt.
+# Boots straight into the TuringOS UI: lightdm autologins `user` into an
+# openbox session, and /etc/xdg/openbox/autostart (includes.chroot) starts
+# turingos-ui in kiosk mode.
 #
-# Runs AFTER 0460 (Electron pre-bundled). Does NOT touch openbox/autostart —
-# that file is baked in via includes.chroot and already handles tint2/picom/
-# wallpaper/kiosk launch; this hook only owns lightdm's autologin config.
-#
-# live-build's default live user is 'user'.
+# live-config creates `user` at boot. If lightdm starts first, autologin
+# fails silently and the greeter shows (see ../../../KNOWN_ISSUES.md), so
+# lightdm is ordered after live-config.
 
 set -euo pipefail
 
@@ -23,5 +21,18 @@ autologin-user-timeout=0
 autologin-session=openbox
 user-session=openbox
 EOF
+
+mkdir -p /etc/systemd/system/lightdm.service.d
+cat > /etc/systemd/system/lightdm.service.d/10-after-live-config.conf <<'EOF'
+[Unit]
+# The live user must exist before lightdm tries to log it in
+After=live-config.service
+Wants=live-config.service
+EOF
+
+if [[ ! -f /usr/share/xsessions/openbox.desktop ]]; then
+    echo "ERROR: openbox session file missing; autologin-session=openbox would fail"
+    exit 1
+fi
 
 echo "==> [0470-autologin-kiosk] Done."

@@ -9,17 +9,10 @@
 _TURINGOS_CONFIG_LOADED=1
 
 # ─── TuringOS Root ────────────────────────────────────────────────────────────
+# Set by the `turingos` entrypoint. Fallback: the checkout this file lives in.
 
-# Resolve the real directory of this script so paths work regardless of $PWD
-_CORE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-# When installed via PKGBUILD, libs are at /usr/lib/turingos
-# When running from a local checkout, root is one level up from core/
-if [[ -d "/usr/lib/turingos" ]]; then
-    export TURINGOS_ROOT="/usr/lib/turingos"
-else
-    export TURINGOS_ROOT="$(cd "${_CORE_DIR}/.." && pwd)"
-fi
+TURINGOS_ROOT="${TURINGOS_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+export TURINGOS_ROOT
 
 # ─── Runtime Directories ──────────────────────────────────────────────────────
 
@@ -27,7 +20,6 @@ export TURINGOS_DATA_DIR="${HOME}/.turingos"
 export TURINGOS_SANDBOX_DIR="${TURINGOS_DATA_DIR}/sandboxes"
 export TURINGOS_LOG_DIR="${TURINGOS_DATA_DIR}/logs"
 export TURINGOS_BAZAAR_DIR="${TURINGOS_DATA_DIR}/bazaar"
-export TURINGOS_AGENT_DIR="${TURINGOS_DATA_DIR}/agents"
 export TURINGOS_CONFIG_FILE="${TURINGOS_DATA_DIR}/config.env"
 export TURINGOS_STATE_FILE="${TURINGOS_DATA_DIR}/state.json"
 export TURINGOS_PID_DIR="${TURINGOS_DATA_DIR}/pids"
@@ -35,17 +27,12 @@ export TURINGOS_PID_DIR="${TURINGOS_DATA_DIR}/pids"
 # Bazaar registry (ships with TuringOS)
 export TURINGOS_REGISTRY="${TURINGOS_ROOT}/bazaar/registry.json"
 
-# Claude Desktop MCP config (standard location)
-export CLAUDE_DESKTOP_CONFIG="${HOME}/.config/Claude/claude_desktop_config.json"
-# Fallback for macOS
-if [[ "$(uname)" == "Darwin" ]]; then
-    export CLAUDE_DESKTOP_CONFIG="${HOME}/Library/Application Support/Claude/claude_desktop_config.json"
-fi
+# Claude Code user config; user-scope MCP servers live under .mcpServers
+export CLAUDE_CODE_CONFIG="${HOME}/.claude.json"
 
 # ─── Defaults (overridable via config.env) ────────────────────────────────────
 
 TURINGOS_AGENT_BINARY="${TURINGOS_AGENT_BINARY:-claude}"
-TURINGOS_LOCAL_LLM_BINARY="${TURINGOS_LOCAL_LLM_BINARY:-ollama}"
 TURINGOS_NOTIFICATION_TITLE="${TURINGOS_NOTIFICATION_TITLE:-TuringOS}"
 TURINGOS_SANDBOX_BACKEND="${TURINGOS_SANDBOX_BACKEND:-btrfs}"   # btrfs | copy
 TURINGOS_GAME_RENICE_LEVEL="${TURINGOS_GAME_RENICE_LEVEL:-10}"  # nice value for background procs
@@ -56,47 +43,36 @@ TURINGOS_MODEL_PROVIDER="${TURINGOS_MODEL_PROVIDER:-claude}"    # claude | nvidi
 TURINGOS_MODEL_ENDPOINT="${TURINGOS_MODEL_ENDPOINT:-}"          # e.g. http://localhost:11434
 TURINGOS_MODEL_NAME="${TURINGOS_MODEL_NAME:-}"                  # e.g. llama3.2
 TURINGOS_OPENCODE_BINARY="${TURINGOS_OPENCODE_BINARY:-opencode}"
+
+export TURINGOS_AGENT_BINARY TURINGOS_NOTIFICATION_TITLE TURINGOS_SANDBOX_BACKEND
+export TURINGOS_GAME_RENICE_LEVEL TURINGOS_LOG_LEVEL
 export TURINGOS_MODEL_PROVIDER TURINGOS_MODEL_ENDPOINT TURINGOS_MODEL_NAME TURINGOS_OPENCODE_BINARY
 
-export TURINGOS_AGENT_BINARY TURINGOS_LOCAL_LLM_BINARY
-export TURINGOS_NOTIFICATION_TITLE TURINGOS_SANDBOX_BACKEND
-export TURINGOS_GAME_RENICE_LEVEL TURINGOS_LOG_LEVEL
-
-# ─── Runtime State Keys ───────────────────────────────────────────────────────
-# Used by state.json — these are just the key names as constants.
-
-STATE_KEY_GAME_MODE="game_mode"           # "on" | "off"
-STATE_KEY_ACTIVE_SANDBOX="active_sandbox" # path to current sandbox
-STATE_KEY_AGENT_PID="agent_pid"           # PID of running claude process
-STATE_KEY_AGENT_TASK="agent_task"         # description of current task
-
-export STATE_KEY_GAME_MODE STATE_KEY_ACTIVE_SANDBOX
-export STATE_KEY_AGENT_PID STATE_KEY_AGENT_TASK
+# ─── Runtime State Keys (state.json, also read by the desktop UI) ────────────
+# shellcheck disable=SC2034  # used by the modules that source this file
+declare -g \
+    STATE_KEY_GAME_MODE="game_mode" \
+    STATE_KEY_ACTIVE_SANDBOX="active_sandbox" \
+    STATE_KEY_AGENT_PID="agent_pid" \
+    STATE_KEY_AGENT_TASK="agent_task"
 
 # ─── Init: Create Runtime Dirs ───────────────────────────────────────────────
 
 config::init_dirs() {
-    local dirs=(
-        "$TURINGOS_DATA_DIR"
-        "$TURINGOS_SANDBOX_DIR"
-        "$TURINGOS_LOG_DIR"
-        "$TURINGOS_BAZAAR_DIR"
-        "$TURINGOS_AGENT_DIR"
-        "$TURINGOS_PID_DIR"
-    )
-    for dir in "${dirs[@]}"; do
-        mkdir -p "$dir"
-    done
+    mkdir -p "$TURINGOS_DATA_DIR" "$TURINGOS_SANDBOX_DIR" "$TURINGOS_LOG_DIR" \
+             "$TURINGOS_BAZAAR_DIR" "$TURINGOS_PID_DIR"
 }
 
 # ─── Load User Config Overrides ───────────────────────────────────────────────
 
 config::load() {
     config::init_dirs
-
     if [[ -f "$TURINGOS_CONFIG_FILE" ]]; then
+        # Export everything so API keys reach claude/opencode child processes
+        set -a
         # shellcheck source=/dev/null
         source "$TURINGOS_CONFIG_FILE"
+        set +a
     fi
 }
 
@@ -104,17 +80,16 @@ config::load() {
 
 config::set() {
     # Usage: config::set KEY VALUE
-    local key="$1"
-    local value="$2"
+    # Value is shell-quoted (the file is sourced). File stays mode 600: it holds API keys.
+    local key="$1" value="$2" tmp
     config::init_dirs
-
+    tmp=$(mktemp "${TURINGOS_CONFIG_FILE}.XXXXXX")
     if [[ -f "$TURINGOS_CONFIG_FILE" ]]; then
-        # Remove existing key if present
-        local tmp
-        tmp=$(grep -v "^${key}=" "$TURINGOS_CONFIG_FILE" 2>/dev/null || true)
-        echo "$tmp" > "$TURINGOS_CONFIG_FILE"
+        grep -v "^${key}=" "$TURINGOS_CONFIG_FILE" > "$tmp" || true
     fi
-    echo "${key}=${value}" >> "$TURINGOS_CONFIG_FILE"
+    printf '%s=%q\n' "$key" "$value" >> "$tmp"
+    chmod 600 "$tmp"
+    mv -f "$tmp" "$TURINGOS_CONFIG_FILE"
     export "${key}=${value}"
 }
 
@@ -122,75 +97,63 @@ config::set() {
 
 config::state_get() {
     # Usage: config::state_get KEY
-    local key="$1"
-    if [[ -f "$TURINGOS_STATE_FILE" ]] && command -v jq &>/dev/null; then
-        jq -r ".${key} // empty" "$TURINGOS_STATE_FILE" 2>/dev/null
+    [[ -f "$TURINGOS_STATE_FILE" ]] || return 0
+    jq -r --arg k "$1" '.[$k] // empty' "$TURINGOS_STATE_FILE" 2>/dev/null || true
+}
+
+config::_state_edit() {
+    # Usage: config::_state_edit JQ_FILTER [jq args...] — atomic rewrite of state.json
+    local filter="$1" tmp current="{}"
+    shift
+    config::init_dirs
+    [[ -s "$TURINGOS_STATE_FILE" ]] && current=$(cat "$TURINGOS_STATE_FILE")
+    tmp=$(mktemp "${TURINGOS_STATE_FILE}.XXXXXX")
+    if jq "$@" "$filter" <<< "$current" > "$tmp"; then
+        mv -f "$tmp" "$TURINGOS_STATE_FILE"
+    else
+        rm -f "$tmp"
+        return 1
     fi
 }
 
 config::state_set() {
     # Usage: config::state_set KEY VALUE
-    local key="$1"
-    local value="$2"
-    config::init_dirs
-
-    local current="{}"
-    if [[ -f "$TURINGOS_STATE_FILE" ]]; then
-        current=$(cat "$TURINGOS_STATE_FILE")
-    fi
-
-    if command -v jq &>/dev/null; then
-        echo "$current" | jq --arg v "$value" ".${key} = \$v" > "$TURINGOS_STATE_FILE"
-    else
-        # Fallback: simple key=value sidecar file
-        echo "${key}=${value}" >> "${TURINGOS_STATE_FILE}.kv"
-    fi
+    # shellcheck disable=SC2016  # jq variables, not shell
+    config::_state_edit '.[$k] = $v' --arg k "$1" --arg v "$2"
 }
 
 config::state_del() {
     # Usage: config::state_del KEY
-    local key="$1"
-    if [[ -f "$TURINGOS_STATE_FILE" ]] && command -v jq &>/dev/null; then
-        local tmp
-        tmp=$(jq "del(.${key})" "$TURINGOS_STATE_FILE")
-        echo "$tmp" > "$TURINGOS_STATE_FILE"
-    fi
+    [[ -f "$TURINGOS_STATE_FILE" ]] || return 0
+    # shellcheck disable=SC2016  # jq variables, not shell
+    config::_state_edit 'del(.[$k])' --arg k "$1"
 }
 
 # ─── PID File Helpers ─────────────────────────────────────────────────────────
 
 config::pid_write() {
     # Usage: config::pid_write NAME PID
-    local name="$1"
-    local pid="$2"
     config::init_dirs
-    echo "$pid" > "${TURINGOS_PID_DIR}/${name}.pid"
+    echo "$2" > "${TURINGOS_PID_DIR}/$1.pid"
 }
 
 config::pid_read() {
     # Usage: config::pid_read NAME
-    local name="$1"
-    local pidfile="${TURINGOS_PID_DIR}/${name}.pid"
-    if [[ -f "$pidfile" ]]; then
-        cat "$pidfile"
-    fi
+    local pidfile="${TURINGOS_PID_DIR}/$1.pid"
+    [[ -f "$pidfile" ]] && cat "$pidfile"
+    return 0
 }
 
 config::pid_clear() {
     # Usage: config::pid_clear NAME
-    local name="$1"
-    rm -f "${TURINGOS_PID_DIR}/${name}.pid"
+    rm -f "${TURINGOS_PID_DIR}/$1.pid"
 }
 
 config::pid_alive() {
     # Usage: config::pid_alive NAME — returns 0 if process is running
-    local name="$1"
     local pid
-    pid=$(config::pid_read "$name")
-    if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
-        return 0
-    fi
-    return 1
+    pid=$(config::pid_read "$1")
+    [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null
 }
 
 # ─── Auto-load on source ──────────────────────────────────────────────────────

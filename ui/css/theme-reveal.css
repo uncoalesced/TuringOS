@@ -1,0 +1,46 @@
+/* Theme reveal animation. */
+
+/* ─── Theme reveal ─────────────────────────────────────────────────────── */
+
+/* The new theme grows as a circle from the toggle. Runs in CSS so it starts
+   on the same frame as the transition, with no script gap. */
+::view-transition-old(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-new(root) {
+  animation: reveal 600ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  mix-blend-mode: normal;
+}
+
+@keyframes reveal {
+  from { clip-path: circle(0 at var(--reveal-x) var(--reveal-y)); }
+  to   { clip-path: circle(var(--reveal-r) at var(--reveal-x) var(--reveal-y)); }
+}
+
+/* While the reveal runs, the live page underneath must stay cheap to paint:
+   drop blur (nothing sits behind it yet) and hold looping animations. */
+.theme-switching * {
+  backdrop-filter: none !important;
+  animation-play-state: paused !important;
+}
+
+.theme-switching .dock,
+.theme-switching .dock-edge {
+  pointer-events: none;
+}
+
+/* The reveal's clip-path masks the page root, but a few fixed, high-z
+   floating surfaces (weather, Clawd) can end up composited on their own
+   layer and briefly show through un-clipped mid-transition. Hiding them
+   for the ~600ms reveal is the reliable fix regardless of the exact cause. */
+.theme-switching .weather,
+.theme-switching .weather-card,
+.theme-switching .clawd {
+  visibility: hidden;
+}
+
+/* The weather readout sits where the panel's first header lands. */
+.panel-open .weather,
+.panel-open .weather-card { visibility: hidden; }

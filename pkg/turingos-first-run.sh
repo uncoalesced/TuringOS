@@ -5,53 +5,28 @@
 # Shows a welcome message once, then self-disables via a marker file.
 # NOTE: no shebang — this file is sourced, not executed.
 
-# Only run in interactive shells
+# Only in interactive shells, only with turingos installed, only once
 [[ $- == *i* ]] || return 0
-
-# Only run if turingos is installed
 command -v turingos &>/dev/null || return 0
+[[ -f "${HOME}/.turingos/.first-run-done" ]] && return 0
 
-# Only run once per user
-_MARKER="${HOME}/.turingos/.first-run-done"
-[[ -f "$_MARKER" ]] && return 0
-
-# Don't run if turingos init has already been run
-[[ -f "${HOME}/.turingos/config.env" ]] && {
-    mkdir -p "${HOME}/.turingos"
-    touch "$_MARKER"
-    return 0
+_turingos_welcome() {
+    local line
+    printf '\n  ╔═══════════════════════════════════════════╗\n'
+    for line in "" "Welcome to TuringOS" "Agentic Substrate - Debian Edition" "" \
+        "TuringOS gives Claude Code a safe" "execution layer:" "" \
+        "- Btrfs sandboxes protect your files" "- Review every change before merge" \
+        "- MCP Bazaar: one-command tool installs" "- Game Mode keeps agents backgrounded" ""; do
+        printf '  ║   %-40s║\n' "$line"
+    done
+    printf '  ╚═══════════════════════════════════════════╝\n\n'
+    printf '  Run setup now (takes about 10 seconds):\n\n    turingos init\n\n'
+    printf '  Or read the workflow guide:\n\n    less /usr/share/doc/turingos/WORKFLOW.md\n\n'
 }
 
-# ─── Welcome Banner ───────────────────────────────────────────────────────────
+# Already initialised (a provider or key was configured): no banner
+[[ -f "${HOME}/.turingos/config.env" ]] || _turingos_welcome
+unset -f _turingos_welcome
 
-echo ""
-echo "  ╔═══════════════════════════════════════════╗"
-echo "  ║                                           ║"
-echo "  ║   Welcome to TuringOS                     ║"
-echo "  ║   Agentic Substrate · Debian Edition      ║"
-echo "  ║                                           ║"
-echo "  ╠═══════════════════════════════════════════╣"
-echo "  ║                                           ║"
-echo "  ║   TuringOS gives Claude Code a safe       ║"
-echo "  ║   execution layer:                        ║"
-echo "  ║                                           ║"
-echo "  ║   • Btrfs sandboxes protect your files   ║"
-echo "  ║   • Review every change before merge     ║"
-echo "  ║   • MCP Bazaar for one-command tool       ║"
-echo "  ║     installs                              ║"
-echo "  ║   • Game Mode keeps agents backgrounded  ║"
-echo "  ║                                           ║"
-echo "  ╚═══════════════════════════════════════════╝"
-echo ""
-echo "  Run setup now (takes about 10 seconds):"
-echo ""
-echo "    turingos init"
-echo ""
-echo "  Or read the workflow guide:"
-echo ""
-echo "    cat /usr/share/doc/turingos/WORKFLOW.md"
-echo ""
-
-# Mark as shown so this doesn't appear on every login
 mkdir -p "${HOME}/.turingos"
-touch "$_MARKER"
+touch "${HOME}/.turingos/.first-run-done"

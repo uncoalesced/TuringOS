@@ -1,0 +1,164 @@
+/* Composer. */
+
+/* ─── Composer ─────────────────────────────────────────────────────────── */
+
+.composer {
+  position: relative;
+  width: min(680px, 100%);
+}
+
+.composer-answer {
+  width: min(680px, 100%);
+  margin-top: 16px;
+  padding: 0 8px;
+  max-height: 240px;
+  overflow-y: auto;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+  white-space: pre-wrap;
+  text-align: left;
+}
+
+.composer-answer:empty { display: none; }
+.composer-answer.is-pending { color: var(--muted); font-style: italic; }
+.composer-answer.is-error { color: var(--danger); }
+.composer-answer:not(:empty) { animation: enter 400ms var(--ease-out) both; }
+
+.composer-box {
+  padding: 14px 12px 10px 18px;
+  border-radius: 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 12px 32px rgb(0 0 0 / 0.06);
+  transition: border-color 180ms var(--ease-out);
+}
+
+.composer-box:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+}
+
+.composer-project {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  padding: 3px 4px 3px 8px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 500;
+  animation: pop-in 220ms var(--ease-out) both;
+}
+
+.composer-project[hidden] { display: none; }
+.composer-project .icon { width: 14px; height: 14px; }
+
+.composer-project-clear {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  color: inherit;
+}
+
+.composer-project-clear:hover { background: color-mix(in srgb, var(--accent) 16%, transparent); }
+.composer-project-clear .icon { width: 12px; height: 12px; }
+
+#composer-input {
+  display: block;
+  width: 100%;
+  max-height: 160px;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  resize: none;
+  background: transparent;
+  color: var(--text);
+  font: 17px/1.5 var(--sans);
+  user-select: text;
+}
+
+#composer-input::placeholder { color: var(--muted); }
+
+.composer-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.composer-hint {
+  flex: 1;
+  font-size: 12.5px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.composer-hint[data-tone="error"] { color: var(--danger); }
+
+kbd {
+  display: inline-block;
+  min-width: 18px;
+  padding: 0 4px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--bg);
+  font: 11px/16px var(--mono);
+  text-align: center;
+}
+
+.icon-button,
+.send-button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  transition: transform 160ms var(--ease-out), background-color 160ms var(--ease-out), color 160ms var(--ease-out);
+}
+
+/* 44px hit area around 34px buttons */
+.icon-button::before,
+.send-button::before {
+  content: "";
+  position: absolute;
+  inset: -5px;
+}
+
+.icon-button { color: var(--text); }
+.icon-button:hover { background: var(--surface-strong); }
+
+.send-button { background: var(--accent); color: var(--white); }
+.send-button:disabled { background: var(--surface-strong); color: var(--faint); }
+
+.icon-button:active,
+.send-button:not(:disabled):active { transform: scale(0.96); }
+
+.icon-button:focus-visible,
+.send-button:focus-visible,
+.mention-item:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.icon-button .icon,
+.send-button .icon { width: 18px; height: 18px; }
+
+#composer-mic[aria-pressed="true"] {
+  background: var(--danger);
+  color: var(--white);
+}
+
+/* Pulses gently while listening — same ping technique as the agent status
+   dot (opacity is the one exception there too), just slower and subtler. */
+#composer-mic[aria-pressed="true"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--danger);
+  animation: ping 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
+}

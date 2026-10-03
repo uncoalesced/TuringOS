@@ -15,8 +15,60 @@ jobs:
         run: |
           for f in $(git ls-files '*.sh' '*.hook.chroot' turingos); do bash -n "$f" || exit 1; done
 
-      - name: ShellCheck (errors only)
-        run: git ls-files '*.sh' '*.hook.chroot' turingos | xargs shellcheck --shell=bash --severity=error
+      - name: ShellCheck
+        run: git ls-files '*.sh' '*.hook.chroot' turingos | xargs shellcheck --shell=bash
 
-      - name: NVIDIA NIM smoke test
-        run: bash tests/nim.sh
+      - name: Tests
+        run: |
+          for t in tests/*.sh; do
+            echo "::group::$t"
+            bash "$t"
+            echo "::endgroup::"
+          done
+
+  ui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: JS syntax
+        run: for f in ui/js/*.js; do node --check "$f"; done
+
+  # Same Debian release, rustc and build packages as the ISO hook
+  # (debian-live/config/hooks/normal/0450-build-ui.hook.chroot)
+  ui-rust:
+    runs-on: ubuntu-latest
+    container: debian:trixie
+    steps:
+      - name: Build dependencies
+        run: |
+          apt-get update -qq
+          apt-get install -y --no-install-recommends git ca-certificates \
+            cargo rustc rustfmt rust-clippy build-essential pkg-config cmake clang libclang-dev \
+            libwebkit2gtk-4.1-dev libasound2-dev libxdo-dev
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ui/src-tauri/target
+          key: ui-rust-${{ hashFiles('ui/src-tauri/Cargo.lock') }}
+
+      - name: Format
+        working-directory: ui/src-tauri
+        run: cargo fmt --check
+
+      - name: Clippy
+        working-directory: ui/src-tauri
+        run: cargo clippy --locked --all-targets -- -D warnings
+
+      - name: Test
+        working-directory: ui/src-tauri
+        run: cargo test --locked
+
+      - name: Release build (as the ISO does)
+        working-directory: ui/src-tauri
+        run: cargo build --release --locked

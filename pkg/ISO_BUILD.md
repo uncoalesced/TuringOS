@@ -1,117 +1,73 @@
-# Shipping TuringOS in a Debian ISO
+# Building the TuringOS ISO
 
-How to bake TuringOS into a custom Debian ISO so it's there on first boot.
-
----
-
-## Overview
-
-Debian builds ISOs with `live-build`. The steps:
-
-1. Build the `turingos` `.deb` package locally with `dpkg-buildpackage`
-2. Put the resulting `.deb` in a local apt repo
-3. Set up a `live-build` config
-4. Add `turingos` to the package list
-5. Point the ISO build at your local repo
-6. Run `lb build`
+TuringOS ships as a Debian 13 ("trixie") live ISO built with `live-build`.
+The ISO is the only install target: there is no separate .deb or Arch package.
 
 ---
 
-## Step 1: Build the package
+## How it fits together
 
-On a Debian (or Debian-based) machine:
+1. `debian-live/sync-scripts.sh` stages TuringOS into
+   `debian-live/config/includes.chroot/` in its final layout (see
+   [File layout](#file-layout)). live-build copies that tree into the image
+   before any hook runs.
+2. `debian-live/config/package-lists/turingos.list.chroot` lists every Debian
+   package the image needs, including the desktop UI's runtime libraries.
+3. The hooks in `debian-live/config/hooks/normal/` run in order:
+
+| Hook | What it does |
+|---|---|
+| `0200-trim` | Purges office suites, printing, Bluetooth, unused GPU drivers |
+| `0300-locale-trim` | Strips locales, man pages and docs (keeps `/usr/share/doc/turingos`) |
+| `0400-install-turingos` | Checks the staged install, adds gum and the app-launcher entry |
+| `0450-build-ui` | Builds the Tauri UI (`ui/src-tauri`) with Debian's Rust, installs `/usr/bin/turingos-ui`, removes the toolchain and source |
+| `0470-autologin-kiosk` | lightdm autologin into openbox, ordered after live-config |
+| `0500-install-claude-cli` | Installs Claude Code (native installer, npm fallback) and OpenCode; first-login API key prompt |
+
+On boot, lightdm logs `user` into openbox, and
+`includes.chroot/etc/xdg/openbox/autostart` starts `turingos-ui` fullscreen.
+
+---
+
+## Build
+
+On a Debian 13 machine:
 
 ```bash
-cd /path/to/turingos/pkg
-sudo apt install devscripts debhelper build-essential
-dpkg-buildpackage -us -uc -b
-```
+sudo apt install live-build rsync git
 
-You should get a file like:
+git clone https://github.com/uncoalesced/turingos
+cd turingos
+./debian-live/sync-scripts.sh
 
-```
-../turingos_0.1.0-1_all.deb
-```
-
----
-
-## Step 2: Create a local apt repo
-
-```bash
-mkdir -p ~/turingos-repo
-cp ../turingos_0.1.0-1_all.deb ~/turingos-repo/
-cd ~/turingos-repo
-sudo apt install dpkg-dev
-dpkg-scanpackages . /dev/null | gzip -9c > Packages.gz
-```
-
----
-
-## Step 3: Set up live-build
-
-```bash
-sudo apt install live-build
-mkdir turingos-iso && cd turingos-iso
-lb config --distribution bookworm --archive-areas "main"
-```
-
----
-
-## Step 4: Add your local repo to the ISO's apt sources
-
-Create `config/archives/turingos-repo.list.chroot`:
-
-```
-deb [trusted=yes] file:///home/yourusername/turingos-repo ./
-```
-
----
-
-## Step 5: Add turingos to the package list
-
-Create or edit `config/package-lists/turingos.list.chroot`:
-
-```
-turingos
-gum
-fzf
-nodejs
-npm
-jq
-btrfs-progs
-libnotify-bin
-```
-
-`gum`, `fzf`, `jq`, `btrfs-progs`, and `libnotify-bin` are the runtime deps
-that give the best experience. `turingos` depends on them anyway; listing them
-here means they're pre-installed instead of downloaded on first run.
-
----
-
-## Step 6: Build the ISO
-
-```bash
+cd debian-live
+sudo lb config --distribution trixie --architectures amd64 \
+    --archive-areas "main contrib non-free-firmware"
 sudo lb build
 ```
 
-Expect 10–30 minutes, depending on your machine.
+Expect 20–40 minutes. The build needs internet: hook 0450 fetches Rust
+crates (pinned by `ui/src-tauri/Cargo.lock`) and hook 0500 downloads Claude
+Code and OpenCode. Without network, 0500 skips both and `turingos init`
+offers to install Claude Code later; 0450 has no offline mode.
 
-The ISO ends up in the current directory as `live-image-amd64.hybrid.iso`.
+The ISO lands in `debian-live/` as `live-image-amd64.hybrid.iso`.
+Clean rebuild: `sudo lb clean --purge && sudo lb build` (re-run
+`sync-scripts.sh` first after any change to the repo).
+
+Build from a checkout with LF line endings. `.gitattributes` forces LF, so a
+fresh clone is fine even on Windows; scripts with CRLF endings break in the
+image.
 
 ---
 
-## Step 7: Test in a VM before burning
+## Test in a VM
 
 ```bash
-# QEMU quick test
-qemu-system-x86_64 \
-  -m 4G \
-  -enable-kvm \
-  -cdrom live-image-amd64.hybrid.iso \
-  -boot d
+qemu-system-x86_64 -m 4G -enable-kvm -cdrom live-image-amd64.hybrid.iso -boot d
 ```
 
-Boot it, open a terminal, and check:
+The UI should come up fullscreen. Open a terminal from the dock and check:
 
 ```bash
 turingos version
@@ -119,60 +75,41 @@ turingos init
 turingos help
 ```
 
+Live login: `user` / `live` (live-config's default).
+
 ---
 
 ## First boot
 
-When the user logs in after installing from the ISO:
-
-1. `/etc/profile.d/turingos-first-run.sh` runs on the first interactive shell
-2. A welcome banner appears
-3. The user runs `turingos init`. The dependency check passes because everything is already installed
-4. `turingos agent start` is ready to use
-
----
-
-## Updating the package
-
-Bump the version in `debian/changelog` (use `dch -i`), rebuild with
-`dpkg-buildpackage`, re-scan the local repo, then rebuild the ISO.
-
-```bash
-# In pkg/
-dch -i
-dpkg-buildpackage -us -uc -b
-cp ../turingos_*.deb ~/turingos-repo/
-cd ~/turingos-repo
-dpkg-scanpackages . /dev/null | gzip -9c > Packages.gz
-```
+1. lightdm autologins `user`; openbox starts `turingos-ui` in kiosk mode
+2. The first interactive terminal shows the welcome banner
+   (`/etc/profile.d/turingos-first-run.sh`) and asks for an Anthropic API key
+   once (`/etc/profile.d/turingos-apikey.sh`)
+3. `turingos init` checks dependencies and offers to pick a model provider
 
 ---
 
-## File layout after install
+## File layout
 
 ```
-/usr/bin/turingos                ← main executable (in PATH)
+/usr/bin/turingos             → ../lib/turingos/turingos
+/usr/bin/turingos-ui          desktop UI (built by hook 0450)
 /usr/lib/turingos/
-├── core/
-│   ├── config.sh
-│   ├── ui.sh
-│   └── logging.sh
-├── agent/claude.sh
-├── agent/nim.sh
-├── sandbox/
-│   ├── btrfs.sh
-│   └── diff.sh
-├── bazaar/
-│   ├── registry.sh
-│   ├── install.sh
-│   └── registry.json
-├── game/gamemode.sh
-└── monitor/system.sh
-/usr/share/doc/turingos/
-├── WORKFLOW.md
-└── plan.md
-/etc/profile.d/turingos-first-run.sh
+├── turingos                  entrypoint
+├── core/      config.sh ui.sh logging.sh init.sh
+├── agent/     claude.sh model.sh nim.sh
+├── sandbox/   btrfs.sh diff.sh
+├── bazaar/    registry.sh install.sh registry.json
+├── game/      gamemode.sh
+├── monitor/   system.sh
+├── voice/     voice.sh wispr_transcribe.py
+└── pkg/       turingos-install-claude-cli.sh
+/usr/share/doc/turingos/      copyright, WORKFLOW.md
+/etc/profile.d/               turingos-first-run.sh, turingos-apikey.sh
+/usr/local/bin/               claude, opencode
 ```
 
-User data (sandboxes, logs, config) always lives in `~/.turingos/`. Package
-install, upgrade, and removal never touch it.
+`tests/install_parity.sh` (run in CI) checks that every module `turingos`
+sources is staged by `sync-scripts.sh`.
+
+User data (sandboxes, logs, config, keys) lives in `~/.turingos/`.

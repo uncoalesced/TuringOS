@@ -246,3 +246,23 @@ or commit to a real in-app file browser (B)?
 - `ui/styles.css`: motion tokens, `corner-shape: squircle`, and the existing z-index/positioning to design around
 - `ui-docs/UI_SHELL.md`: the target spec this should stay consistent with
 - `core/config.sh`: the `~/.turingos/config.env` convention we're reusing, and the source of the config-bypass problem above
+
+---
+
+## Follow-ups from the refactor (October 2026)
+
+Deliberately left for later, so they don't get lost:
+
+- **Dock: Debian apps drawer.** The dock's Files and Settings buttons still
+  try KDE apps first (`dolphin`, `systemsettings`), which the ISO doesn't
+  ship. Plan: a drawer of the apps the ISO does have (Thunar, xterm,
+  NetworkManager settings), auto-listed from their `.desktop` files.
+- **Packages the dock and widgets assume:** a web browser (the Browser button
+  and Google sign-in both go through `xdg-open`), `gh` (GitHub widget), and
+  a notification daemon such as `dunst` (`notify-send` does nothing
+  without one). Each grows the ISO; decide per item.
+- **Wispr Flow:** the voice backend uses the unofficial `wisprflow-re`
+  client with a session copied from another machine. Switch to an official
+  client or API if Wispr ships one for Linux.
+- **Effort for agent runs:** the model picker's effort is used for chat
+  answers only; `agent/claude.sh` passes the model, not the effort.
