@@ -28,7 +28,7 @@ TURINGOS_WEATHER="12.97,77.59,Bengaluru" ./turingos ui  # fixed location instead
 
 To quit, press Ctrl+Q (or Alt+F4 in fullscreen).
 
-Opening `ui/index.html` in a normal browser shows the page on sample data,
+Opening `ui/web/index.html` in a normal browser shows the page on sample data,
 which is handy for CSS work.
 
 ## Real data vs sample data
@@ -65,6 +65,6 @@ If none of these work, send the full terminal output to the UI owner.
 |---|---|
 | `ui/run.sh` | Launcher for a checkout: builds and opens the app |
 | `ui/src-tauri/` | Rust backend: reads `~/.turingos`, system stats, weather, GitHub, calendar; starts agents; voice input |
-| `ui/js/bridge.js` | `window.shell`, the only bridge between the page and the system |
-| `ui/index.html`, `ui/css/`, `ui/js/` | The UI itself, one file per feature |
-| `ui/fonts/`, `ui/assets/` | Bundled Timeless fonts, Claude brand assets, icons — each with its own `LICENSE` |
+| `ui/web/js/bridge.js` | `window.shell`, the only bridge between the page and the system |
+| `ui/web/index.html`, `ui/web/css/`, `ui/web/js/` | The UI itself, one file per feature |
+| `ui/web/fonts/`, `ui/web/assets/` | Bundled Timeless fonts, Claude brand assets, icons — each with its own `LICENSE` |
