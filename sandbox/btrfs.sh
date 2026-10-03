@@ -11,22 +11,50 @@ SANDBOX_EXCLUDES=(--exclude=.git --exclude='.turingos_*')
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
+sandbox::_meta_file() {
+    # Metadata sits next to the sandbox, not inside it: the agent works in the
+    # sandbox and must not be able to redirect a merge by editing it.
+    echo "${1%/}.meta"
+}
+
 sandbox::_meta() {
     # Usage: sandbox::_meta SANDBOX KEY — value from the sandbox metadata file
-    local meta="$1/.turingos_sandbox"
+    local meta
+    meta=$(sandbox::_meta_file "$1")
     [[ -f "$meta" ]] || return 0
     sed -n "s/^$2=//p" "$meta" | head -1
 }
 
 sandbox::_resolve() {
-    # Usage: path=$(sandbox::_resolve [SANDBOX]) — argument or active sandbox
-    local path="${1:-}"
+    # Usage: path=$(sandbox::_resolve [SANDBOX]) — argument or active sandbox,
+    # canonical, and only a direct child of TURINGOS_SANDBOX_DIR
+    local path="${1:-}" root=""
     [[ -z "$path" ]] && path=$(config::state_get "$STATE_KEY_ACTIVE_SANDBOX")
-    if [[ -z "$path" || ! -f "${path}/.turingos_sandbox" ]]; then
-        ui::fail "No sandbox found${path:+ at ${path}}. Run: turingos sandbox create" >&2
+    root=$(realpath -e -- "$TURINGOS_SANDBOX_DIR" 2>/dev/null) || root=""
+    if [[ -n "$path" ]]; then
+        path=$(realpath -e -- "$path" 2>/dev/null) || path=""
+    fi
+    if [[ -z "$path" || -z "$root" || "$(dirname -- "$path")" != "$root" \
+        || ! -d "$path" || ! -f "$(sandbox::_meta_file "$path")" ]]; then
+        ui::fail "No sandbox found${1:+ at ${1}}. Run: turingos sandbox create" >&2
         return 1
     fi
     echo "$path"
+}
+
+sandbox::_source() {
+    # Usage: src=$(sandbox::_source SANDBOX) — the project a sandbox merges
+    # into: an existing directory outside the sandbox root, never /
+    local src root
+    src=$(realpath -e -- "$(sandbox::_meta "$1" SOURCE_PROJECT)" 2>/dev/null) || src=""
+    root=$(realpath -e -- "$TURINGOS_SANDBOX_DIR")
+    if [[ -z "$src" || ! -d "$src" || "$src" == "/" \
+        || "$src" == "$root" || "$src" == "$root"/* || "$root" == "$src"/* ]]; then
+        ui::fail "Sandbox has no valid source project: $(sandbox::_meta "$1" SOURCE_PROJECT)" >&2
+        log::error "invalid source project for ${1}"
+        return 1
+    fi
+    echo "$src"
 }
 
 sandbox::_sudo() {
@@ -47,13 +75,20 @@ sandbox::create() {
         log::error "directory not found: $project"
         return 1
     fi
-    project="$(cd "$project" && pwd)"
+    project="$(realpath -e -- "$project")"
+    mkdir -p "$TURINGOS_SANDBOX_DIR"
+    local root
+    root=$(realpath -e -- "$TURINGOS_SANDBOX_DIR")
+    if [[ "$project" == "/" || "$project" == "$root" || "$project" == "$root"/* || "$root" == "$project"/* ]]; then
+        ui::fail "Can't sandbox ${project}: it contains or is inside the sandbox directory" >&2
+        log::error "refused sandbox of ${project}"
+        return 1
+    fi
 
     local safe_label sandbox_name sandbox_path backend="copy"
     safe_label=$(tr ' /' '__' <<< "$label" | tr -cd '[:alnum:]_-' | cut -c1-32)
     sandbox_name="${safe_label:-task}-$(date +%s)"
     sandbox_path="${TURINGOS_SANDBOX_DIR}/${sandbox_name}"
-    mkdir -p "$TURINGOS_SANDBOX_DIR"
 
     log::section "SANDBOX CREATE — ${sandbox_name}"
 
@@ -79,7 +114,7 @@ sandbox::create() {
     } >&2
     log::info "project=${project} sandbox=${sandbox_path} backend=${backend}"
 
-    cat > "${sandbox_path}/.turingos_sandbox" <<EOF
+    cat > "$(sandbox::_meta_file "$sandbox_path")" <<EOF
 SANDBOX_NAME=${sandbox_name}
 SANDBOX_PATH=${sandbox_path}
 SOURCE_PROJECT=${project}
@@ -117,7 +152,7 @@ sandbox::list() {
         sb="${sb%/}"
         [[ "$found" -eq 0 ]] && ui::header "Sandboxes"
         found=1
-        if [[ -f "${sb}/.turingos_sandbox" ]]; then
+        if [[ -f "$(sandbox::_meta_file "$sb")" ]]; then
             printf '  %-36s  %s\n' "$(sandbox::_meta "$sb" SANDBOX_NAME)" "$(sandbox::_meta "$sb" CREATED_AT)"
             printf '  %b  %-34s  %s%b\n\n' "$DIM" "$(sandbox::_meta "$sb" SOURCE_PROJECT)" \
                 "$(sandbox::_meta "$sb" LABEL)" "$RESET"
@@ -152,6 +187,7 @@ sandbox::_destroy() {
     else
         rm -rf "$path"
     fi
+    rm -f "$(sandbox::_meta_file "$path")"
     if [[ "$(config::state_get "$STATE_KEY_ACTIVE_SANDBOX")" == "$path" ]]; then
         config::state_del "$STATE_KEY_ACTIVE_SANDBOX"
     fi
@@ -189,18 +225,12 @@ sandbox::merge() {
     # Usage: sandbox::merge [SANDBOX_PATH]
     local sandbox_path source_project
     sandbox_path=$(sandbox::_resolve "${1:-}") || return 1
-    source_project=$(sandbox::_meta "$sandbox_path" SOURCE_PROJECT)
+    source_project=$(sandbox::_source "$sandbox_path") || return 1
 
     ui::info "Merging sandbox → original project"
     ui::label "From" "$sandbox_path"
     ui::label "Into" "$source_project"
     echo ""
-
-    if [[ ! -d "$source_project" ]]; then
-        ui::fail "Original project directory missing: $source_project"
-        log::error "merge failed — source project gone: $source_project"
-        return 1
-    fi
 
     sandbox::_show_summary "$sandbox_path" "$source_project"
     echo ""
