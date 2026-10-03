@@ -3,18 +3,32 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'" />
+  <!-- ipc: is how the Tauri backend answers; there is no other network access from the page -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'; connect-src ipc: http://ipc.localhost" />
   <title>TuringOS</title>
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="palette.css" />
-  <link rel="stylesheet" href="bazaar.css" />
-  <script src="theme.js"></script>
+  <link rel="stylesheet" href="css/tokens.css" />
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/menubar.css" />
+  <link rel="stylesheet" href="css/desktop.css" />
+  <link rel="stylesheet" href="css/composer.css" />
+  <link rel="stylesheet" href="css/model-picker.css" />
+  <link rel="stylesheet" href="css/mention.css" />
+  <link rel="stylesheet" href="css/weather.css" />
+  <link rel="stylesheet" href="css/corners.css" />
+  <link rel="stylesheet" href="css/theme-reveal.css" />
+  <link rel="stylesheet" href="css/panel.css" />
+  <link rel="stylesheet" href="css/clawd.css" />
+  <link rel="stylesheet" href="css/dock.css" />
+  <link rel="stylesheet" href="css/palette.css" />
+  <link rel="stylesheet" href="css/app-window.css" />
+  <link rel="stylesheet" href="css/bazaar.css" />
+  <script src="js/theme.js"></script>
 </head>
 <body>
   <!-- Claude symbol, from assets/brand/claude-symbol.svg -->
   <svg class="sprite" aria-hidden="true">
     <symbol id="claude-spark" viewBox="0 0 100 100"><path d="m19.6 66.5 19.7-11 .3-1-.3-.5h-1l-3.3-.2-11.2-.3L14 53l-9.5-.5-2.4-.5L0 49l.2-1.5 2-1.3 2.9.2 6.3.5 9.5.6 6.9.4L38 49.1h1.6l.2-.7-.5-.4-.4-.4L29 41l-10.6-7-5.6-4.1-3-2-1.5-2-.6-4.2 2.7-3 3.7.3.9.2 3.7 2.9 8 6.1L37 36l1.5 1.2.6-.4.1-.3-.7-1.1L33 25l-6-10.4-2.7-4.3-.7-2.6c-.3-1-.4-2-.4-3l3-4.2L28 0l4.2.6L33.8 2l2.6 6 4.1 9.3L47 29.9l2 3.8 1 3.4.3 1h.7v-.5l.5-7.2 1-8.7 1-11.2.3-3.2 1.6-3.8 3-2L61 2.6l2 2.9-.3 1.8-1.1 7.7L59 27.1l-1.5 8.2h.9l1-1.1 4.1-5.4 6.9-8.6 3-3.5L77 13l2.3-1.8h4.3l3.1 4.7-1.4 4.9-4.4 5.6-3.7 4.7-5.3 7.1-3.2 5.7.3.4h.7l12-2.6 6.4-1.1 7.6-1.3 3.5 1.6.4 1.6-1.4 3.4-8.2 2-9.6 2-14.3 3.3-.2.1.2.3 6.4.6 2.8.2h6.8l12.6 1 3.3 2 1.9 2.7-.3 2-5.1 2.6-6.8-1.6-16-3.8-5.4-1.3h-.8v.4l4.6 4.5 8.3 7.5L89 80.1l.5 2.4-1.3 2-1.4-.2-9.2-7-3.6-3-8-6.8h-.5v.7l1.8 2.7 9.8 14.7.5 4.5-.7 1.4-2.6 1-2.7-.6-5.8-8-6-9-4.7-8.2-.5.4-2.9 30.2-1.3 1.5-3 1.2-2.5-2-1.4-3 1.4-6.2 1.6-8 1.3-6.4 1.2-7.9.7-2.6v-.2H49L43 72l-9 12.3-7.2 7.6-1.7.7-3-1.5.3-2.8L24 86l10-12.8 6-7.9 4-4.6-.1-.5h-.3L17.2 77.4l-4.7.6-2-2 .2-3 1-1 8-5.5Z" /></symbol>
-    <!-- Weather glyphs: Feather icons (assets/icons/feather), MIT licensed -->
+    <!-- Weather glyphs: Feather icons, MIT licensed (assets/icons/feather/LICENSE) -->
     <defs>
       <!-- Masks out the area behind the cloud so the sun/moon's strokes don't
            visibly cross the cloud's outline — without this, two overlapping
@@ -268,8 +282,24 @@
     <div class="clawd-answer" id="clawd-answer"></div>
   </section>
 
-  <script src="app.js"></script>
-  <script src="palette.js" defer></script>
-  <script src="bazaar.js" defer></script>
+  <!-- Classic scripts sharing one global scope, in dependency order -->
+  <script src="js/bridge.js"></script>
+  <script src="js/base.js"></script>
+  <script src="js/notifications.js"></script>
+  <script src="js/weather.js"></script>
+  <script src="js/widgets.js"></script>
+  <script src="js/panel.js"></script>
+  <script src="js/clock.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/theme-toggle.js"></script>
+  <script src="js/composer.js"></script>
+  <script src="js/model-picker.js"></script>
+  <script src="js/voice.js"></script>
+  <script src="js/dock.js"></script>
+  <script src="js/clawd.js"></script>
+  <script src="js/boot.js"></script>
+  <script src="js/catalog.js" defer></script>
+  <script src="js/palette.js" defer></script>
+  <script src="js/bazaar.js" defer></script>
 </body>
 </html>
