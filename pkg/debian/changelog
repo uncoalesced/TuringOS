@@ -1,5 +1,0 @@
-turingos (0.1.0-1) unstable; urgency=medium
-
-  * Initial Debian packaging (migrated from Arch PKGBUILD).
-
- -- TuringOS Contributors <mail@uncoalesced.com>  Fri, 26 Sep 2026 00:00:00 +0000
