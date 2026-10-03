@@ -60,7 +60,8 @@ APIKEY_HOOK
 
 _write_firstboot_prompt
 
-if ! curl -fsSI --max-time 10 https://claude.ai >/dev/null 2>&1; then
+# GET, not HEAD: claude.ai answers HEAD requests from curl with 403
+if ! curl -fsS --max-time 10 -o /dev/null https://claude.ai/install.sh; then
     echo "==> [0500-install-claude-cli] No network: skipping Claude Code and OpenCode."
     echo "    Users can install Claude Code later with: turingos init"
     exit 0
