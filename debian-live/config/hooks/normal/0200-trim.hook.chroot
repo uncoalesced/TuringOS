@@ -106,9 +106,12 @@ PURGE_GPU=(
 )
 
 # ─── Firmware blobs not needed in VM ─────────────────────────────────────────
-# Keep: firmware-linux (core), firmware-linux-free, firmware-linux-nonfree
-# Drop: hardware-specific blobs that are dead weight in a VM
+# live-build's firmware stage installs these. Keep: firmware-linux-free.
+# Drop: hardware-specific blobs that are dead weight in a VM, and the
+# firmware-linux(-nonfree) metapackages that depend on them
 PURGE_FIRMWARE=(
+    firmware-linux
+    firmware-linux-nonfree
     firmware-amd-graphics
     firmware-nvidia-graphics
     firmware-realtek
