@@ -9,7 +9,7 @@ fullscreen on boot. These steps are for running it from a checkout.
 # 1. One-time: Rust and the libraries the UI builds against (NetworkManager
 #    too, if the install is minimal — it's how the UI reads Wi-Fi)
 sudo apt update
-sudo apt install -y cargo pkg-config cmake clang libclang-dev \
+sudo apt install -y cargo build-essential pkg-config cmake clang libclang-dev \
     libwebkit2gtk-4.1-dev libasound2-dev libxdo-dev git jq network-manager
 
 # 2. Launch (the first run compiles the app, a few minutes)
