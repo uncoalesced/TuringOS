@@ -1,328 +1,72 @@
 #!/usr/bin/env bash
 # turingos — TuringOS main entrypoint
 #
-# Usage:
-#   turingos init
-#   turingos dashboard
-#   turingos agent start [PROJECT] [TASK]
-#   turingos agent stop
-#   turingos agent status
-#   turingos agent logs
-#   turingos sandbox create [PROJECT] [LABEL]
-#   turingos sandbox diff   [SANDBOX]
-#   turingos sandbox merge  [SANDBOX]
-#   turingos sandbox rollback [SANDBOX]
-#   turingos sandbox list
-#   turingos sandbox status
-#   turingos bazaar
-#   turingos bazaar search <query>
-#   turingos bazaar info <tool>
-#   turingos bazaar install <tool>
-#   turingos bazaar uninstall <tool>
-#   turingos bazaar installed
-#   turingos game on
-#   turingos game off
-#   turingos game status
-#   turingos game watch
-#   turingos status
-#   turingos monitor
-#   turingos monitor watch
-#   turingos monitor spend
-#   turingos model status
-#   turingos model set <provider> [endpoint] [model]
-#   turingos model use <model>
-#   turingos image "<prompt>" [output.jpg]
-#   turingos logs [lines]
-#   turingos version
-#   turingos help
+# Installed on the Debian ISO as /usr/bin/turingos, with modules in
+# /usr/lib/turingos. From a checkout, the modules next to this script win.
+# Run `turingos help` for the command list.
 
 set -euo pipefail
 
 TURINGOS_VERSION="0.1.0"
 
 # ─── Resolve Library Path ─────────────────────────────────────────────────────
-# When installed via PKGBUILD: modules live in /usr/lib/turingos/
-# When running from a local checkout: modules are next to this script.
 
-_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-if [[ -d "/usr/lib/turingos" ]]; then
-    _LIB_DIR="/usr/lib/turingos"
+_SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+if [[ -f "${_SCRIPT_DIR}/core/config.sh" ]]; then
+    TURINGOS_ROOT="$_SCRIPT_DIR"
 else
-    _LIB_DIR="${_SCRIPT_DIR}"
+    TURINGOS_ROOT="/usr/lib/turingos"
 fi
+export TURINGOS_ROOT
 
-# ─── Source Core (must come first) ───────────────────────────────────────────
+# ─── Modules (core first; order matters only for source-time globals) ────────
 
-source "${_LIB_DIR}/core/config.sh"
-source "${_LIB_DIR}/core/ui.sh"
-source "${_LIB_DIR}/core/logging.sh"
-
-# ─── Source Modules ───────────────────────────────────────────────────────────
-
-source "${_LIB_DIR}/sandbox/btrfs.sh"
-source "${_LIB_DIR}/sandbox/diff.sh"
-source "${_LIB_DIR}/agent/claude.sh"
-source "${_LIB_DIR}/agent/nim.sh"
-source "${_LIB_DIR}/bazaar/registry.sh"
-source "${_LIB_DIR}/bazaar/install.sh"
-source "${_LIB_DIR}/game/gamemode.sh"
-source "${_LIB_DIR}/monitor/system.sh"
-
-# ─── Init ─────────────────────────────────────────────────────────────────────
-
-cmd::init() {
-    ui::banner
-
-    ui::info "Initializing TuringOS..."
-    echo ""
-
-    # Create runtime dirs
-    config::init_dirs
-    ui::ok "Runtime directories created: ${TURINGOS_DATA_DIR}"
-
-    # Check optional dependencies
-    echo ""
-    ui::info "Checking dependencies..."
-    echo ""
-
-    local deps_required=("git" "jq")
-    local deps_optional=("gum" "fzf" "btrfs" "nvidia-smi" "notify-send" "rsync")
-
-    local all_ok=true
-    for dep in "${deps_required[@]}"; do
-        if command -v "$dep" &>/dev/null; then
-            ui::status_row "$dep" "found" "ok"
-        else
-            ui::status_row "$dep" "MISSING (required)" "fail"
-            all_ok=false
-        fi
-    done
-
-    echo ""
-    for dep in "${deps_optional[@]}"; do
-        if command -v "$dep" &>/dev/null; then
-            ui::status_row "$dep" "found" "ok"
-        else
-            ui::status_row "$dep" "not found (optional)" "warn"
-        fi
-    done
-
-    # ── Claude Code CLI check ─────────────────────────────────────────────────
-    echo ""
-    ui::divider
-    echo ""
-    if command -v claude &>/dev/null; then
-        local claude_ver
-        claude_ver=$(claude --version 2>/dev/null || echo "installed")
-        ui::status_row "Claude Code CLI" "$claude_ver" "ok"
-    else
-        ui::status_row "Claude Code CLI" "NOT FOUND" "fail"
-        echo ""
-        ui::warn "Claude Code CLI is required to run agents."
-        echo ""
-        if ui::confirm "Install Claude Code CLI now?"; then
-            echo ""
-            # Locate the install script
-            local install_script=""
-            for candidate in \
-                "${_LIB_DIR}/../pkg/turingos-install-claude-cli.sh" \
-                "/usr/lib/turingos/pkg/turingos-install-claude-cli.sh" \
-                "${_SCRIPT_DIR}/pkg/turingos-install-claude-cli.sh"; do
-                if [[ -f "$candidate" ]]; then
-                    install_script="$candidate"
-                    break
-                fi
-            done
-
-            if [[ -n "$install_script" ]]; then
-                bash "$install_script"
-            else
-                ui::info "Run manually: curl -fsSL https://claude.ai/install.sh | sh"
-                ui::info "Or:           brew install claude-code"
-                ui::info "Or:           npm install -g @anthropic-ai/claude-code"
-            fi
-        else
-            ui::info "Skip for now. Install later:"
-            ui::info "  curl -fsSL https://claude.ai/install.sh | sh   (native)"
-            ui::info "  brew install claude-code                        (Homebrew)"
-            ui::info "  npm install -g @anthropic-ai/claude-code        (npm)"
-        fi
-    fi
-
-    # ── API key check ─────────────────────────────────────────────────────────
-    echo ""
-    if [[ -n "${ANTHROPIC_API_KEY:-}" ]]; then
-        ui::status_row "ANTHROPIC_API_KEY" "set" "ok"
-    else
-        # Check config.env
-        local key_in_config
-        key_in_config=$(grep '^ANTHROPIC_API_KEY=' "${TURINGOS_CONFIG_FILE}" 2>/dev/null | cut -d= -f2-) || true
-        if [[ -n "$key_in_config" ]]; then
-            ui::status_row "ANTHROPIC_API_KEY" "set (in config.env)" "ok"
-        else
-            ui::status_row "ANTHROPIC_API_KEY" "not set" "warn"
-            ui::info "Set it: echo 'export ANTHROPIC_API_KEY=sk-ant-...' >> ~/.bashrc"
-        fi
-    fi
-
-    # ── Model provider (optional) ─────────────────────────────────────────────
-    echo ""
-    if ui::confirm "Configure a model provider now? (Claude is the default)"; then
-        local provider endpoint="" name=""
-        provider=$(ui::choose "Model provider" claude nvidia ollama openrouter custom) || true
-        case "$provider" in
-            custom) endpoint=$(ui::input "Endpoint URL" "http://localhost:8080") || true ;;&
-            ollama | openrouter | custom) name=$(ui::input "Model name" "") || true ;;
-        esac
-        if [[ -n "$provider" ]]; then
-            cmd::model set "$provider" "$endpoint" "$name" || ui::warn "Model provider not configured"
-        fi
-    fi
-
-    echo ""
-    ui::divider
-    echo ""
-
-    if $all_ok; then
-        ui::ok "TuringOS initialized"
-    else
-        ui::warn "Some required dependencies are missing — install them before running agents"
-    fi
-
-    echo ""
-    ui::info "Data dir:    ${TURINGOS_DATA_DIR}"
-    ui::info "Config:      ${TURINGOS_CONFIG_FILE}"
-    ui::info "Agent log:   ${TURINGOS_LOG_DIR}/"
-    ui::info "Sandboxes:   ${TURINGOS_SANDBOX_DIR}/"
-    echo ""
-    ui::info "Next steps:"
-    ui::info "  turingos agent start   — launch Claude in a safe sandbox"
-    ui::info "  turingos bazaar        — browse MCP tools"
-    ui::info "  turingos dashboard     — interactive menu"
-    echo ""
-}
-
-# ─── Model Provider ───────────────────────────────────────────────────────────
-
-cmd::model() {
-    local sub="${1:-status}"; shift 2>/dev/null || true
-    case "$sub" in
-        set)
-            local provider="${1:-}" endpoint="${2:-}" name="${3:-}"
-            case "$provider" in
-                claude | nvidia | ollama | openrouter | custom) ;;
-                *) ui::fail "Usage: turingos model set <claude|nvidia|ollama|openrouter|custom> [endpoint] [model]"; return 1 ;;
-            esac
-            # `model set nvidia kimi` means the model, not an endpoint
-            if [[ -n "$endpoint" && "$endpoint" != *://* && -z "$name" ]]; then
-                name="$endpoint"
-                endpoint=""
-            fi
-            [[ "$provider" == "ollama" && -z "$endpoint" ]] && endpoint="http://localhost:11434"
-            [[ "$provider" == "openrouter" && -z "$endpoint" ]] && endpoint="https://openrouter.ai/api/v1"
-            [[ "$provider" == "nvidia" && -z "$endpoint" ]] && endpoint="$NIM_DEFAULT_ENDPOINT"
-            config::set TURINGOS_MODEL_PROVIDER "$provider"
-            config::set TURINGOS_MODEL_ENDPOINT "$endpoint"
-            if [[ "$provider" == "nvidia" ]]; then
-                nim::setup "$name" || return 1
-            else
-                config::set TURINGOS_MODEL_NAME "$name"
-            fi
-            ui::ok "Model provider set to ${provider}${TURINGOS_MODEL_NAME:+ (${TURINGOS_MODEL_NAME})}"
-            ;;
-        use)
-            local id="${1:-}"
-            if [[ -z "$id" ]]; then
-                ui::fail "Usage: turingos model use <model>"
-                return 1
-            fi
-            config::set TURINGOS_MODEL_NAME "$id"
-            if [[ "$TURINGOS_MODEL_PROVIDER" == "nvidia" && ",${TURINGOS_NIM_MODELS:-}," != *",${id},"* ]]; then
-                config::set TURINGOS_NIM_MODELS "${TURINGOS_NIM_MODELS:+${TURINGOS_NIM_MODELS},}${id}"
-            fi
-            ui::ok "Default model: ${id}"
-            ;;
-        status)
-            ui::info "Provider: ${TURINGOS_MODEL_PROVIDER}"
-            ui::info "Endpoint: ${TURINGOS_MODEL_ENDPOINT:-<default>}"
-            ui::info "Model:    ${TURINGOS_MODEL_NAME:-<default>}"
-            if [[ "$TURINGOS_MODEL_PROVIDER" == "nvidia" ]]; then
-                ui::info "Backups:  ${TURINGOS_NIM_FALLBACKS:-<none>}"
-                ui::info "Picked:   ${TURINGOS_NIM_MODELS:-<none>}"
-                ui::info "Image:    ${TURINGOS_NIM_IMAGE_MODEL:-${NIM_IMAGE_MODELS[0]}}"
-            fi
-            [[ "$TURINGOS_MODEL_PROVIDER" == "claude" || -z "$TURINGOS_MODEL_ENDPOINT" ]] && return 0
-            local url key=""
-            case "$TURINGOS_MODEL_PROVIDER" in
-                ollama)              url="${TURINGOS_MODEL_ENDPOINT%/}/api/tags" ;;
-                openrouter | nvidia) url="${TURINGOS_MODEL_ENDPOINT%/}/models" ;;   # endpoint already ends in /v1
-                *)                   url="${TURINGOS_MODEL_ENDPOINT%/}/v1/models" ;;
-            esac
-            [[ "$TURINGOS_MODEL_PROVIDER" == "openrouter" ]] && key="${OPENROUTER_API_KEY:-}"
-            [[ "$TURINGOS_MODEL_PROVIDER" == "nvidia" ]] && key="${NVIDIA_API_KEY:-}"
-            # Key goes to curl as config on stdin, not argv, so ps can't see it
-            if { [[ -z "$key" ]] || printf 'header = "Authorization: Bearer %s"\n' "$key"; } \
-                | curl -fsS --max-time 5 -K - "$url" >/dev/null; then
-                ui::ok "Endpoint reachable"
-            else
-                ui::fail "Endpoint unreachable: ${url}"
-                return 1
-            fi
-            ;;
-        *) ui::fail "Unknown model subcommand: ${sub}"; return 1 ;;
-    esac
-}
+for _module in \
+    core/config.sh core/ui.sh core/logging.sh core/init.sh \
+    sandbox/btrfs.sh sandbox/diff.sh \
+    agent/nim.sh agent/model.sh agent/claude.sh \
+    bazaar/registry.sh bazaar/install.sh \
+    game/gamemode.sh monitor/system.sh voice/voice.sh; do
+    # shellcheck source=/dev/null
+    source "${TURINGOS_ROOT}/${_module}"
+done
+unset _module
 
 # ─── Dashboard (interactive gum/fzf menu) ────────────────────────────────────
 
 cmd::dashboard() {
     ui::banner
-
+    local choice
     while true; do
-        local choice
         choice=$(ui::choose "TuringOS Dashboard" \
-            "◈  Agent → Start"          \
-            "◈  Agent → Status"         \
-            "◈  Agent → Logs"           \
-            "⬡  Sandbox → Create"       \
-            "⬡  Sandbox → Diff"         \
-            "⬡  Sandbox → Merge"        \
-            "⬡  Sandbox → Rollback"     \
-            "⬡  Sandbox → List"         \
-            "   Bazaar → Browse"        \
-            "   Bazaar → Installed"     \
-            "🎮  Game Mode → On"         \
-            "🎮  Game Mode → Off"        \
-            "🎮  Game Mode → Status"     \
-            "   System Status"          \
-            "   Live Monitor"           \
-            "   API Spend"              \
-            "   Quit"                   \
-        )
+            "Agent → Start" "Agent → Status" "Agent → Logs" \
+            "Sandbox → Create" "Sandbox → Diff" "Sandbox → Merge" "Sandbox → Rollback" "Sandbox → List" \
+            "Bazaar → Browse" "Bazaar → Installed" \
+            "Game Mode → On" "Game Mode → Off" "Game Mode → Status" \
+            "System Status" "Live Monitor" "API Spend" "Quit") || true
 
-        [[ -z "$choice" || "$choice" == *"Quit"* ]] && break
+        [[ -z "$choice" || "$choice" == "Quit" ]] && break
 
+        # Each action reports its own errors; keep the menu alive either way
         case "$choice" in
-            *"Agent → Start"*)     agent::start ;;
-            *"Agent → Status"*)    agent::status ;;
-            *"Agent → Logs"*)      agent::logs ;;
-            *"Sandbox → Create"*)  sandbox::create ;;
-            *"Sandbox → Diff"*)    diff::show ;;
-            *"Sandbox → Merge"*)   sandbox::merge ;;
-            *"Sandbox → Rollback"*)sandbox::rollback ;;
-            *"Sandbox → List"*)    sandbox::list ;;
-            *"Bazaar → Browse"*)   registry::browse ;;
-            *"Bazaar → Installed"*)registry::installed ;;
-            *"Game Mode → On"*)    gamemode::on ;;
-            *"Game Mode → Off"*)   gamemode::off ;;
-            *"Game Mode → Status"*)gamemode::status ;;
-            *"System Status"*)     monitor::status ;;
-            *"Live Monitor"*)      monitor::watch ;;
-            *"API Spend"*)         monitor::spend ;;
-        esac
+            "Agent → Start")      agent::start ;;
+            "Agent → Status")     agent::status ;;
+            "Agent → Logs")       agent::logs ;;
+            "Sandbox → Create")   sandbox::create >/dev/null ;;
+            "Sandbox → Diff")     diff::show ;;
+            "Sandbox → Merge")    sandbox::merge ;;
+            "Sandbox → Rollback") sandbox::rollback ;;
+            "Sandbox → List")     sandbox::list ;;
+            "Bazaar → Browse")    registry::browse ;;
+            "Bazaar → Installed") registry::installed ;;
+            "Game Mode → On")     gamemode::on ;;
+            "Game Mode → Off")    gamemode::off ;;
+            "Game Mode → Status") gamemode::status ;;
+            "System Status")      monitor::status ;;
+            "Live Monitor")       monitor::watch ;;
+            "API Spend")          monitor::spend ;;
+        esac || true
 
-        # Pause between actions so the user can read output
         echo ""
         read -rp "  Press Enter to continue..." _
         clear
@@ -339,7 +83,7 @@ cmd::help() {
     turingos <command> [subcommand] [args...]
 
   AGENT
-    agent start [project] [task]   Start Claude in a sandbox
+    agent start [project] [task]   Start the agent in a sandbox
     agent stop                     Stop the running agent
     agent status                   Show agent state + recent output
     agent logs                     Tail agent session log
@@ -356,7 +100,7 @@ cmd::help() {
     bazaar                         Browse tools (fzf UI)
     bazaar search <query>          Search registry
     bazaar info <tool>             Show tool details
-    bazaar install <tool>          Install + wire into Claude Desktop
+    bazaar install <tool>          Install + register with Claude Code
     bazaar uninstall <tool>        Remove tool + MCP config entry
     bazaar installed               List installed tools
 
@@ -380,10 +124,16 @@ cmd::help() {
     model use <model>              Change the default model
     image "<prompt>" [out.jpg]     Generate an image with NVIDIA FLUX
 
+  VOICE
+    voice status                   Show the speech-to-text backend
+    voice backend whisper|wispr    Pick local Whisper or Wispr Flow
+    voice wispr-import <session.json> [config.json]
+                                   Use a Wispr Flow session (unofficial)
+
   OTHER
     init                           First-time setup + dependency check
     dashboard                      Interactive menu
-    ui                             Open the ui-shell desktop UI
+    ui                             Open the desktop UI
     logs [N]                       Show last N lines of TuringOS log
     version                        Print version
     help                           This message
@@ -394,63 +144,42 @@ HELP
 # ─── Router ───────────────────────────────────────────────────────────────────
 
 main() {
-    local cmd="${1:-}"
-    local sub="${2:-}"
-    shift 2 2>/dev/null || shift "${#}" 2>/dev/null || true
+    local cmd="${1:-}" sub="${2:-}"
+    shift "$(( $# < 2 ? $# : 2 ))"
 
     case "$cmd" in
-
-        # ── Desktop UI ────────────────────────────────────────────────────────
         ui)
-            # Repo checkout: ui/ sits next to this script. Debian image: the
-            # UI lives in /opt/turingos-ui behind the turingos-ui launcher.
-            if [[ -x "${_SCRIPT_DIR}/ui/run.sh" ]]; then
-                exec "${_SCRIPT_DIR}/ui/run.sh" ${sub:+"$sub"} "$@"
-            elif command -v turingos-ui &>/dev/null; then
+            # Installed: the turingos-ui binary. Checkout: ui/run.sh.
+            if command -v turingos-ui &>/dev/null; then
                 exec turingos-ui ${sub:+"$sub"} "$@"
-            else
-                echo "TuringOS UI not found (no ui/run.sh, no turingos-ui)." >&2
-                exit 1
+            elif [[ -x "${TURINGOS_ROOT}/ui/run.sh" ]]; then
+                exec "${TURINGOS_ROOT}/ui/run.sh" ${sub:+"$sub"} "$@"
             fi
+            ui::fail "TuringOS UI not found (no turingos-ui, no ui/run.sh)"
+            exit 1
             ;;
-
-        # ── Init / Setup ──────────────────────────────────────────────────────
-        init)
-            cmd::init
-            ;;
-
-        # ── Dashboard ─────────────────────────────────────────────────────────
-        dashboard)
-            cmd::dashboard
-            ;;
-
-        # ── Agent ─────────────────────────────────────────────────────────────
+        init)      init::run ;;
+        dashboard) cmd::dashboard ;;
         agent)
             case "$sub" in
-                start)   agent::start "$@" ;;
-                stop)    agent::stop ;;
-                status)  agent::status ;;
-                logs)    agent::logs ;;
-                "")      agent::status ;;
-                *)       ui::fail "Unknown agent subcommand: ${sub}"; cmd::help; exit 1 ;;
+                start)     agent::start "$@" ;;
+                stop)      agent::stop ;;
+                status|"") agent::status ;;
+                logs)      agent::logs ;;
+                *)         ui::fail "Unknown agent subcommand: ${sub}"; exit 1 ;;
             esac
             ;;
-
-        # ── Sandbox ───────────────────────────────────────────────────────────
         sandbox)
             case "$sub" in
-                create)   sandbox::create "$@" ;;
-                diff)     diff::show "$@" ;;
-                merge)    sandbox::merge "$@" ;;
-                rollback) sandbox::rollback "$@" ;;
-                list)     sandbox::list ;;
-                status)   sandbox::status ;;
-                "")       sandbox::status ;;
-                *)        ui::fail "Unknown sandbox subcommand: ${sub}"; exit 1 ;;
+                create)    sandbox::create "$@" >/dev/null ;;
+                diff)      diff::show "$@" ;;
+                merge)     sandbox::merge "$@" ;;
+                rollback)  sandbox::rollback "$@" ;;
+                list)      sandbox::list ;;
+                status|"") sandbox::status ;;
+                *)         ui::fail "Unknown sandbox subcommand: ${sub}"; exit 1 ;;
             esac
             ;;
-
-        # ── Bazaar ────────────────────────────────────────────────────────────
         bazaar)
             case "$sub" in
                 search)    registry::search "$@" ;;
@@ -460,65 +189,36 @@ main() {
                 installed) registry::installed ;;
                 "")        registry::browse ;;
                 *)
-                    # Treat unknown sub as a tool key to install
                     ui::warn "Unknown bazaar subcommand '${sub}'"
                     ui::info "Did you mean: turingos bazaar install ${sub}?"
                     exit 1
                     ;;
             esac
             ;;
-
-        # ── Game Mode ─────────────────────────────────────────────────────────
         game)
             case "$sub" in
-                on)     gamemode::on ;;
-                off)    gamemode::off ;;
-                status) gamemode::status ;;
-                watch)  gamemode::watch ;;
-                "")     gamemode::status ;;
-                *)      ui::fail "Unknown game subcommand: ${sub}"; exit 1 ;;
+                on)        gamemode::on ;;
+                off)       gamemode::off ;;
+                status|"") gamemode::status ;;
+                watch)     gamemode::watch ;;
+                *)         ui::fail "Unknown game subcommand: ${sub}"; exit 1 ;;
             esac
             ;;
-
-        # ── Monitor / Status ──────────────────────────────────────────────────
-        status)
-            monitor::status
-            ;;
-
+        status) monitor::status ;;
         monitor)
             case "$sub" in
-                watch)  monitor::watch "${@}" ;;
+                watch)  monitor::watch "$@" ;;
                 spend)  monitor::spend ;;
                 "")     monitor::status ;;
                 *)      ui::fail "Unknown monitor subcommand: ${sub}"; exit 1 ;;
             esac
             ;;
-
-        # ── Model Provider ────────────────────────────────────────────────────
-        model)
-            cmd::model ${sub:+"$sub"} "$@"
-            ;;
-
-        # ── Image (NVIDIA NIM) ────────────────────────────────────────────────
-        image)
-            nim::image "$sub" "$@"
-            ;;
-
-        # ── Logs ──────────────────────────────────────────────────────────────
-        logs)
-            local lines="${sub:-50}"
-            log::tail "$lines"
-            ;;
-
-        # ── Meta ──────────────────────────────────────────────────────────────
-        version | --version | -v)
-            echo "  TuringOS v${TURINGOS_VERSION}"
-            ;;
-
-        help | --help | -h | "")
-            cmd::help
-            ;;
-
+        model) model::cmd ${sub:+"$sub"} "$@" ;;
+        image) nim::image "$sub" "$@" ;;
+        voice) voice::cmd ${sub:+"$sub"} "$@" ;;
+        logs)  log::tail "${sub:-50}" ;;
+        version | --version | -v) echo "  TuringOS v${TURINGOS_VERSION}" ;;
+        help | --help | -h | "")  cmd::help ;;
         *)
             ui::fail "Unknown command: ${cmd}"
             echo ""
