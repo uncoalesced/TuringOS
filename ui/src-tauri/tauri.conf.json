@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "identifier": "dev.turingos.shell",
   "build": {
-    "frontendDist": ["../index.html", "../css", "../js", "../assets", "../fonts"]
+    "frontendDist": "../web"
   },
   "app": {
     "withGlobalTauri": true,
