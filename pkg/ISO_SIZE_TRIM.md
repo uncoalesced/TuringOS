@@ -24,11 +24,17 @@ Where the image's weight goes, and how it's kept down.
 
 ## Next ideas
 
-1. Minimal bootstrap: `lb config --bootstrap-flavour minimal` pulls a base
+1. **OpenCode** is the biggest single item: about 730 MB unpacked under
+   `/usr/local/lib/node_modules/opencode-ai` (0500 grows the chroot from
+   3.1 GB to 4.1 GB, with Claude Code's 235 MB binary). Check whether the npm
+   package ships binaries for other platforms that can be deleted, or install
+   its standalone Linux binary instead.
+2. Minimal bootstrap: `lb config --bootstrap-flavour minimal` pulls a base
    without the `Priority: standard` set.
-2. Record chroot and ISO sizes per build here, so regressions show up.
 
-## Baseline
+## Sizes per build
 
-v1 (Electron UI, full repo copy in `/opt`) reached ~4.9 GB of chroot
-mid-build. Record the first Tauri-based build's squashfs/ISO size here.
+| Build | Chroot after 0300 | After 0500 | squashfs | ISO |
+|---|---|---|---|---|
+| v1 (Electron, repo copy in `/opt`) | | ~4.9 GB mid-build | | |
+| Tauri UI, October 2026 | 3.1 GB | 4.1 GB | 1.29 GB | 1.40 GB |
