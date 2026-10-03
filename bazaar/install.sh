@@ -227,10 +227,21 @@ bazaar::uninstall() {
     fi
 
     name=$(registry::get_field "$key" name)
+    # A registry key, or (for a tool dropped from the registry) a bare name:
+    # never a path, so rm -rf can't leave the Bazaar directory
+    if [[ -z "$name" && ! "$key" =~ ^[A-Za-z0-9][A-Za-z0-9_-]*$ ]]; then
+        ui::fail "Unknown tool: ${key}"
+        return 1
+    fi
     install_dir="${TURINGOS_BAZAAR_DIR}/${key}"
-    if [[ ! -d "$install_dir" ]]; then
+    if [[ ! -d "$install_dir" || -L "$install_dir" ]]; then
         ui::info "${key} is not installed"
         return 0
+    fi
+    if [[ "$(dirname -- "$(realpath -e -- "$install_dir")")" != "$(realpath -e -- "$TURINGOS_BAZAAR_DIR")" ]]; then
+        ui::fail "Refusing to remove ${install_dir}: outside ${TURINGOS_BAZAAR_DIR}"
+        log::error "bazaar uninstall refused: ${key}"
+        return 1
     fi
     ui::confirm "Uninstall ${name:-$key}?" || return 0
 

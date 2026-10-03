@@ -104,7 +104,7 @@ Run `turingos model status` to check the provider and ping its endpoint. In your
 - [ ] Test environment described
 - [ ] Commits follow Conventional Commits
 - [ ] `shellcheck` clean with no warnings (CI runs it on every shell file and hook, plus `bash tests/*.sh`)
-- [ ] For `ui/src-tauri` changes: `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass. CI builds it on `debian:trixie` with Debian's rustc (1.85), the same toolchain the ISO uses, so keep dependencies within `rust-version`
+- [ ] For `ui/src-tauri` changes: `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass. CI builds it on `debian:trixie` with Debian's rustc-web (currently 1.96, floor `rust-version` 1.88), the same toolchain the ISO uses, so keep dependencies within `rust-version`
 - [ ] Model provider and model named (for agent changes)
 - [ ] Docs updated if behaviour changed
 - [ ] Linked the related issue (`Closes #123`)

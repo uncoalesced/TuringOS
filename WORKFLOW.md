@@ -411,8 +411,8 @@ tail -f ~/.turingos/logs/audit.log
 │   ├── audit.log               # structured action trail
 │   └── agent-session-*.log     # per-session agent output
 ├── sandboxes/
+│   ├── <label>-<timestamp>.meta # metadata (source project, backend, etc.), outside the sandbox
 │   └── <label>-<timestamp>/    # one directory per sandbox
-│       ├── .turingos_sandbox   # metadata (source project, backend, etc.)
 │       └── .turingos_prompt    # task prompt written for the agent
 └── bazaar/
     └── <tool-key>/

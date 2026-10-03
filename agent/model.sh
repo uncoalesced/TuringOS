@@ -50,6 +50,8 @@ model::curl_bearer() {
     # on stdin, not argv, so ps can't see it
     local key="$1"
     shift
+    # A quote or newline in the key would be read as more curl config
+    [[ -z "$key" ]] || config::valid_secret "$key" || { echo "invalid API key format" >&2; return 1; }
     { [[ -z "$key" ]] || printf 'header = "Authorization: Bearer %s"\n' "$key"; } | curl -K - "$@"
 }
 

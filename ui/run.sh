@@ -7,7 +7,7 @@
 #   LITE=1 ./ui/run.sh       software rendering (VMs without 3D acceleration)
 #
 # Building needs Rust plus the WebKitGTK/ALSA dev packages:
-#   sudo apt install cargo build-essential libwebkit2gtk-4.1-dev libasound2-dev libxdo-dev cmake clang libclang-dev pkg-config
+#   sudo apt install cargo-web build-essential libwebkit2gtk-4.1-dev libasound2-dev libxdo-dev cmake clang libclang-dev pkg-config
 
 set -euo pipefail
 

@@ -87,6 +87,10 @@ install_claude_cli::configure_api_key() {
         ui::warn "Skipped. Run later: turingos-install-claude-cli.sh --api-key"
         return 0
     fi
+    if ! config::valid_secret "$api_key"; then
+        ui::fail "That doesn't look like an API key (letters, digits and -_. only). Nothing saved."
+        return 1
+    fi
     [[ "$api_key" == sk-ant-* ]] || ui::warn "Unexpected format — saving anyway (expected sk-ant-...)"
 
     # config.env is mode 600; ~/.bashrc only sources it, so the key never

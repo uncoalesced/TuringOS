@@ -3,8 +3,9 @@ name = "turingos-ui"
 version = "0.1.0"
 description = "TuringOS desktop shell"
 edition = "2021"
-# Debian 13 (the ISO build) ships rustc 1.85: keep every dependency buildable there
-rust-version = "1.85"
+# Built with Debian 13's rustc-web/cargo-web (security-updated, 1.96 today):
+# plain rustc 1.85 is too old for the patched serde_with/time
+rust-version = "1.88"
 resolver = "3"
 publish = false
 
