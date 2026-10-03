@@ -1,0 +1,77 @@
+/* Design tokens: fonts, brand colors, light/dark themes. */
+
+/* ui-shell — design tokens from Claude's brand colors:
+   Japonica #D97757 · Pampas #F4F3EE · Cloudy #B1ADA1 · Tuatara #373734 · White #FFFFFF */
+
+/* Timeless type, bundled in ui/fonts. Variable: Sans 300–800, Serif 200–700. */
+@font-face {
+  font-family: "Timeless Sans";
+  src: url("../fonts/TimelessSansVF.ttf") format("truetype");
+  font-weight: 300 800;
+  font-display: block;
+}
+@font-face {
+  font-family: "Timeless Serif";
+  src: url("../fonts/TimelessSerifVF.ttf") format("truetype");
+  font-weight: 200 700;
+  font-display: block;
+}
+
+:root {
+  /* Brand */
+  --japonica: #d97757;
+  --pampas: #f4f3ee;
+  --cloudy: #b1ada1;
+  --tuatara: #373734;
+  --white: #ffffff;
+
+  /* Derived (not brand colors, only for contrast and states) */
+  --tuatara-deep: #262624;
+  --ink: #1d1c1a;
+  --japonica-light: #e58a6c;
+  --japonica-dark: #b4532f;
+  --tuatara-raised: #42423f;
+  --stone: #6f6c64;
+  --focus: #61aaf2;
+  --error: #bf4d43;
+
+  /* Type */
+  --sans: "Timeless Sans", system-ui, -apple-system, "Segoe UI", "Noto Sans", sans-serif;
+  --serif: "Timeless Serif", "Iowan Old Style", Georgia, "Noto Serif", serif;
+  --mono: "JetBrains Mono", "SF Mono", ui-monospace, "Noto Sans Mono", monospace;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+
+  --menubar-h: 34px;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: var(--pampas);
+  --surface: var(--white);
+  --surface-strong: #e9e7df;
+  --line: rgb(55 55 52 / 0.09);
+  --text: var(--tuatara);
+  --muted: var(--stone);
+  --faint: var(--cloudy);
+  --accent: var(--japonica);
+  --glow: rgb(217 119 87 / 0.16);
+  --danger: var(--error);
+  --bar: rgb(244 243 238 / 0.72);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: var(--tuatara-deep);
+  --surface: var(--tuatara);
+  --surface-strong: var(--tuatara-raised);
+  --line: rgb(244 243 238 / 0.08);
+  --text: var(--pampas);
+  --muted: var(--cloudy);
+  --faint: #8a877e;
+  --accent: var(--japonica);
+  --glow: rgb(217 119 87 / 0.22);
+  --danger: #e07a70;
+  --bar: rgb(38 38 36 / 0.66);
+}
