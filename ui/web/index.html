@@ -260,15 +260,47 @@
     </section>
   </aside>
 
-  <!-- Clawd: a small pixel mascot that patrols a corner near the dock and
-       answers one-off questions via Haiku. -->
-  <button class="clawd" id="clawd" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Ask Clawd">
-    <span class="clawd-body">
-      <span class="clawd-eye clawd-eye-l"></span>
-      <span class="clawd-eye clawd-eye-r"></span>
-      <span class="clawd-leg clawd-leg-l"></span>
-      <span class="clawd-leg clawd-leg-r"></span>
-    </span>
+  <!-- Clawd: a pixel mascot that roams the bottom of the screen and answers
+       one-off questions via Haiku. data-mood picks the face and props:
+       idle, busy (mug), happy (> <), dizzy (spiral eyes), love (heart),
+       skate (skateboard). See clawd.js. -->
+  <button class="clawd" id="clawd" type="button" data-mood="idle" aria-haspopup="dialog" aria-expanded="false" aria-label="Ask Clawd">
+    <svg class="clawd-svg" viewBox="0 0 480 420" aria-hidden="true" shape-rendering="crispEdges">
+      <g class="clawd-heart">
+        <path d="M36 4h32v16h-32zM100 4h32v16h-32zM20 20h128v32h-128zM36 52h96v16h-96zM52 68h64v16h-64zM68 84h32v16h-32z" />
+      </g>
+      <g class="clawd-board">
+        <rect class="clawd-deck" x="30" y="356" width="400" height="14" />
+        <rect class="clawd-wheel" x="80" y="372" width="34" height="34" />
+        <rect class="clawd-wheel" x="330" y="372" width="34" height="34" />
+      </g>
+      <g class="clawd-fig">
+        <rect class="clawd-fill" x="72" y="100" width="258" height="185" />
+        <rect class="clawd-fill" x="12" y="162" width="378" height="62" />
+        <g class="clawd-legs">
+          <rect class="clawd-fill clawd-leg-a" x="72" y="285" width="35" height="68" />
+          <rect class="clawd-fill clawd-leg-b" x="137" y="285" width="33" height="68" />
+          <rect class="clawd-fill clawd-leg-a" x="232" y="285" width="33" height="68" />
+          <rect class="clawd-fill clawd-leg-b" x="295" y="285" width="35" height="68" />
+        </g>
+        <g class="clawd-eyes clawd-eyes-dot">
+          <rect x="107" y="129" width="33" height="33" />
+          <rect x="262" y="129" width="33" height="33" />
+        </g>
+        <g class="clawd-eyes clawd-eyes-squint">
+          <path d="M100 124l42 22l-42 22" />
+          <path d="M302 124l-42 22l42 22" />
+        </g>
+        <g class="clawd-eyes clawd-eyes-spiral">
+          <path d="M124 146h14v14h-30v-30h46v46h-62v-62h70" />
+          <path d="M278 146h-14v14h30v-30h-46v46h62v-62h-70" />
+        </g>
+        <g class="clawd-mug">
+          <rect class="clawd-mug-body" x="390" y="150" width="78" height="86" />
+          <rect class="clawd-mug-slot" x="410" y="158" width="40" height="14" />
+        </g>
+      </g>
+    </svg>
   </button>
 
   <section class="clawd-chat" id="clawd-chat" hidden role="dialog" aria-label="Ask Clawd">

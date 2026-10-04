@@ -165,6 +165,7 @@ dockItems.forEach((el) => {
 });
 
 function showDockError(text) {
+  window.flashClawd?.('dizzy', 3200);
   clearTimeout(dockErrorTimer);
   dockError.textContent = text;
   dockError.hidden = false;
