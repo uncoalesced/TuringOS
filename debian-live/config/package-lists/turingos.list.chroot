@@ -5,7 +5,8 @@
 # Trim hooks (0200/0300) clean up whatever the base profile drags in.
 # Hooks then add gum (0400), build the desktop UI (0450), set up kiosk
 # autologin (0470), install Brave as the default browser (0480) and
-# Homebrew (0490), and install the Claude Code CLI + OpenCode (0500).
+# Homebrew (0490), set up the Calamares installer (0495), and install the
+# Claude Code CLI + OpenCode (0500).
 
 # ── Core system ───────────────────────────────────────────────────────────────
 bash
@@ -100,6 +101,11 @@ systemd-sysv
 dbus
 udev
 acpid
+
+# ── Installer (Calamares; hook 0495 brands it and adds turingos-install) ──────
+calamares
+calamares-settings-debian
+qt6-qpa-plugins
 
 # ── Persistence ───────────────────────────────────────────────────────────────
 cryptsetup

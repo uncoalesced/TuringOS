@@ -1,0 +1,105 @@
+#!/bin/bash
+# 0495-installer.hook.chroot
+#
+# Sets up Calamares (calamares + calamares-settings-debian, from the package
+# list) to install the live system to disk, so logins, keys and installs
+# persist. On top of Debian's config:
+#   - TuringOS branding (logo staged by sync-scripts.sh)
+#   - /usr/bin/turingos-install: Debian's launcher uses pkexec, which needs a
+#     polkit agent openbox doesn't run; the live user has passwordless sudo
+#   - a shellprocess job pointing the kiosk autologin (0470, hardcoded to the
+#     live `user`) and Homebrew's prefix (0490) at the account created in
+#     the installer
+# GRUB comes from the ISO's own package pool (installer.list.binary), via
+# Debian's sources-media job, so installing works offline.
+
+set -euo pipefail
+
+CAL=/etc/calamares
+BRAND="${CAL}/branding/turingos"
+LOGO=/usr/share/pixmaps/turingos.png
+VERSION=1.2
+
+[[ -f "${CAL}/settings.conf" ]] || { echo "ERROR: calamares-settings-debian missing"; exit 1; }
+[[ -f "$LOGO" ]] || { echo "ERROR: ${LOGO} not staged (run sync-scripts.sh)"; exit 1; }
+
+echo "==> [0495-installer] Branding Calamares..."
+rm -rf "$BRAND"
+mkdir -p "$BRAND"
+install -m644 "$LOGO" "${BRAND}/turingos.png"
+cat > "${BRAND}/branding.desc" <<EOF
+---
+componentName:  turingos
+welcomeStyleCalamares: true
+welcomeExpandingLogo: true
+windowExpanding: normal
+windowSize: 800px,580px
+windowPlacement: center
+strings:
+    productName:         TuringOS
+    shortProductName:    TuringOS
+    version:             ${VERSION}
+    shortVersion:        ${VERSION}
+    versionedName:       TuringOS ${VERSION}
+    shortVersionedName:  TuringOS ${VERSION}
+    bootloaderEntryName: TuringOS
+    productUrl:          https://github.com/uncoalesced/turingos
+    supportUrl:          https://github.com/uncoalesced/turingos/issues
+    knownIssuesUrl:      https://github.com/uncoalesced/turingos/blob/main/debian-live/KNOWN_ISSUES.md
+    releaseNotesUrl:     https://github.com/uncoalesced/turingos/releases
+sidebar: widget
+navigation: widget
+images:
+    productLogo:         "turingos.png"
+    productIcon:         "turingos.png"
+    productWelcome:      "turingos.png"
+slideshow:
+    - "turingos.png"
+style:
+   SidebarBackground:        "#141413"
+   SidebarText:              "#faf9f5"
+   SidebarTextCurrent:       "#141413"
+   SidebarBackgroundCurrent: "#d97757"
+EOF
+
+# ─── Point the installed system at the new account ────────────────────────────
+
+cat > "${CAL}/modules/shellprocess-turingos.conf" <<'EOF'
+---
+dontChroot: false
+timeout: 120
+script:
+    - "sed -i 's/^autologin-user=.*/autologin-user=${USER}/' /etc/lightdm/lightdm.conf.d/50-autologin.conf"
+    - "chown -R ${USER}: /home/linuxbrew"
+    - "rm -f /usr/bin/turingos-install"
+EOF
+
+sed -i 's/^branding: .*/branding: turingos/' "${CAL}/settings.conf"
+sed -i 's/^\( *- \)displaymanager$/&\n\1shellprocess@turingos/' "${CAL}/settings.conf"
+cat >> "${CAL}/settings.conf" <<'EOF'
+instances:
+- id: turingos
+  module: shellprocess
+  config: shellprocess-turingos.conf
+EOF
+grep -q 'shellprocess@turingos' "${CAL}/settings.conf" \
+    || { echo "ERROR: settings.conf has no displaymanager step to follow"; exit 1; }
+
+# ─── Launcher ─────────────────────────────────────────────────────────────────
+
+cat > /usr/bin/turingos-install <<'EOF'
+#!/bin/sh
+# Runs Calamares as root on the live user's X display (TuringOS hook 0495).
+# Debian's calamares-install-debian does the same through pkexec.
+[ -d /run/live/medium ] || { echo "turingos-install: run it from the live ISO" >&2; exit 1; }
+sudo -n mv /etc/fstab /etc/fstab.orig.calamares 2>/dev/null
+sudo -n --preserve-env=DISPLAY,XAUTHORITY,LANG QT_AUTO_SCREEN_SCALE_FACTOR=1 calamares "$@"
+rc=$?
+sudo -n mv /etc/fstab.orig.calamares /etc/fstab 2>/dev/null
+exit "$rc"
+EOF
+chmod 755 /usr/bin/turingos-install
+sed -i 's/^Name=Install Debian$/Name=Install TuringOS/; s/^Exec=.*/Exec=turingos-install/' \
+    /usr/share/applications/calamares-install-debian.desktop
+
+echo "==> [0495-installer] Done."

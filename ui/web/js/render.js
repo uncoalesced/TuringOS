@@ -7,6 +7,7 @@ function render(snap) {
   // sample agent data so the desktop still reads as intended.
   const s = snap.live ? snap : { ...SAMPLE, system: { ...SAMPLE.system, ...pickDefined(snap.system) } };
   $('#sample-badge').hidden = snap.live;
+  $('.dock-item[data-app="install"]').hidden = !snap.system?.installer;
   lastSnap = snap;
 
   const name = snap.user?.name || null;

@@ -18,6 +18,8 @@ rm -rf "$PREFIX"
 mkdir -p "${PREFIX}/bin"
 git clone --depth 1 https://github.com/Homebrew/brew "${PREFIX}/Homebrew"
 ln -s ../Homebrew/bin/brew "${PREFIX}/bin/brew"
+# Before the chown: git refuses a repo owned by another user
+BREW_DATE=$(git -C "${PREFIX}/Homebrew" log -1 --format=%cs)
 chown -R "${LIVE_UID}:${LIVE_UID}" /home/linuxbrew
 
 # lightdm-session sources /etc/profile, so this reaches the whole desktop
@@ -32,4 +34,4 @@ fi
 EOF
 chmod 644 /etc/profile.d/homebrew.sh
 
-echo "==> [0490-install-homebrew] Done. Homebrew $(git -C "${PREFIX}/Homebrew" log -1 --format=%cs)"
+echo "==> [0490-install-homebrew] Done. Homebrew from ${BREW_DATE}."

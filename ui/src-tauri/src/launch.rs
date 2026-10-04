@@ -33,6 +33,7 @@ fn dock_commands(id: &str) -> Option<(&'static str, Commands)> {
                 ("xdg-open", vec!["https://".into()]),
             ],
         ),
+        "install" => ("Installer", vec![("turingos-install", vec![])]),
         "settings" => (
             "Settings",
             vec![("systemsettings", vec![]), ("systemsettings5", vec![])],

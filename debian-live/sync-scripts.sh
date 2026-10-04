@@ -7,6 +7,7 @@
 #   /usr/bin/turingos          -> ../lib/turingos/turingos
 #   /etc/profile.d/turingos-first-run.sh
 #   /usr/share/doc/turingos/   copyright (LICENSE), WORKFLOW.md
+#   /usr/share/pixmaps/turingos.png  installer logo (hook 0495)
 #   /opt/turingos-ui/          UI source; hook 0450 builds it into
 #                              /usr/bin/turingos-ui and deletes the source
 #
@@ -27,7 +28,7 @@ UI="${INC}/opt/turingos-ui"
 MODULE_DIRS=(core agent sandbox monitor game bazaar voice)
 
 echo "→ Staging TuringOS into ${INC}"
-rm -rf "$LIB" "$DOC" "$UI" "${INC}/usr/bin/turingos" "${INC}/etc/profile.d/turingos-first-run.sh"
+rm -rf "$LIB" "$DOC" "$UI" "${INC}/usr/bin/turingos" "${INC}/etc/profile.d/turingos-first-run.sh" \n    "${INC}/usr/share/pixmaps/turingos.png"
 install -d "${LIB}/pkg" "${INC}/usr/bin" "${INC}/etc/profile.d" "$DOC" "$UI"
 
 for dir in "${MODULE_DIRS[@]}"; do
@@ -39,6 +40,8 @@ ln -sfn ../lib/turingos/turingos "${INC}/usr/bin/turingos"
 install -m644 "${REPO_ROOT}/pkg/turingos-first-run.sh" "${INC}/etc/profile.d/turingos-first-run.sh"
 install -m644 "${REPO_ROOT}/LICENSE" "${DOC}/copyright"
 install -m644 "${REPO_ROOT}/WORKFLOW.md" "${DOC}/"
+# Installer branding (hook 0495)
+install -Dm644 "${REPO_ROOT}/ui/web/assets/brand/app-icon.png" "${INC}/usr/share/pixmaps/turingos.png"
 
 # UI: page + Tauri source, never build output
 rsync -a --exclude='src-tauri/target/' --exclude='src-tauri/gen/' "${REPO_ROOT}/ui/" "${UI}/"
