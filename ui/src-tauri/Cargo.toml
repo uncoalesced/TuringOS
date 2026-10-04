@@ -24,6 +24,14 @@ getrandom = "0.2"
 cpal = "0.15"
 whisper-rs = "0.15"
 
+# Security: glib < 0.20.0 has unsound VariantStrIter::impl_get (RUSTSEC-2024-0429,
+# GHSA-wrw7-89jp-8q8g, fixed upstream in gtk-rs/gtk-rs-core#1343),
+# which calls CStr::from_ptr on a possibly-NULL pointer under optimizations.
+# tauri 2.x hard-pins gtk 0.18 -> glib ^0.18, so a version bump is impossible;
+# vendor/glib is glib 0.18.5 with the upstream fix (&p -> &mut p) applied.
+[patch.crates-io]
+glib = { path = "vendor/glib" }
+
 [profile.release]
 codegen-units = 1
 lto = true
