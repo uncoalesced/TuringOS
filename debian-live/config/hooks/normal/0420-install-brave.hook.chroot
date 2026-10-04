@@ -24,16 +24,17 @@ case "$(dpkg --print-architecture)" in
 esac
 
 # ─── Brave: signed apt repo ───────────────────────────────────────────────────
-if ! dpkg -s brave-browser-stable &>/dev/null; then
+if ! dpkg -s brave-browser &>/dev/null; then
     echo "==> [0420-install-brave] Installing Brave (signed apt repo)..."
     install -d -m755 /etc/apt/keyrings
-    curl -fsSL --retry 3 --retry-all-errors \
-        https://brave-browser-apt-release.s3.brave.com/brave-browser-stable.gpg.key \
-        | gpg --dearmor -o /etc/apt/keyrings/brave.gpg
+    # Already a binary keyring (the brave-browser-stable.gpg.key URL is a 404)
+    curl -fsSL --retry 3 --retry-all-errors -o /etc/apt/keyrings/brave.gpg \
+        https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg
     echo "deb [signed-by=/etc/apt/keyrings/brave.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main" \
         > /etc/apt/sources.list.d/brave.list
     apt-get update -qq
-    apt-get install -y brave-browser-stable
+    # The package is brave-browser; there is no brave-browser-stable package
+    apt-get install -y brave-browser
 fi
 
 # ─── Make it the default browser ─────────────────────────────────────────────

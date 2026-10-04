@@ -23,10 +23,10 @@ need() {
 
 # Signed install from Brave's own repo
 need 'set -euo pipefail'
-need 'brave-browser-stable.gpg.key'
+need 'brave-browser-archive-keyring.gpg'
 need 'signed-by=/etc/apt/keyrings/brave.gpg'
 need 'sources.list.d/brave.list'
-need 'apt-get install -y brave-browser-stable'
+need 'apt-get install -y brave-browser'
 
 # Both entry points: dock fallback (launch.rs) and xdg-open links
 need 'update-alternatives --install /usr/bin/x-www-browser'
