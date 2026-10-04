@@ -28,6 +28,14 @@ Merge
 
 We ship it as a bootable Debian live ISO with the UI and all tooling pre-installed.
 
+### Download
+
+**[Download the latest ISO](https://github.com/uncoalesced/turingos/releases/latest)** (`live-image-amd64.hybrid.iso`, with a `.sha256` next to it).
+
+Boot it in a VM (VMware, VirtualBox, QEMU: 4 GB RAM, 2 CPUs, EFI or BIOS) or write it to a USB stick. It logs in by itself and opens the TuringOS UI fullscreen. Brave is the default browser and comes with the Claude extension, so `claude` → `/login`, the [Anthropic Console](https://console.anthropic.com) (API keys) and Google sign-in open right there. Homebrew is ready too: `brew install <formula>`.
+
+Debug login: `user` / `live`.
+
 ### Why it exists
 
 TuringOS is built for AI-first consumer hardware: a laptop, tablet, or phone whose whole job is working with Claude. You boot straight into Claude. The agent sandbox is the environment, not an app you open, and help is always one cursor shake away. We want a distro that a hardware maker could put on a Claude-dedicated device and ship.
@@ -191,7 +199,7 @@ cd turingos
 # Stage TuringOS + the UI source into the image
 ./debian-live/sync-scripts.sh
 
-# Build (takes 20–40 min, needs internet: crates, Claude Code, OpenCode)
+# Build (takes 20–40 min, needs internet: crates, Brave, Homebrew, Claude Code, OpenCode)
 cd debian-live
 sudo lb clean --purge
 sudo lb build
@@ -259,6 +267,8 @@ turingos help                           Full command list
 | `0400-install-turingos` | Checks the staged install, adds gum and the launcher entry |
 | `0450-build-ui` | Builds the Tauri UI against the image's libraries, then removes the toolchain |
 | `0470-autologin-kiosk` | lightdm autologin into openbox, ordered after live-config |
+| `0480-install-brave` | Brave as the default browser (`xdg-open`, `x-www-browser`, `$BROWSER`), Claude extension by policy |
+| `0490-install-homebrew` | Homebrew in `/home/linuxbrew/.linuxbrew`, owned by the live user, on `PATH` |
 | `0500-install-claude-cli` | Installs Claude Code (native installer, npm fallback) and OpenCode |
 
 ---
@@ -284,7 +294,7 @@ turingos help                           Full command list
 
 - Debian Trixie host
 - `live-build`
-- Internet access during build (Rust crates, Claude Code, OpenCode)
+- Internet access during build (Rust crates, Brave, Homebrew, Claude Code, OpenCode)
 
 ---
 

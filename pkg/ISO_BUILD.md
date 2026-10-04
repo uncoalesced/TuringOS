@@ -22,6 +22,8 @@ The ISO is the only install target: there is no separate .deb or Arch package.
 | `0400-install-turingos` | Checks the staged install, adds gum and the app-launcher entry |
 | `0450-build-ui` | Builds the Tauri UI (`ui/src-tauri`) with Debian's Rust, installs `/usr/bin/turingos-ui`, removes the toolchain and source |
 | `0470-autologin-kiosk` | lightdm autologin into openbox, ordered after live-config |
+| `0480-install-brave` | Brave as the default browser (`xdg-open`, `x-www-browser`, `$BROWSER`), Claude extension by policy |
+| `0490-install-homebrew` | Homebrew in `/home/linuxbrew/.linuxbrew`, owned by the live user, on `PATH` |
 | `0500-install-claude-cli` | Installs Claude Code (native installer, npm fallback) and OpenCode; first-login API key prompt |
 | `0900-boot-timeout` (binary) | Boot menus (isolinux and GRUB) start the live entry after 3 seconds |
 
@@ -48,7 +50,8 @@ sudo lb build
 ```
 
 Expect 20–40 minutes. The build needs internet: hook 0450 fetches Rust
-crates (pinned by `ui/src-tauri/Cargo.lock`) and hook 0500 downloads Claude
+crates (pinned by `ui/src-tauri/Cargo.lock`), hooks 0480/0490 fetch Brave and
+Homebrew (no offline mode either) and hook 0500 downloads Claude
 Code and OpenCode. Without network, 0500 skips both and `turingos init`
 offers to install Claude Code later; 0450 has no offline mode.
 

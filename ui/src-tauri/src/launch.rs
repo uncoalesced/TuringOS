@@ -29,8 +29,8 @@ fn dock_commands(id: &str) -> Option<(&'static str, Commands)> {
         "browser" => (
             "Browser",
             vec![
-                ("xdg-open", vec!["https://".into()]),
                 ("x-www-browser", vec![]),
+                ("xdg-open", vec!["https://".into()]),
             ],
         ),
         "settings" => (

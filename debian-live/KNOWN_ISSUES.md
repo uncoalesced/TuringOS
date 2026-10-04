@@ -14,11 +14,13 @@ default), with passwordless sudo.
 - **Blank or blurred UI on VMware.** WebKitGTK's DMA-BUF renderer is disabled
   by the app; VMs without a render node fall back to software drawing.
 
+- **No browser.** `claude` /login, the Anthropic Console, Google sign-in and
+  UI links had nothing to open in. Brave is now the default for `xdg-open`,
+  `x-www-browser` and `$BROWSER`, with the Claude extension force-installed
+  by policy (`0480-install-brave`).
+
 ## Open
 
-- **No browser in the image.** Links (GitHub PR rows, Google sign-in) go to
-  `xdg-open`, which has nothing to open them with. See
-  `ui-docs/NEXT_FEATURES.md`.
 - **`glib` 0.18 Dependabot alert.** Tauri's GTK 0.18 stack pins it; nothing to
   upgrade to until Tauri moves to gtk-rs 0.20+. TuringOS's own code doesn't
   call the affected API (`VariantStrIter`).
