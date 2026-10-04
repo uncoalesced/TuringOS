@@ -107,7 +107,7 @@ grep -q 'x-scheme-handler/https=brave-browser.desktop' /etc/xdg/mimeapps.list ||
     exit 1
 }
 
+# Keep the apt lists: 0450 installs its build dependencies from them
 apt-get clean
-rm -rf /var/lib/apt/lists/*
 
 echo "==> [0420-install-brave] Done. $(brave-browser --version 2>/dev/null || echo brave-browser installed)"
