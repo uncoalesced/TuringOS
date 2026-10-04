@@ -19,7 +19,7 @@ jobs:
   codacy-security-scan:
     name: Codacy Security Scan
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     permissions:
       contents: read          # required by actions/checkout
       security-events: write  # required to upload SARIF
@@ -40,6 +40,9 @@ jobs:
           format: sarif
           gh-code-scanning-compat: true
           max-allowed-issues: 2147483647
+          # The full tool suite ran past the job timeout one tool at a time
+          parallel: 4
+          tool-timeout: 8minutes
 
       - name: Upload SARIF results file
         uses: github/codeql-action/upload-sarif@e60ea984bd3baa95954f2856bcf24f9eaba46637 # v3
