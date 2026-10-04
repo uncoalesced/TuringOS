@@ -1,5 +1,26 @@
 ---
 # Codacy reads this from the repo root (the Codacy Security Scan workflow).
+#
+# This file can only CONFIGURE tools, never enable them (docs: "Adjusting tool
+# configurations"). The enabled set is chosen on Codacy's Code Patterns page.
+# The tools that matter for TuringOS, given the languages actually in the repo
+# (Rust, Shell, JS, one Python file, CSS, Markdown):
+#
+#   Security  opengrep      SAST: Rust, Shell, JS, Python, YAML, GH Actions.
+#                           Reads .semgrep.yaml for repo-specific rules.
+#             trivy         SCA + misconfig: Cargo.lock, package.json, Dockerfiles.
+#             bandit        Python (voice/).
+#             shellcheck    Shell; the repo ships .shellcheckrc, so it agrees
+#                           with the `shell` job in the CI workflow.
+#   Quality   duplication   copies, weighted against vendored sources below.
+#             metric        file size / complexity.
+#             lizard        complexity.
+#
+# Leave OFF unless a matching config lands in the repo, or they report style
+# opinions that no one has agreed to: eslint-8/eslint-9 (no .eslintrc*),
+# stylelint (no .stylelintrc*), markdownlint (no .markdownlint.*),
+# remark-lint, checkov, spectral. Codacy's defaults are not this repo's rules.
+
 # Binary assets are excluded: when a tool flags one, the CLI's SARIF writer
 # reads the file as text and crashes (MalformedInputException), failing CI.
 exclude_paths:
@@ -11,3 +32,25 @@ exclude_paths:
   - "**/*.ico"
   - "**/*.ttf"
   - "**/*.mp4"
+  # Vendored crates.io sources, unmodified except for one documented security
+  # patch (ui/src-tauri/vendor/glib/VENDOR_PATCH.md). Third-party code we don't
+  # fix here, so findings against it are unactionable noise. Trivy still reads
+  # ui/src-tauri/Cargo.lock, which is the file that pins the vulnerable versions.
+  - "ui/src-tauri/vendor/**"
+  # ISO build internals: apt package lists and chroot hooks are generated
+  # against Debian 13 and not hand-maintained code.
+  - "debian-live/config/package-lists/**"
+
+duplication:
+  exclude_paths:
+    - "ui/src-tauri/vendor/**"
+    - "debian-live/config/package-lists/**"
+
+engines:
+  metric:
+    exclude_paths:
+      - "ui/src-tauri/vendor/**"
+      - "debian-live/config/package-lists/**"
+  opengrep:
+    exclude_paths:
+      - "ui/src-tauri/vendor/**"

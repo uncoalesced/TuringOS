@@ -13,7 +13,12 @@ permissions: {}
 
 concurrency:
   group: codacy-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Cancel superseded PR scans only. With this unconditional, a run of pushes
+  # killed every scan before it finished (runs 8-14 all "cancelled") and the
+  # weekly schedule was cancelled by any push landing during it, so a push to
+  # main never produced a completed security scan. main and the schedule now
+  # always run to completion; they are one per push/week, not per-commit.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   codacy-security-scan:
