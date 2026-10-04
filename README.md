@@ -2,6 +2,8 @@
 
 An agentic execution layer built on Debian. It runs Claude Code agents in safe sandboxes and comes with a live desktop UI, an MCP tool registry, and Game Mode.
 
+**[⬇ Download the ISO (amd64)](https://github.com/uncoalesced/TuringOS/releases/latest/download/live-image-amd64.hybrid.iso)** · [SHA-256](https://github.com/uncoalesced/TuringOS/releases/latest/download/live-image-amd64.hybrid.iso.sha256) · [All releases](https://github.com/uncoalesced/TuringOS/releases)
+
 ---
 
 ## What it is
