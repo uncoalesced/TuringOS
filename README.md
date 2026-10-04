@@ -72,7 +72,7 @@ When you launch a game, TuringOS drops agent and build processes to low priority
 
 ### Live desktop UI
 
-A desktop shell (Tauri: the system's WebKitGTK plus a small Rust backend) that shows agent state, sandbox status, system stats, and MCP connections in real time. It launches fullscreen on boot. The mic button dictates into the composer with local Whisper (the model downloads on first use), or with Wispr Flow via `turingos voice wispr-import` (unofficial, opt-in).
+A desktop shell (Tauri: the system's WebKitGTK plus a small Rust backend) that shows agent state, sandbox status, system stats, and MCP connections in real time. It launches fullscreen on boot. The mic button dictates into the composer with local Whisper (the model downloads on first use), or with Wispr Flow via `turingos voice wispr-import` (unofficial, opt-in). The image ships Brave as its browser: links and Google sign-in open there, and being Chromium-based it runs the Claude in Chrome extension.
 
 ### Models
 
@@ -146,12 +146,13 @@ turingos/
 ├── voice/                    # `turingos voice` + Wispr Flow helper
 ├── ui/                       # desktop shell: page (css/, js/) + Tauri app (src-tauri/)
 ├── assets/                   # branding, palette, UI preview media
-├── pkg/                      # Claude CLI installer, first-run banner, ISO docs
+├── pkg/                      # Claude CLI installer, persistence setup, first-run banner, ISO docs
 ├── debian-live/              # Debian live-build config + hooks
 │   ├── sync-scripts.sh       # stage the install into includes.chroot
 │   └── config/
-│       ├── hooks/normal/     # build-time hooks (trim, install, UI build, kiosk)
+│       ├── hooks/normal/     # build-time hooks (trim, install, UI build, kiosk, boot menus)
 │       └── package-lists/    # explicit apt package list
+├── arm/                      # arm64 ISO build + QEMU test scripts
 ├── tests/                    # bash regression tests (run in CI)
 ├── WORKFLOW.md               # end-to-end usage guide
 └── plan.md                   # architecture + build plan
@@ -203,17 +204,33 @@ cd turingos
 
 # Build (takes 20–40 min, needs internet: crates, Brave, Homebrew, Claude Code, OpenCode)
 cd debian-live
-sudo lb clean --purge
+sudo lb config --distribution trixie --architectures amd64 \
+    --archive-areas "main contrib non-free-firmware"
 sudo lb build
 ```
 
-The ISO lands in `debian-live/`. Boot it in a VM or write it to USB with:
+The ISO lands in `debian-live/live-image-amd64.hybrid.iso`. Boot it in a VM or write it to USB with:
 
 ```bash
 sudo dd if=live-image-amd64.hybrid.iso of=/dev/sdX bs=4M status=progress
 ```
 
 On first boot the UI launches fullscreen. Open a terminal and run `turingos init` to configure your API key.
+
+**Architectures:** amd64 (above) and arm64 — build the arm64 image with
+[`./arm/build.sh`](arm/README.md); it has the exact same feature set.
+
+**Persistence:** like Kali, the boot menu offers a *Live system
+(persistence)* entry. Prepare the stick once — it adds an ext4 partition
+labelled `persistence` in the disk's free space:
+
+```bash
+sudo ./pkg/make-persistence.sh /dev/sdX
+```
+
+then pick that entry when booting: files you change (including
+`~/.turingos` and your API key) survive reboots. The plain entry stays
+ephemeral.
 
 Full build instructions: [`pkg/ISO_BUILD.md`](pkg/ISO_BUILD.md)
 
@@ -267,12 +284,14 @@ turingos help                           Full command list
 | `0200-trim` | Purges LibreOffice, CUPS, Bluetooth, unused GPU drivers (~1GB) |
 | `0300-locale-trim` | Strips locale data, man pages, docs (~200MB) |
 | `0400-install-turingos` | Checks the staged install, adds gum and the launcher entry |
+| `0420-install-brave` | Brave from its signed apt repo as the default browser (`xdg-open`, `x-www-browser`, `$BROWSER`), Claude extension installed and pinned by policy |
 | `0450-build-ui` | Builds the Tauri UI against the image's libraries, then removes the toolchain |
 | `0470-autologin-kiosk` | lightdm autologin into openbox, ordered after live-config |
-| `0480-install-brave` | Brave as the default browser (`xdg-open`, `x-www-browser`, `$BROWSER`), Claude extension by policy |
 | `0490-install-homebrew` | Homebrew in `/home/linuxbrew/.linuxbrew`, owned by the live user, on `PATH` |
 | `0495-installer` | Calamares installer (TuringOS branding, `turingos-install` launcher, autologin + Homebrew handed to the new account) |
 | `0500-install-claude-cli` | Installs Claude Code (native installer, npm fallback) and OpenCode |
+| `0900-boot-timeout` (binary) | Boot menus default to the live entry after 3 seconds (isolinux + GRUB) |
+| `0910-persistence-menu` (binary) | Adds the Kali-style *Live system (persistence)* boot entry (isolinux + GRUB) |
 
 ---
 

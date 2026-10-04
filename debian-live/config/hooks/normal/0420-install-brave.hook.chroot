@@ -1,0 +1,112 @@
+#!/bin/bash
+# 0420-install-brave.hook.chroot
+#
+# Brave is the image's web browser: the dock's Browser button and every
+# xdg-open link (GitHub rows, Google sign-in) go through x-www-browser and
+# the http/https mime defaults, which had no target until now
+# (../../../KNOWN_ISSUES.md). It is Chromium-based, so the Claude in Chrome
+# extension and Claude Code's /chrome integration work; Firefox has no
+# official Anthropic add-on, so shipping Firefox would not fix it.
+#
+# Not in Debian — installed from Brave's signed apt repo, the same pattern
+# as gum in 0400. Both amd64 and arm64 are published there.
+
+set -euo pipefail
+
+export DEBIAN_FRONTEND=noninteractive
+
+case "$(dpkg --print-architecture)" in
+    amd64 | arm64) ;;
+    *)
+        echo "ERROR: Brave publishes no $(dpkg --print-architecture) package"
+        exit 1
+        ;;
+esac
+
+# ─── Brave: signed apt repo ───────────────────────────────────────────────────
+if ! dpkg -s brave-browser-stable &>/dev/null; then
+    echo "==> [0420-install-brave] Installing Brave (signed apt repo)..."
+    install -d -m755 /etc/apt/keyrings
+    curl -fsSL --retry 3 --retry-all-errors \
+        https://brave-browser-apt-release.s3.brave.com/brave-browser-stable.gpg.key \
+        | gpg --dearmor -o /etc/apt/keyrings/brave.gpg
+    echo "deb [signed-by=/etc/apt/keyrings/brave.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main" \
+        > /etc/apt/sources.list.d/brave.list
+    apt-get update -qq
+    apt-get install -y brave-browser-stable
+fi
+
+# ─── Make it the default browser ─────────────────────────────────────────────
+# x-www-browser: the dock's Browser fallback (ui/src-tauri/src/launch.rs).
+if [[ ! -e /usr/bin/brave-browser ]]; then
+    echo "ERROR: /usr/bin/brave-browser missing after install"
+    exit 1
+fi
+update-alternatives --install /usr/bin/x-www-browser x-www-browser /usr/bin/brave-browser 210
+
+# System-wide mime defaults: xdg-open consults these for every user the live
+# system creates, so links and OAuth consent screens open in Brave.
+if [[ -e /etc/xdg/mimeapps.list ]]; then
+    echo "==> [0420-install-brave] Replacing existing /etc/xdg/mimeapps.list"
+fi
+cat > /etc/xdg/mimeapps.list <<'EOF'
+[Default Applications]
+x-scheme-handler/http=brave-browser.desktop
+x-scheme-handler/https=brave-browser.desktop
+text/html=brave-browser.desktop
+EOF
+
+# Claude Code and other CLIs honor $BROWSER; pam_env sets it for every login
+grep -q '^BROWSER=' /etc/environment 2>/dev/null || echo 'BROWSER=brave-browser' >> /etc/environment
+
+# ─── Policy ───────────────────────────────────────────────────────────────────
+# Claude in Chrome installed and pinned to the toolbar on first launch with
+# network; Claude Code finds it in Brave by itself (`claude --chrome`).
+# Claude is the assistant here, so Leo is off, along with the crypto, VPN,
+# news and call buttons that crowd the toolbar, and the default-browser and
+# crash-report prompts. Names checked against the strings in Brave 1.96's
+# binary.
+CLAUDE_EXTENSION=fcoeoabgfenejglbffodgkkbkcdhcgfn
+mkdir -p /etc/brave/policies/managed
+cat > /etc/brave/policies/managed/turingos.json <<EOF
+{
+  "ExtensionInstallForcelist": [
+    "${CLAUDE_EXTENSION};https://clients2.google.com/service/update2/crx"
+  ],
+  "ExtensionSettings": {
+    "${CLAUDE_EXTENSION}": { "toolbar_pin": "force_pinned" }
+  },
+  "BraveAIChatEnabled": false,
+  "BraveRewardsDisabled": true,
+  "BraveWalletDisabled": true,
+  "BraveVPNDisabled": true,
+  "BraveNewsDisabled": true,
+  "BraveTalkDisabled": true,
+  "DefaultBrowserSettingEnabled": false,
+  "MetricsReportingEnabled": false
+}
+EOF
+python3 -m json.tool /etc/brave/policies/managed/turingos.json >/dev/null
+
+# ─── Verify ───────────────────────────────────────────────────────────────────
+command -v brave-browser &>/dev/null || {
+    echo "ERROR: brave-browser not on PATH"
+    exit 1
+}
+[[ -f /usr/share/applications/brave-browser.desktop ]] || {
+    echo "ERROR: brave-browser.desktop missing"
+    exit 1
+}
+update-alternatives --query x-www-browser | grep -q '^Value: /usr/bin/brave-browser$' || {
+    echo "ERROR: x-www-browser alternative is not Brave"
+    exit 1
+}
+grep -q 'x-scheme-handler/https=brave-browser.desktop' /etc/xdg/mimeapps.list || {
+    echo "ERROR: https default handler not set"
+    exit 1
+}
+
+apt-get clean
+rm -rf /var/lib/apt/lists/*
+
+echo "==> [0420-install-brave] Done. $(brave-browser --version 2>/dev/null || echo brave-browser installed)"

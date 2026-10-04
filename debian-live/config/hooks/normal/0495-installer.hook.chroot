@@ -95,9 +95,17 @@ GRUB_DEBS=/var/cache/turingos/grub
 rm -rf "$GRUB_DEBS"
 mkdir -p "$GRUB_DEBS"
 apt-get update -qq
-(cd "$GRUB_DEBS" && apt-get download grub-pc grub-efi-amd64 grub-efi)
+ARCH=$(dpkg --print-architecture)
+case "$ARCH" in
+    amd64) GRUB_PKGS=(grub-pc grub-efi-amd64 grub-efi) ;;
+    arm64) GRUB_PKGS=(grub-efi-arm64 grub-efi) ;;   # UEFI only
+    *) echo "ERROR: no GRUB packages known for ${ARCH}"; exit 1 ;;
+esac
+(cd "$GRUB_DEBS" && apt-get download "${GRUB_PKGS[@]}")
 rm -rf /var/lib/apt/lists/*
-ls "$GRUB_DEBS"/grub-pc_*.deb "$GRUB_DEBS"/grub-efi-amd64_*.deb "$GRUB_DEBS"/grub-efi_*.deb >/dev/null
+for p in "${GRUB_PKGS[@]}"; do
+    ls "$GRUB_DEBS/${p}"_*.deb >/dev/null
+done
 
 # Replaces Debian's helper (same job, same LUKS handling, no apt)
 cat > /usr/share/calamares/helpers/calamares-bootloader-config <<'EOF'
@@ -111,7 +119,7 @@ if [ "$(mount | grep "$CHROOT " | cut -c -16)" = "/dev/mapper/luks" ]; then
 fi
 if [ -d /sys/firmware/efi/efivars ]; then
     echo " * Installing grub-efi (uefi)..."
-    set -- "$DEBS"/grub-efi-amd64_*.deb "$DEBS"/grub-efi_*.deb
+    set -- "$DEBS"/grub-efi-*_*.deb "$DEBS"/grub-efi_*.deb   # grub-efi-amd64 or -arm64
 else
     echo " * Installing grub-pc (bios)..."
     set -- "$DEBS"/grub-pc_*.deb

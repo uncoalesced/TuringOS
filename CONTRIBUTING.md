@@ -36,8 +36,8 @@ By taking part, you agree to follow our [Code of Conduct](CODE_OF_CONDUCT.md). T
 
 Run and test TuringOS scripts on a Debian install built from the official netinst ISO, not on your everyday machine or another distro.
 
-- Architecture: we only support **amd64** right now. arm64 is coming soon.
-- ISO: always use `debian-13.7.0-amd64-netinst.iso`. Don't use other Debian versions or images. That way everyone tests against the same base, and results stay comparable.
+- Architecture: we support **amd64** and **arm64** (`./arm/build.sh`). Test boot or packaging changes on both when you can; the shared debian-live config must keep building on each.
+- ISO: use `debian-13.7.0-amd64-netinst.iso` — or `debian-13.7.0-arm64-netinst.iso` when working on arm64. Don't use other Debian versions or images. That way everyone tests against the same base, and results stay comparable.
 - A VM (QEMU/KVM, VirtualBox, etc.) is fine and is the easiest option.
 
 ## Model providers
@@ -86,7 +86,7 @@ Run `turingos model status` to check the provider and ping its endpoint. In your
 
 **Test your change yourself and show us the results. We won't approve a PR that has no test evidence.**
 
-1. Test on Debian from `debian-13.7.0-amd64-netinst.iso` (see [Test environment](#test-environment)). Actually run your change; reading the code doesn't count.
+1. Test on Debian from `debian-13.7.0-amd64-netinst.iso` — or the arm64 netinst / `arm/` VM for arm64 changes (see [Test environment](#test-environment)). Actually run your change; reading the code doesn't count.
 2. Put the post-test evidence in the PR description:
    - Scripts / CLI (`turingos`, `agent/`, `core/`, `monitor/`): the commands you ran and their output.
    - Sandbox / agent changes: the sandbox diff output and the result of the merge or discard.
@@ -99,7 +99,7 @@ Run `turingos model status` to check the provider and ping its endpoint. In your
 
 ## PR checklist
 
-- [ ] Tested on Debian from `debian-13.7.0-amd64-netinst.iso`
+- [ ] Tested on Debian from `debian-13.7.0-amd64-netinst.iso` (arm64 netinst / `arm/` for arm64 changes)
 - [ ] Post-test evidence attached (output, screenshots, or recording)
 - [ ] Test environment described
 - [ ] Commits follow Conventional Commits
