@@ -38,7 +38,9 @@ fi
 "${ROOT}/debian-live/sync-scripts.sh"
 
 cd "${ROOT}/debian-live"
-sudo lb config --distribution trixie --architectures arm64 \
+# --linux-flavours: lb config keeps the kernel flavour already in
+# config/chroot, so after an amd64 build it would ask for linux-image-amd64
+sudo lb config --distribution trixie --architectures arm64 --linux-flavours arm64 \
     --archive-areas "main contrib non-free-firmware"
 
 # lb config just created .build as root
