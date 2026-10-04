@@ -1,7 +1,7 @@
 // Clawd: pixel mascot with single-shot Q&A, opened by click or cursor shake.
 
 // ─── Clawd ──────────────────────────────────────────────────────────────────
-// Patrols its bottom-right corner, sometimes on a skateboard. Click opens a
+// Roams the bottom edge, sometimes on a skateboard. Click opens a
 // single-shot Q&A popover — one question, one answer, no history kept.
 //
 // Mood (data-mood, drawn in index.html / clawd.css):
@@ -19,7 +19,10 @@ let clawdFlash = null; // { mood, until }
 let clawdFlashTimer = null;
 let clawdSkating = false;
 
-const CLAWD_LANE = 130; // px it wanders left of its corner, as before
+function clawdLane() {
+  // Up to about half the screen, leaving the opposite corner's status text alone
+  return Math.max(130, Math.min(innerWidth * 0.5, 720));
+}
 
 function paintClawdMood() {
   const flash = clawdFlash && clawdFlash.until > Date.now() ? clawdFlash.mood : null;
@@ -44,7 +47,7 @@ function setClawdBusy(source, on) {
 function clawdWalkTo(x, skate = false) {
   const dist = Math.abs(x - clawdX);
   const perPx = skate ? 4 : 12;
-  const duration = Math.max(500, Math.min(2200, dist * perPx));
+  const duration = Math.max(500, Math.min(skate ? 1800 : 5200, dist * perPx));
   clawd.style.transitionDuration = `${duration}ms`;
   clawd.style.transitionTimingFunction = skate ? 'cubic-bezier(.3,.1,.3,1)' : 'linear';
   clawd.style.transform = `translateX(${-x}px)`;
@@ -66,13 +69,14 @@ function scheduleClawdWander() {
   if (reducedMotion.matches) return; // stay put rather than teleport with no walk
   clawdWanderTimer = setTimeout(() => {
     if (clawdOpen) return scheduleClawdWander(); // hold still while the chat is open
-    const x = Math.random() * CLAWD_LANE;
+    const x = Math.random() * clawdLane();
     // Long trips are sometimes a skateboard ride, never while it's holding a mug
-    const skate = Math.abs(x - clawdX) > 70 && Math.random() < 0.35 && !clawdBusy.agent && !clawdBusy.ask;
+    const skate = Math.abs(x - clawdX) > 250 && Math.random() < 0.35 && !clawdBusy.agent && !clawdBusy.ask;
     clawdWalkTo(x, skate);
   }, 2500 + Math.random() * 6000);
 }
 scheduleClawdWander();
+addEventListener('resize', () => { if (clawdX > clawdLane()) clawdWalkTo(clawdLane()); });
 
 clawd.addEventListener('mouseenter', () => flashClawd('love', 1800));
 
