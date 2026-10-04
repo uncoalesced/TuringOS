@@ -3,9 +3,10 @@
 #
 # Philosophy: install only what the image needs.
 # Trim hooks (0200/0300) clean up whatever the base profile drags in.
-# Hooks then add gum (0400) and Brave (0420, not in Debian), build the
-# desktop UI (0450), set up kiosk autologin (0470) and install the Claude
-# Code CLI + OpenCode (0500).
+# Hooks then add gum (0400) and Brave (0420, not in Debian; default browser
+# with the Claude extension), build the desktop UI (0450), set up kiosk
+# autologin (0470), install Homebrew (0490), set up the Calamares installer
+# (0495), and install the Claude Code CLI + OpenCode (0500).
 
 # ── Core system ───────────────────────────────────────────────────────────────
 bash
@@ -104,6 +105,26 @@ dbus
 udev
 acpid
 
+# ── Installer (Calamares; hook 0495 brands it and adds turingos-install) ──────
+calamares
+calamares-settings-debian
+qt6-qpa-plugins
+# Everything the installed system's bootloader needs except grub-pc and
+# grub-efi-amd64, which conflict: 0495 keeps those two as .debs
+grub-common
+grub2-common
+#if ARCHITECTURES amd64
+grub-pc-bin
+grub-efi-amd64-bin
+#endif
+#if ARCHITECTURES arm64
+grub-efi-arm64-bin
+#endif
+efibootmgr
+ucf
+cryptsetup-initramfs
+keyutils
+
 # ── Persistence ───────────────────────────────────────────────────────────────
 cryptsetup
 lvm2
@@ -128,3 +149,7 @@ gvfs
 shared-mime-info
 xdg-utils
 desktop-file-utils
+# The dock's Settings button (Qt is already here for Calamares)
+lxqt-config
+# hwclock (moved out of util-linux in trixie); Calamares sets the RTC with it
+util-linux-extra

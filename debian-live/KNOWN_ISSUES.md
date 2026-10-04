@@ -14,16 +14,16 @@ default), with passwordless sudo.
 - **Blank or blurred UI on VMware.** WebKitGTK's DMA-BUF renderer is disabled
   by the app; VMs without a render node fall back to software drawing.
 
+- **No browser.** `claude` /login, the Anthropic Console, Google sign-in and
+  UI links had nothing to open in. Brave is now the default for `xdg-open`,
+  `x-www-browser` and `$BROWSER`, with the Claude extension force-installed
+  by policy (`0420-install-brave`).
+- **No persistent install.** Everything lived in RAM. Calamares now
+  installs to disk (`0495-installer`). GRUB ships in the image, so it works
+  offline.
+
 ## Open
 
-- **No browser in the image — fixed in the build, awaiting boot re-test.**
-  `0420-install-brave` installs `brave-browser-stable` from Brave's signed
-  apt repo, registers it as `x-www-browser` (the dock's Browser button) and
-  the system `http`/`https` mime default (`/etc/xdg/mimeapps.list`), and fails
-  the build if either is missing. Brave is Chromium-based, so the Claude in
-  Chrome extension works (Firefox has no official Anthropic add-on). Re-test
-  after the next build: click a link in the UI and run
-  `xdg-open https://example.com` as `user`.
 - **`glib` 0.18 Dependabot alert.** Tauri's GTK 0.18 stack pins it; nothing to
   upgrade to until Tauri moves to gtk-rs 0.20+. TuringOS's own code doesn't
   call the affected API (`VariantStrIter`).

@@ -2,6 +2,8 @@
 
 An agentic execution layer built on Debian. It runs Claude Code agents in safe sandboxes and comes with a live desktop UI, an MCP tool registry, and Game Mode.
 
+**[Download the ISO (amd64)](https://github.com/uncoalesced/TuringOS/releases/latest/download/live-image-amd64.hybrid.iso)** · [SHA-256](https://github.com/uncoalesced/TuringOS/releases/latest/download/live-image-amd64.hybrid.iso.sha256) · [All releases](https://github.com/uncoalesced/TuringOS/releases)
+
 ---
 
 ## What it is
@@ -27,6 +29,16 @@ Merge
 ```
 
 We ship it as a bootable Debian live ISO with the UI and all tooling pre-installed.
+
+### Download
+
+**[Download the latest ISO](https://github.com/uncoalesced/turingos/releases/latest)** (`live-image-amd64.hybrid.iso`, with a `.sha256` next to it).
+
+Boot it in a VM (VMware, VirtualBox, QEMU: 4 GB RAM, 2 CPUs, EFI or BIOS) or write it to a USB stick. It logs in by itself and opens the TuringOS UI fullscreen. Brave is the default browser and comes with the Claude extension, so `claude` → `/login`, the [Anthropic Console](https://console.anthropic.com) (API keys) and Google sign-in open right there. Homebrew is ready too: `brew install <formula>`.
+
+The live session runs from RAM: a reboot forgets logins, keys and installs. To keep them, click **Install** in the dock (or search "Install TuringOS" with Ctrl+K). The Calamares installer partitions the disk, creates your account (which logs in automatically, like the live session) and installs GRUB for BIOS or UEFI. It works offline. Give the VM or machine a disk of 20 GB or more.
+
+Debug login: `user` / `live`.
 
 ### Why it exists
 
@@ -192,7 +204,7 @@ cd turingos
 # Stage TuringOS + the UI source into the image
 ./debian-live/sync-scripts.sh
 
-# Build (takes 20–40 min, needs internet: crates, Claude Code, OpenCode)
+# Build (takes 20–40 min, needs internet: crates, Brave, Homebrew, Claude Code, OpenCode)
 cd debian-live
 sudo lb config --distribution trixie --architectures amd64 \
     --archive-areas "main contrib non-free-firmware"
@@ -274,8 +286,11 @@ turingos help                           Full command list
 | `0200-trim` | Purges LibreOffice, CUPS, Bluetooth, unused GPU drivers (~1GB) |
 | `0300-locale-trim` | Strips locale data, man pages, docs (~200MB) |
 | `0400-install-turingos` | Checks the staged install, adds gum and the launcher entry |
+| `0420-install-brave` | Brave from its signed apt repo as the default browser (`xdg-open`, `x-www-browser`, `$BROWSER`), Claude extension installed and pinned by policy |
 | `0450-build-ui` | Builds the Tauri UI against the image's libraries, then removes the toolchain |
 | `0470-autologin-kiosk` | lightdm autologin into openbox, ordered after live-config |
+| `0490-install-homebrew` | Homebrew in `/home/linuxbrew/.linuxbrew`, owned by the live user, on `PATH` |
+| `0495-installer` | Calamares installer (TuringOS branding, `turingos-install` launcher, autologin + Homebrew handed to the new account) |
 | `0500-install-claude-cli` | Installs Claude Code (native installer, npm fallback) and OpenCode |
 | `0900-boot-timeout` (binary) | Boot menus default to the live entry after 3 seconds (isolinux + GRUB) |
 | `0910-persistence-menu` (binary) | Adds the Kali-style *Live system (persistence)* boot entry (isolinux + GRUB) |
@@ -303,7 +318,7 @@ turingos help                           Full command list
 
 - Debian Trixie host
 - `live-build`
-- Internet access during build (Rust crates, Claude Code, OpenCode)
+- Internet access during build (Rust crates, Brave, Homebrew, Claude Code, OpenCode)
 
 ---
 

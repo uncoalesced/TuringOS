@@ -1,0 +1,13 @@
+---
+# Codacy reads this from the repo root (the Codacy Security Scan workflow).
+# Binary assets are excluded: when a tool flags one, the CLI's SARIF writer
+# reads the file as text and crashes (MalformedInputException), failing CI.
+exclude_paths:
+  - "assets/**"
+  - "ui/web/assets/**"
+  - "ui/web/fonts/**"
+  - "ui/src-tauri/icons/**"
+  - "**/*.png"
+  - "**/*.ico"
+  - "**/*.ttf"
+  - "**/*.mp4"

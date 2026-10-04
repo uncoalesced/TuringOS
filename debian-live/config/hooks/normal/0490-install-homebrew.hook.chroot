@@ -1,0 +1,40 @@
+#!/bin/bash
+# 0490-install-homebrew.hook.chroot
+#
+# Installs Homebrew in its default Linux prefix (/home/linuxbrew/.linuxbrew),
+# so `brew install <formula>` works out of the box. Brew refuses to run as
+# root and the official installer wants sudo, so this is Homebrew's
+# documented "untar anywhere" install: a shallow clone, owned by the live
+# user (live-config creates `user` as uid 1000 at boot).
+# Formulae come from Homebrew's JSON API on first use; nothing is tapped here.
+
+set -euo pipefail
+
+PREFIX=/home/linuxbrew/.linuxbrew
+LIVE_UID=1000
+
+echo "==> [0490-install-homebrew] Cloning Homebrew into ${PREFIX}..."
+rm -rf "$PREFIX"
+mkdir -p "${PREFIX}/bin"
+git clone --depth 1 https://github.com/Homebrew/brew "${PREFIX}/Homebrew"
+ln -s ../Homebrew/bin/brew "${PREFIX}/bin/brew"
+# Before the chown: git refuses a repo owned by another user
+BREW_DATE=$(git -C "${PREFIX}/Homebrew" log -1 --format=%cs)
+chown -R "${LIVE_UID}:${LIVE_UID}" /home/linuxbrew
+
+# Login shells source profile.d; Debian's lightdm runs /etc/X11/Xsession,
+# which doesn't, so an Xsession.d snippet sources the same file for the
+# desktop session (the UI, the agents it starts, terminals).
+# Skipped for root: brew won't run as root anyway.
+cat > /etc/profile.d/homebrew.sh <<EOF
+# /etc/profile.d/homebrew.sh (TuringOS hook 0490). Sourced: no shebang.
+if [ "\$(id -u)" -ne 0 ] && [ -x ${PREFIX}/bin/brew ]; then
+    eval "\$(${PREFIX}/bin/brew shellenv)"
+    export HOMEBREW_NO_ANALYTICS=1
+fi
+EOF
+chmod 644 /etc/profile.d/homebrew.sh
+echo '. /etc/profile.d/homebrew.sh' > /etc/X11/Xsession.d/60turingos-homebrew
+chmod 644 /etc/X11/Xsession.d/60turingos-homebrew
+
+echo "==> [0490-install-homebrew] Done. Homebrew from ${BREW_DATE}."

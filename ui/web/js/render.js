@@ -7,6 +7,7 @@ function render(snap) {
   // sample agent data so the desktop still reads as intended.
   const s = snap.live ? snap : { ...SAMPLE, system: { ...SAMPLE.system, ...pickDefined(snap.system) } };
   $('#sample-badge').hidden = snap.live;
+  $('.dock-item[data-app="install"]').hidden = !snap.system?.installer;
   lastSnap = snap;
 
   const name = snap.user?.name || null;
@@ -35,7 +36,9 @@ function render(snap) {
   const state = pendingStart ? 'working' : s.agent.running ? 'agentic' : 'idle';
   if (lastAgentRunning && !s.agent.running) {
     notify({ app: 'terminal', title: 'Agent task finished', body: lastAgentTask || 'The sandboxed agent is done.' });
+    window.flashClawd?.('happy', 4000);
   }
+  window.setClawdBusy?.('agent', s.agent.running);
   lastAgentRunning = s.agent.running;
   if (s.agent.task) lastAgentTask = s.agent.task;
   const label = { idle: 'Agent idle', working: 'Starting…', agentic: 'Agentic' }[state];

@@ -11,6 +11,7 @@
     { id: 'terminal', name: 'Open Terminal', desc: 'Launch a terminal window', icon: 'ic-terminal', run: click('.dock-item[data-app="terminal"]') },
     { id: 'browser', name: 'Open Browser', desc: 'Launch the web browser', icon: 'ic-globe', run: click('.dock-item[data-app="browser"]') },
     { id: 'files', name: 'Open Files', desc: 'Browse your home folder', icon: 'ic-folder', run: click('.dock-item[data-app="files"]') },
+    { id: 'install', name: 'Install TuringOS', desc: 'Install to disk so your setup persists', icon: 'ic-download', run: click('.dock-item[data-app="install"]:not([hidden])') },
     { id: 'theme', name: 'Toggle theme', desc: 'Switch light and dark', icon: 'ic-settings', run: click('#theme-toggle') },
     { id: 'settings', name: 'Settings', desc: 'System preferences', icon: 'ic-settings', run: click('.dock-item[data-app="settings"]') },
   ];

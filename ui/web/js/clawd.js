@@ -1,26 +1,62 @@
 // Clawd: pixel mascot with single-shot Q&A, opened by click or cursor shake.
 
 // ─── Clawd ──────────────────────────────────────────────────────────────────
-// Patrols a lane in the corner opposite the dock; idle otherwise. Click opens
-// a single-shot Q&A popover — one question, one answer, no history kept.
+// Patrols its bottom-right corner, sometimes on a skateboard. Click opens a
+// single-shot Q&A popover — one question, one answer, no history kept.
+//
+// Mood (data-mood, drawn in index.html / clawd.css):
+//   idle  normal eyes, blinks       busy  holding a mug: agent or answer running
+//   happy > < eyes: task done, answer in    dizzy spiral eyes: an error
+//   love  heart: hovered (petted)    skate on a board while riding across
+// busy is a base mood that lasts as long as the work; the others flash.
 
 const clawd = $('#clawd');
-const CLAWD_LANE = 130; // px it can wander left of its resting spot
 let clawdX = 0;
 let clawdWalkTimer = null;
 let clawdWanderTimer = null;
+let clawdBusy = { agent: false, ask: false };
+let clawdFlash = null; // { mood, until }
+let clawdFlashTimer = null;
+let clawdSkating = false;
 
-function clawdWalkTo(x) {
+const CLAWD_LANE = 130; // px it wanders left of its corner, as before
+
+function paintClawdMood() {
+  const flash = clawdFlash && clawdFlash.until > Date.now() ? clawdFlash.mood : null;
+  clawd.dataset.mood = flash
+    || (clawdBusy.agent || clawdBusy.ask ? 'busy' : null)
+    || (clawdSkating ? 'skate' : 'idle');
+}
+
+// A short-lived mood (happy, dizzy, love) that wins over busy and skating
+function flashClawd(mood, ms = 2500) {
+  clawdFlash = { mood, until: Date.now() + ms };
+  clearTimeout(clawdFlashTimer);
+  clawdFlashTimer = setTimeout(() => { clawdFlash = null; paintClawdMood(); }, ms);
+  paintClawdMood();
+}
+
+function setClawdBusy(source, on) {
+  clawdBusy[source] = on;
+  paintClawdMood();
+}
+
+function clawdWalkTo(x, skate = false) {
   const dist = Math.abs(x - clawdX);
-  const duration = Math.max(500, Math.min(2200, dist * 14));
-  // No facing flip — just slide sideways and let the legs do the walking.
+  const perPx = skate ? 4 : 12;
+  const duration = Math.max(500, Math.min(2200, dist * perPx));
   clawd.style.transitionDuration = `${duration}ms`;
+  clawd.style.transitionTimingFunction = skate ? 'cubic-bezier(.3,.1,.3,1)' : 'linear';
   clawd.style.transform = `translateX(${-x}px)`;
   clawd.classList.add('is-walking');
+  clawdSkating = skate;
+  paintClawdMood();
   clawdX = x;
   clearTimeout(clawdWalkTimer);
   clawdWalkTimer = setTimeout(() => {
     clawd.classList.remove('is-walking');
+    clawdSkating = false;
+    paintClawdMood();
     scheduleClawdWander();
   }, duration);
 }
@@ -28,9 +64,17 @@ function clawdWalkTo(x) {
 function scheduleClawdWander() {
   clearTimeout(clawdWanderTimer);
   if (reducedMotion.matches) return; // stay put rather than teleport with no walk
-  clawdWanderTimer = setTimeout(() => clawdWalkTo(Math.random() * CLAWD_LANE), 3000 + Math.random() * 6000);
+  clawdWanderTimer = setTimeout(() => {
+    if (clawdOpen) return scheduleClawdWander(); // hold still while the chat is open
+    const x = Math.random() * CLAWD_LANE;
+    // Long trips are sometimes a skateboard ride, never while it's holding a mug
+    const skate = Math.abs(x - clawdX) > 70 && Math.random() < 0.35 && !clawdBusy.agent && !clawdBusy.ask;
+    clawdWalkTo(x, skate);
+  }, 2500 + Math.random() * 6000);
 }
 scheduleClawdWander();
+
+clawd.addEventListener('mouseenter', () => flashClawd('love', 1800));
 
 // Shake the cursor anywhere — like macOS's shake-to-locate making the
 // pointer huge — and Clawd's chat pops open, no click, no need to be near
@@ -38,9 +82,11 @@ scheduleClawdWander();
 // so this is effectively "anywhere on the OS". A "shake" is several quick
 // direction reversals close together, not just fast motion in one
 // direction (that's just someone moving the mouse across the screen).
-const CLAWD_SHAKE_WINDOW_MS = 450;
-const CLAWD_SHAKE_MIN_DIST = 220; // px of total horizontal travel inside the window
-const CLAWD_SHAKE_MIN_REVERSALS = 3;
+// About three full back-and-forth swipes inside a second; a small wiggle
+// while aiming at something shouldn't open the chat.
+const CLAWD_SHAKE_WINDOW_MS = 800;
+const CLAWD_SHAKE_MIN_DIST = 600; // px of total horizontal travel inside the window
+const CLAWD_SHAKE_MIN_REVERSALS = 6;
 
 let clawdShakeSamples = []; // { x, t }
 
@@ -118,6 +164,7 @@ $('#clawd-form').addEventListener('submit', async (e) => {
   if (!message || send.disabled) return;
 
   send.disabled = true;
+  setClawdBusy('ask', true);
   answer.className = 'clawd-answer is-pending';
   answer.textContent = 'Clawd is thinking…';
 
@@ -125,15 +172,20 @@ $('#clawd-form').addEventListener('submit', async (e) => {
     answer.className = 'clawd-answer is-error';
     answer.textContent = 'Not available in this preview.';
     send.disabled = false;
+    setClawdBusy('ask', false);
+    flashClawd('dizzy');
     return;
   }
   const res = await window.shell.askClawd(message);
   send.disabled = false;
+  setClawdBusy('ask', false);
   if (res.ok) {
     answer.className = 'clawd-answer';
     answer.textContent = res.text;
+    flashClawd('happy');
   } else {
     answer.className = 'clawd-answer is-error';
     answer.textContent = res.error;
+    flashClawd('dizzy', 4000);
   }
 });

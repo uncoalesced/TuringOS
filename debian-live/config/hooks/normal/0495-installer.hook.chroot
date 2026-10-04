@@ -1,0 +1,153 @@
+#!/bin/bash
+# 0495-installer.hook.chroot
+#
+# Sets up Calamares (calamares + calamares-settings-debian, from the package
+# list) to install the live system to disk, so logins, keys and installs
+# persist. On top of Debian's config:
+#   - TuringOS branding (logo staged by sync-scripts.sh)
+#   - /usr/bin/turingos-install: Debian's launcher uses pkexec, which needs a
+#     polkit agent openbox doesn't run; the live user has passwordless sudo
+#   - a shellprocess job pointing the kiosk autologin (0470, hardcoded to the
+#     live `user`) and Homebrew's prefix (0490) at the account created in
+#     the installer
+#   - GRUB without network: Debian's bootloader-config helper apt-installs
+#     grub-pc or grub-efi from the network (or a package pool on the ISO,
+#     which live-build can't build here: grub-pc and grub-efi-amd64
+#     conflict). Their dependencies are in the package list; the two
+#     packages themselves ride along as .debs and our helper dpkg -i's the
+#     right one. Debian's sources-media jobs are dropped with the pool.
+
+set -euo pipefail
+
+CAL=/etc/calamares
+BRAND="${CAL}/branding/turingos"
+LOGO=/usr/share/pixmaps/turingos.png
+VERSION=1.2
+
+[[ -f "${CAL}/settings.conf" ]] || { echo "ERROR: calamares-settings-debian missing"; exit 1; }
+[[ -f "$LOGO" ]] || { echo "ERROR: ${LOGO} not staged (run sync-scripts.sh)"; exit 1; }
+
+echo "==> [0495-installer] Branding Calamares..."
+rm -rf "$BRAND"
+mkdir -p "$BRAND"
+install -m644 "$LOGO" "${BRAND}/turingos.png"
+cat > "${BRAND}/branding.desc" <<EOF
+---
+componentName:  turingos
+welcomeStyleCalamares: true
+welcomeExpandingLogo: true
+windowExpanding: normal
+windowSize: 800px,580px
+windowPlacement: center
+strings:
+    productName:         TuringOS
+    shortProductName:    TuringOS
+    version:             ${VERSION}
+    shortVersion:        ${VERSION}
+    versionedName:       TuringOS ${VERSION}
+    shortVersionedName:  TuringOS ${VERSION}
+    bootloaderEntryName: TuringOS
+    productUrl:          https://github.com/uncoalesced/turingos
+    supportUrl:          https://github.com/uncoalesced/turingos/issues
+    knownIssuesUrl:      https://github.com/uncoalesced/turingos/blob/main/debian-live/KNOWN_ISSUES.md
+    releaseNotesUrl:     https://github.com/uncoalesced/turingos/releases
+sidebar: widget
+navigation: widget
+images:
+    productLogo:         "turingos.png"
+    productIcon:         "turingos.png"
+    productWelcome:      "turingos.png"
+slideshow:
+    - "turingos.png"
+style:
+   SidebarBackground:        "#141413"
+   SidebarText:              "#faf9f5"
+   SidebarTextCurrent:       "#141413"
+   SidebarBackgroundCurrent: "#d97757"
+EOF
+
+# ─── Point the installed system at the new account ────────────────────────────
+
+cat > "${CAL}/modules/shellprocess-turingos.conf" <<'EOF'
+---
+dontChroot: false
+timeout: 120
+script:
+    - "sed -i 's/^autologin-user=.*/autologin-user=${USER}/' /etc/lightdm/lightdm.conf.d/50-autologin.conf"
+    - "chown -R ${USER}: /home/linuxbrew"
+    - "rm -f /usr/bin/turingos-install"
+EOF
+
+sed -i 's/^branding: .*/branding: turingos/' "${CAL}/settings.conf"
+sed -i 's/^\( *- \)displaymanager$/&\n\1shellprocess@turingos/' "${CAL}/settings.conf"
+cat >> "${CAL}/settings.conf" <<'EOF'
+instances:
+- id: turingos
+  module: shellprocess
+  config: shellprocess-turingos.conf
+EOF
+grep -q 'shellprocess@turingos' "${CAL}/settings.conf" \
+    || { echo "ERROR: settings.conf has no displaymanager step to follow"; exit 1; }
+
+# ─── GRUB, offline ────────────────────────────────────────────────────────────
+
+GRUB_DEBS=/var/cache/turingos/grub
+rm -rf "$GRUB_DEBS"
+mkdir -p "$GRUB_DEBS"
+apt-get update -qq
+ARCH=$(dpkg --print-architecture)
+case "$ARCH" in
+    amd64) GRUB_PKGS=(grub-pc grub-efi-amd64 grub-efi) ;;
+    arm64) GRUB_PKGS=(grub-efi-arm64 grub-efi) ;;   # UEFI only
+    *) echo "ERROR: no GRUB packages known for ${ARCH}"; exit 1 ;;
+esac
+(cd "$GRUB_DEBS" && apt-get download "${GRUB_PKGS[@]}")
+rm -rf /var/lib/apt/lists/*
+for p in "${GRUB_PKGS[@]}"; do
+    ls "$GRUB_DEBS/${p}"_*.deb >/dev/null
+done
+
+# Replaces Debian's helper (same job, same LUKS handling, no apt)
+cat > /usr/share/calamares/helpers/calamares-bootloader-config <<'EOF'
+#!/bin/sh
+# TuringOS (hook 0495): install GRUB in the target from the .debs in
+# /var/cache/turingos/grub (the target is a copy of the live system).
+CHROOT=$(mount | grep proc | grep calamares | awk '{print $3}' | sed -e "s#/proc##g")
+DEBS=/var/cache/turingos/grub
+if [ "$(mount | grep "$CHROOT " | cut -c -16)" = "/dev/mapper/luks" ]; then
+    echo "UMASK=0077" > "$CHROOT/etc/initramfs-tools/conf.d/initramfs-permissions"
+fi
+if [ -d /sys/firmware/efi/efivars ]; then
+    echo " * Installing grub-efi (uefi)..."
+    set -- "$DEBS"/grub-efi-*_*.deb "$DEBS"/grub-efi_*.deb   # grub-efi-amd64 or -arm64
+else
+    echo " * Installing grub-pc (bios)..."
+    set -- "$DEBS"/grub-pc_*.deb
+fi
+DEBIAN_FRONTEND=noninteractive chroot "$CHROOT" dpkg -i "$@" || exit 1
+rm -rf "${CHROOT:?}$DEBS"
+sed -i "s/#GRUB_DISABLE_OS_PROBER=false/GRUB_DISABLE_OS_PROBER=false/" "$CHROOT/etc/default/grub"
+chroot "$CHROOT" /usr/sbin/update-grub
+EOF
+chmod 755 /usr/share/calamares/helpers/calamares-bootloader-config
+
+sed -i '/^ *- sources-media$/d; /^ *- sources-media-unmount$/d' "${CAL}/settings.conf"
+
+# ─── Launcher ─────────────────────────────────────────────────────────────────
+
+cat > /usr/bin/turingos-install <<'EOF'
+#!/bin/sh
+# Runs Calamares as root on the live user's X display (TuringOS hook 0495).
+# Debian's calamares-install-debian does the same through pkexec.
+[ -d /run/live/medium ] || { echo "turingos-install: run it from the live ISO" >&2; exit 1; }
+sudo -n mv /etc/fstab /etc/fstab.orig.calamares 2>/dev/null
+sudo -n --preserve-env=DISPLAY,XAUTHORITY,LANG QT_AUTO_SCREEN_SCALE_FACTOR=1 calamares "$@"
+rc=$?
+sudo -n mv /etc/fstab.orig.calamares /etc/fstab 2>/dev/null
+exit "$rc"
+EOF
+chmod 755 /usr/bin/turingos-install
+sed -i 's/^Name=Install Debian$/Name=Install TuringOS/; s/^Exec=.*/Exec=turingos-install/' \
+    /usr/share/applications/calamares-install-debian.desktop
+
+echo "==> [0495-installer] Done."

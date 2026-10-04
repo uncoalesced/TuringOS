@@ -150,6 +150,11 @@ pub fn which(cmd: &str) -> Option<PathBuf> {
         .find(|p| p.is_file())
 }
 
+/// The live ISO session, with the Calamares installer: the dock offers "Install"
+pub fn installer_available() -> bool {
+    Path::new("/run/live/medium").is_dir() && which("turingos-install").is_some()
+}
+
 /// Start a program detached from the UI; a thread reaps it so it never
 /// lingers as a zombie
 pub fn spawn_detached(program: &Path, args: &[&str], envs: &[(&str, &str)]) -> std::io::Result<()> {

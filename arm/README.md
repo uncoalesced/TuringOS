@@ -43,12 +43,18 @@ boot menus — behaves exactly as on amd64.
 ```bash
 ./arm/test-qemu.sh                          # finds debian-live/live-image-arm64*.iso
 ./arm/test-qemu.sh -- -m 8G                 # extra qemu args after --
+QEMU_DISPLAY=vnc=:1 ./arm/test-qemu.sh      # headless host: VNC on :5901
+DISK=/tmp/arm.qcow2 ./arm/test-qemu.sh      # + 20G virtio disk for the Calamares install
 ```
 
 Needs `qemu-system-aarch64` and the EDK2 firmware
 (`sudo apt install qemu-system-arm qemu-efi-aarch64`). On an arm64 host it
 uses KVM automatically; elsewhere it falls back to TCG emulation (slow but
-works). The UI should come up fullscreen — same smoke test as amd64:
+works). The script gives the `virt` machine a virtio-gpu (a KMS device for
+Xorg; without it the UI drew in software on a bare EFI framebuffer) and a USB
+tablet + keyboard (absolute pointer, no lag). Under TCG everything is still
+slow: judge rendering on KVM. The UI should come up fullscreen — same smoke
+test as amd64:
 
 ```bash
 turingos version && turingos init

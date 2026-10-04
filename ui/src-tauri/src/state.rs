@@ -67,6 +67,7 @@ pub fn snapshot(shared: &Shared) -> Value {
             "mem": system::mem(),
             "battery": system::battery(),
             "wifi": shared.wifi.lock().unwrap().clone(),
+            "installer": system::installer_available(),
         },
         "weather": shared.weather.lock().unwrap().clone(),
         "github": shared.github.lock().unwrap().clone(),

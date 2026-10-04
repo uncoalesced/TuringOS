@@ -1,69 +1,85 @@
 /* Clawd mascot and chat. */
 
 /* ─── Clawd ────────────────────────────────────────────────────────────── */
-/* Patrols a lane in the corner opposite the dock. JS drives the walk via
-   translateX on .clawd itself (a CSS transition smooths
-   each move, so prefers-reduced-motion's global transition:none makes every
-   move instant for free — no raw requestAnimationFrame tween to gate). Legs
-   are the only thing that loop-animates, and only while .is-walking. */
+/* Patrols its bottom-right corner. JS drives the walk via translateX on .clawd (a CSS
+   transition smooths each move, so prefers-reduced-motion's global
+   transition:none makes every move instant for free). data-mood swaps the
+   face and props; only the legs, the blink and the heart loop-animate. */
 
 .clawd {
   position: fixed;
   right: 36px;
   bottom: 44px;
-  /* Below the side panel (22) — a decorative pet must never cover real UI. */
+  /* Below the side panel (22): a decorative pet must never cover real UI. */
   z-index: 16;
-  width: 44px;
-  height: 44px;
-  display: grid;
-  place-items: center;
+  width: 48px;
+  height: 42px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
   transform: translateX(0);
   transition: transform 900ms linear;
 }
 
-.clawd:active .clawd-body { transform: scale(0.94); }
+.clawd-svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.clawd-svg * { transform-box: fill-box; }
+.clawd:active .clawd-fig { transform: scale(0.94); }
+.clawd-fig { transform-origin: center bottom; transition: transform 160ms var(--ease-out); }
 
-.clawd-body {
-  position: relative;
-  width: 34px;
-  height: 22px;
-  background: var(--accent);
-  border-radius: 8px;
-  corner-shape: squircle;
-  transition: transform 160ms var(--ease-out);
+.clawd-fill { fill: var(--accent); }
+.clawd-eyes-dot rect { fill: #141413; }
+.clawd-eyes-squint path,
+.clawd-eyes-spiral path { fill: none; stroke: #141413; stroke-width: 12; stroke-linecap: square; stroke-linejoin: miter; }
+.clawd-eyes-spiral path { stroke-width: 11; }
+.clawd-heart path { fill: #e5484d; }
+.clawd-deck { fill: #5c1a33; }
+.clawd-wheel { fill: #f0b450; }
+.clawd-mug-body { fill: #b5b3aa; }
+.clawd-mug-slot { fill: #141413; }
+
+/* Faces and props by mood: everything optional starts hidden */
+.clawd-eyes-squint, .clawd-eyes-spiral, .clawd-heart, .clawd-board, .clawd-mug { display: none; }
+.clawd[data-mood="happy"] .clawd-eyes-dot,
+.clawd[data-mood="dizzy"] .clawd-eyes-dot { display: none; }
+.clawd[data-mood="happy"] .clawd-eyes-squint,
+.clawd[data-mood="dizzy"] .clawd-eyes-spiral,
+.clawd[data-mood="love"] .clawd-heart,
+.clawd[data-mood="skate"] .clawd-board,
+.clawd[data-mood="busy"] .clawd-mug { display: inline; }
+
+/* Idle blink */
+.clawd-eyes-dot rect { transform-origin: center; animation: clawd-blink 5s steps(1) infinite; }
+@keyframes clawd-blink {
+  0%, 96% { transform: scaleY(1); }
+  97%, 99% { transform: scaleY(0.15); }
 }
 
-.clawd-eye {
-  position: absolute;
-  top: 7px;
-  width: 5px;
-  height: 5px;
-  background: var(--bg);
-  border-radius: 1px;
-}
-
-.clawd-eye-l { left: 7px; }
-.clawd-eye-r { right: 7px; }
-
-.clawd-leg {
-  position: absolute;
-  bottom: -9px;
-  width: 6px;
-  height: 11px;
-  background: var(--accent);
-  border-radius: 0 0 3px 3px;
-  transform-origin: top center;
-}
-
-.clawd-leg-l { left: 7px; }
-.clawd-leg-r { right: 7px; }
-
-.clawd.is-walking .clawd-leg-l { animation: clawd-step 480ms ease-in-out infinite; }
-.clawd.is-walking .clawd-leg-r { animation: clawd-step 480ms ease-in-out infinite reverse; }
-
+/* Pixel walk: legs hop in pairs */
+.clawd.is-walking:not([data-mood="skate"]) .clawd-leg-a { animation: clawd-step 360ms steps(1) infinite; }
+.clawd.is-walking:not([data-mood="skate"]) .clawd-leg-b { animation: clawd-step 360ms steps(1) infinite 180ms; }
 @keyframes clawd-step {
-  0%, 100% { transform: rotate(-18deg); }
-  50%      { transform: rotate(18deg); }
+  0%   { transform: translateY(-14px); }
+  50%  { transform: translateY(0); }
+}
+
+/* Skating: legs tuck, the whole figure rides a little higher */
+.clawd[data-mood="skate"] .clawd-legs { transform: scaleY(0.55); transform-origin: top; }
+.clawd[data-mood="skate"] .clawd-fig { transform: translateY(30px); }
+
+/* Love: the heart floats */
+.clawd[data-mood="love"] .clawd-heart { animation: clawd-float 900ms ease-in-out infinite alternate; }
+@keyframes clawd-float { to { transform: translateY(-14px); } }
+
+/* Dizzy: a wobble */
+.clawd[data-mood="dizzy"] .clawd-fig { animation: clawd-wobble 260ms ease-in-out 4 alternate; }
+@keyframes clawd-wobble {
+  from { transform: rotate(-6deg); }
+  to   { transform: rotate(6deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clawd *, .clawd-svg * { animation: none !important; }
 }
 
 .clawd-chat {

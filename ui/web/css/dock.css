@@ -44,6 +44,7 @@
    exception to the transform-only rule — a scale doesn't take up space, so
    magnified icons would overlap their neighbours instead of pushing them
    apart. Everything inside is sized in % so it grows with the tile. */
+.dock-item[hidden] { display: none; }
 .dock-item {
   position: relative;
   flex: none;

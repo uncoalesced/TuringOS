@@ -20,9 +20,11 @@ The ISO is the only install target: there is no separate .deb or Arch package.
 | `0200-trim` | Purges office suites, printing, Bluetooth, unused GPU drivers |
 | `0300-locale-trim` | Strips locales, man pages and docs (keeps `/usr/share/doc/turingos`) |
 | `0400-install-turingos` | Checks the staged install, adds gum and the app-launcher entry |
-| `0420-install-brave` | Installs Brave from its signed apt repo and sets it as `x-www-browser` and the http/https default (the image's browser) |
+| `0420-install-brave` | Brave from its signed apt repo as the default browser (`xdg-open`, `x-www-browser`, `$BROWSER`), Claude extension installed and pinned by policy |
 | `0450-build-ui` | Builds the Tauri UI (`ui/src-tauri`) with Debian's Rust, installs `/usr/bin/turingos-ui`, removes the toolchain and source |
 | `0470-autologin-kiosk` | lightdm autologin into openbox, ordered after live-config |
+| `0490-install-homebrew` | Homebrew in `/home/linuxbrew/.linuxbrew`, owned by the live user, on `PATH` |
+| `0495-installer` | Calamares installer (TuringOS branding, `turingos-install` launcher, autologin + Homebrew handed to the new account) |
 | `0500-install-claude-cli` | Installs Claude Code (native installer, npm fallback) and OpenCode; first-login API key prompt |
 | `0900-boot-timeout` (binary) | Boot menus (isolinux and GRUB) start the live entry after 3 seconds |
 | `0910-persistence-menu` (binary) | Clones the live entry into a Kali-style *Live system (persistence)* entry (isolinux and GRUB) |
@@ -50,7 +52,8 @@ sudo lb build
 ```
 
 Expect 20–40 minutes. The build needs internet: hook 0450 fetches Rust
-crates (pinned by `ui/src-tauri/Cargo.lock`) and hook 0500 downloads Claude
+crates (pinned by `ui/src-tauri/Cargo.lock`), hooks 0420/0490 fetch Brave and
+Homebrew (no offline mode either) and hook 0500 downloads Claude
 Code and OpenCode. Without network, 0500 skips both and `turingos init`
 offers to install Claude Code later; 0450 has no offline mode.
 
