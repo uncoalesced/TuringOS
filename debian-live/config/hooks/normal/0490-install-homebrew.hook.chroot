@@ -22,8 +22,9 @@ ln -s ../Homebrew/bin/brew "${PREFIX}/bin/brew"
 BREW_DATE=$(git -C "${PREFIX}/Homebrew" log -1 --format=%cs)
 chown -R "${LIVE_UID}:${LIVE_UID}" /home/linuxbrew
 
-# lightdm-session sources /etc/profile, so this reaches the whole desktop
-# session (the UI, the agents it starts, terminals), not just login shells.
+# Login shells source profile.d; Debian's lightdm runs /etc/X11/Xsession,
+# which doesn't, so an Xsession.d snippet sources the same file for the
+# desktop session (the UI, the agents it starts, terminals).
 # Skipped for root: brew won't run as root anyway.
 cat > /etc/profile.d/homebrew.sh <<EOF
 # /etc/profile.d/homebrew.sh (TuringOS hook 0490). Sourced: no shebang.
@@ -33,5 +34,7 @@ if [ "\$(id -u)" -ne 0 ] && [ -x ${PREFIX}/bin/brew ]; then
 fi
 EOF
 chmod 644 /etc/profile.d/homebrew.sh
+echo '. /etc/profile.d/homebrew.sh' > /etc/X11/Xsession.d/60turingos-homebrew
+chmod 644 /etc/X11/Xsession.d/60turingos-homebrew
 
 echo "==> [0490-install-homebrew] Done. Homebrew from ${BREW_DATE}."
