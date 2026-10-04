@@ -36,7 +36,9 @@ function render(snap) {
   const state = pendingStart ? 'working' : s.agent.running ? 'agentic' : 'idle';
   if (lastAgentRunning && !s.agent.running) {
     notify({ app: 'terminal', title: 'Agent task finished', body: lastAgentTask || 'The sandboxed agent is done.' });
+    window.flashClawd?.('happy', 4000);
   }
+  window.setClawdBusy?.('agent', s.agent.running);
   lastAgentRunning = s.agent.running;
   if (s.agent.task) lastAgentTask = s.agent.task;
   const label = { idle: 'Agent idle', working: 'Starting…', agentic: 'Agentic' }[state];
