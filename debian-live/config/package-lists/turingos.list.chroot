@@ -3,8 +3,9 @@
 #
 # Philosophy: install only what the image needs.
 # Trim hooks (0200/0300) clean up whatever the base profile drags in.
-# Hooks then add gum (0400), build the desktop UI (0450), set up kiosk
-# autologin (0470) and install the Claude Code CLI + OpenCode (0500).
+# Hooks then add gum (0400) and Brave (0420, not in Debian), build the
+# desktop UI (0450), set up kiosk autologin (0470) and install the Claude
+# Code CLI + OpenCode (0500).
 
 # ── Core system ───────────────────────────────────────────────────────────────
 bash
@@ -41,7 +42,10 @@ openssh-client
 xserver-xorg-core
 xserver-xorg-input-libinput
 xserver-xorg-video-fbdev
+# vesa and vmware only exist for amd64/i386 in trixie — skipped on arm64
+#if ARCHITECTURES amd64 i386
 xserver-xorg-video-vesa
+#endif
 openbox
 tint2
 picom
@@ -105,7 +109,9 @@ cryptsetup
 lvm2
 
 # ── VM hardware support ───────────────────────────────────────────────────────
+#if ARCHITECTURES amd64 i386
 xserver-xorg-video-vmware
+#endif
 xserver-xorg-video-qxl
 open-vm-tools
 open-vm-tools-desktop

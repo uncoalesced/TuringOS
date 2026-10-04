@@ -16,9 +16,14 @@ default), with passwordless sudo.
 
 ## Open
 
-- **No browser in the image.** Links (GitHub PR rows, Google sign-in) go to
-  `xdg-open`, which has nothing to open them with. See
-  `ui-docs/NEXT_FEATURES.md`.
+- **No browser in the image — fixed in the build, awaiting boot re-test.**
+  `0420-install-brave` installs `brave-browser-stable` from Brave's signed
+  apt repo, registers it as `x-www-browser` (the dock's Browser button) and
+  the system `http`/`https` mime default (`/etc/xdg/mimeapps.list`), and fails
+  the build if either is missing. Brave is Chromium-based, so the Claude in
+  Chrome extension works (Firefox has no official Anthropic add-on). Re-test
+  after the next build: click a link in the UI and run
+  `xdg-open https://example.com` as `user`.
 - **`glib` 0.18 Dependabot alert.** Tauri's GTK 0.18 stack pins it; nothing to
   upgrade to until Tauri moves to gtk-rs 0.20+. TuringOS's own code doesn't
   call the affected API (`VariantStrIter`).

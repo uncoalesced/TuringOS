@@ -8,11 +8,22 @@
 
 set -euo pipefail
 
-# isolinux (BIOS): timeout is in tenths of a second
-sed -i 's/^timeout 0$/timeout 30/' isolinux/isolinux.cfg
-grep -qx 'timeout 30' isolinux/isolinux.cfg
+# isolinux (BIOS): timeout is in tenths of a second. arm64 images are
+# EFI/GRUB-only and ship no isolinux tree.
+if [[ -f isolinux/isolinux.cfg ]]; then
+    sed 's/^timeout 0$/timeout 30/' isolinux/isolinux.cfg > isolinux/isolinux.cfg.tmp
+    mv isolinux/isolinux.cfg.tmp isolinux/isolinux.cfg
+    grep -qx 'timeout 30' isolinux/isolinux.cfg
+fi
 
-# GRUB (UEFI): grub.cfg sources config.cfg first
-echo 'set timeout=3' >> boot/grub/config.cfg
+# GRUB (UEFI, both arches): grub.cfg sources config.cfg first
+if [[ -f boot/grub/config.cfg ]]; then
+    echo 'set timeout=3' >> boot/grub/config.cfg
+elif [[ -f boot/grub/grub.cfg ]]; then
+    echo 'set timeout=3' >> boot/grub/grub.cfg
+else
+    echo "ERROR: [0900-boot-timeout] no GRUB config found under boot/grub/" >&2
+    exit 1
+fi
 
 echo "==> [0900-boot-timeout] Boot menus default after 3 seconds"

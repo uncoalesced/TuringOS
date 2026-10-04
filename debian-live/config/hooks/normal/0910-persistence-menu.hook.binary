@@ -1,0 +1,192 @@
+#!/bin/bash
+# 0910-persistence-menu.hook.binary
+#
+# Kali-style persistence: give every boot menu a "Live system (persistence)"
+# entry next to the default one. Each entry is a clone of the first
+# boot=live entry with `persistence` appended to the kernel command line, so
+# kernel/initrd paths (which carry the kernel version) are never hardcoded.
+#
+# The media half is separate: an ext4 partition labelled `persistence` with a
+# persistence.conf containing `/ union` — create one with pkg/make-persistence.sh.
+#
+# Runs in the binary tree before the ISO is written. arm64 images are
+# EFI/GRUB-only (no isolinux/), amd64 images have both menus: clone into
+# whichever are present and fail if none was found at all.
+
+set -euo pipefail
+
+shopt -s nullglob
+found=()
+
+# ── isolinux (BIOS): clone the first label block that boots the live system ──
+clone_isolinux() {
+    local f out
+    for f in isolinux/*.cfg; do
+        out="${f}.persistence-tmp"
+        if awk '
+            function emit(    i, line, indent, rest, kw, name, tail) {
+                for (i = 1; i <= n; i++) print buf[i]
+                if (live && !done) {
+                    done = 1
+                    for (i = 1; i <= n; i++) {
+                        line = buf[i]
+                        if (line ~ /^[ \t]*label[ \t]/) {
+                            match(line, /^[ \t]*/);      indent = substr(line, 1, RLENGTH)
+                            rest = substr(line, RLENGTH + 1)
+                            match(rest, /^label[ \t]+/); kw = substr(rest, 1, RLENGTH)
+                            rest = substr(rest, RLENGTH + 1)
+                            match(rest, /^[^ \t]+/);     name = substr(rest, 1, RLENGTH)
+                            tail = substr(rest, RLENGTH + 1)
+                            print indent kw name "-persistence" tail
+                        } else if (line ~ /^[ \t]*menu label[ \t]/) {
+                            print line " (persistence)"
+                        } else if (line ~ /boot=live/) {
+                            print line " persistence"
+                        } else {
+                            print line
+                        }
+                    }
+                }
+            }
+            {
+                line = $0
+                if (line ~ /^[ \t]*label[ \t]/) {
+                    if (n) emit()
+                    n = 0
+                    live = 0
+                } else if (n == 0) {
+                    print line
+                    next
+                }
+                buf[++n] = line
+                if (line ~ /boot=live/) live = 1
+            }
+            END {
+                if (n) emit()
+                if (done) exit 0
+                exit 1
+            }
+        ' "$f" > "$out"; then
+            mv "$out" "$f"
+            found+=("$f")
+        else
+            rm -f "$out"
+        fi
+    done
+}
+
+# ── GRUB (UEFI, both arches): clone the first boot=live menuentry ────────────
+clone_grub() {
+    local f out
+    for f in boot/grub/*.cfg; do
+        out="${f}.persistence-tmp"
+        if awk '
+            function braces(line,    t, o, c) {
+                t = line
+                o = gsub(/{/, "", t)
+                t = line
+                c = gsub(/}/, "", t)
+                return o - c
+            }
+            # rename the title inside its quotes so --class args stay untouched
+            function retitle(line,    head, rest, tail, pos) {
+                if (match(line, /^[ \t]*menuentry[ \t]+/)) {
+                    head = substr(line, 1, RLENGTH)
+                    rest = substr(line, RLENGTH + 1)
+                    if (rest ~ /^\047/) {
+                        sub(/^\047/, "", rest)
+                        if ((pos = match(rest, /\047/)) > 0) {
+                            tail = substr(rest, pos)
+                            return head "\047" substr(rest, 1, pos - 1) \
+                                   " (persistence)" tail
+                        }
+                    } else if (rest ~ /^"/) {
+                        sub(/^"/, "", rest)
+                        if ((pos = match(rest, /"/)) > 0) {
+                            tail = substr(rest, pos)
+                            return head "\"" substr(rest, 1, pos - 1) \
+                                   " (persistence)" tail
+                        }
+                    }
+                }
+                return line
+            }
+            # ids must stay unique per entry
+            function reid(line,    p, l, rest, q) {
+                p = match(line, /--id[ \t]+/)
+                if (!p) return line
+                l = RLENGTH
+                rest = substr(line, p + l)
+                if (rest ~ /^\047/) {
+                    sub(/^\047/, "", rest)
+                    if ((q = match(rest, /\047/)) > 0) {
+                        return substr(line, 1, p + l - 1) "\047" \
+                               substr(rest, 1, q - 1) "-persistence" substr(rest, q)
+                    }
+                }
+                return line
+            }
+            function emit(    i, line) {
+                for (i = 1; i <= n; i++) print buf[i]
+                if (live && !done) {
+                    done = 1
+                    for (i = 1; i <= n; i++) {
+                        line = buf[i]
+                        if (i == 1) {
+                            line = retitle(line)
+                            line = reid(line)
+                        }
+                        if (line ~ /boot=live/) line = line " persistence"
+                        print line
+                    }
+                }
+            }
+            {
+                line = $0
+                if (inblock) {
+                    buf[++n] = line
+                    if (line ~ /boot=live/) live = 1
+                    depth += braces(line)
+                    if (depth <= 0) {
+                        emit()
+                        inblock = 0
+                    }
+                    next
+                }
+                if (line ~ /^[ \t]*menuentry[ \t]/) {
+                    inblock = 1
+                    n = 1
+                    live = 0
+                    buf[1] = line
+                    depth = braces(line)
+                    if (depth <= 0) {
+                        emit()
+                        inblock = 0
+                    }
+                    next
+                }
+                print line
+            }
+            END {
+                if (inblock) emit()
+                if (done) exit 0
+                exit 1
+            }
+        ' "$f" > "$out"; then
+            mv "$out" "$f"
+            found+=("$f")
+        else
+            rm -f "$out"
+        fi
+    done
+}
+
+clone_isolinux
+clone_grub
+
+if [[ ${#found[@]} -eq 0 ]]; then
+    echo "ERROR: [0910-persistence-menu] no boot=live menu entry found to clone" >&2
+    exit 1
+fi
+
+echo "==> [0910-persistence-menu] persistence entry added to: ${found[*]}"

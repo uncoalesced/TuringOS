@@ -257,10 +257,11 @@ Deliberately left for later, so they don't get lost:
   try KDE apps first (`dolphin`, `systemsettings`), which the ISO doesn't
   ship. Plan: a drawer of the apps the ISO does have (Thunar, xterm,
   NetworkManager settings), auto-listed from their `.desktop` files.
-- **Packages the dock and widgets assume:** a web browser (the Browser button
-  and Google sign-in both go through `xdg-open`), `gh` (GitHub widget), and
-  a notification daemon such as `dunst` (`notify-send` does nothing
-  without one). Each grows the ISO; decide per item.
+- **Packages the dock and widgets assume:** `gh` (GitHub widget) and a
+  notification daemon such as `dunst` (`notify-send` does nothing
+  without one). Each grows the ISO; decide per item. The browser is done —
+  Brave ships via `0420-install-brave`, covering the Browser button and
+  Google sign-in's `xdg-open`.
 - **Wispr Flow:** the voice backend uses the unofficial `wisprflow-re`
   client with a session copied from another machine. Switch to an official
   client or API if Wispr ships one for Linux.

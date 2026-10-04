@@ -21,6 +21,11 @@ Where the image's weight goes, and how it's kept down.
   layout; the UI source is deleted after the build.
 - **Electron is gone.** The UI uses the system WebKitGTK instead of bundling
   Chromium (about 250 MB less).
+- **One browser: Brave.** Not in Debian, so `0420-install-brave` pulls it
+  from Brave's signed apt repo (same pattern as gum in 0400) and sets it as
+  `x-www-browser` and the http/https default. Chromium-based, so the Claude
+  in Chrome extension works; Firefox would not (no official Anthropic
+  add-on). Costs a few hundred MB unpacked — the table below predates it.
 
 ## Next ideas
 

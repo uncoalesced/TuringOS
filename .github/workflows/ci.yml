@@ -7,7 +7,11 @@ on:
 
 jobs:
   shell:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
@@ -27,7 +31,11 @@ jobs:
           done
 
   ui:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
@@ -37,7 +45,11 @@ jobs:
   # Same Debian release, rustc and build packages as the ISO hook
   # (debian-live/config/hooks/normal/0450-build-ui.hook.chroot)
   ui-rust:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.os }}
     container: debian:trixie
     steps:
       - name: Build dependencies
@@ -55,7 +67,7 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             ui/src-tauri/target
-          key: ui-rust-${{ hashFiles('ui/src-tauri/Cargo.lock') }}
+          key: ui-rust-${{ matrix.os }}-${{ hashFiles('ui/src-tauri/Cargo.lock') }}
 
       - name: Format
         working-directory: ui/src-tauri
