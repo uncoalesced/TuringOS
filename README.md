@@ -34,6 +34,8 @@ We ship it as a bootable Debian live ISO with the UI and all tooling pre-install
 
 Boot it in a VM (VMware, VirtualBox, QEMU: 4 GB RAM, 2 CPUs, EFI or BIOS) or write it to a USB stick. It logs in by itself and opens the TuringOS UI fullscreen. Brave is the default browser and comes with the Claude extension, so `claude` → `/login`, the [Anthropic Console](https://console.anthropic.com) (API keys) and Google sign-in open right there. Homebrew is ready too: `brew install <formula>`.
 
+The live session runs from RAM: a reboot forgets logins, keys and installs. To keep them, click **Install** in the dock (or search "Install TuringOS" with Ctrl+K). The Calamares installer partitions the disk, creates your account (which logs in automatically, like the live session) and installs GRUB for BIOS or UEFI. It works offline. Give the VM or machine a disk of 20 GB or more.
+
 Debug login: `user` / `live`.
 
 ### Why it exists
@@ -269,6 +271,7 @@ turingos help                           Full command list
 | `0470-autologin-kiosk` | lightdm autologin into openbox, ordered after live-config |
 | `0480-install-brave` | Brave as the default browser (`xdg-open`, `x-www-browser`, `$BROWSER`), Claude extension by policy |
 | `0490-install-homebrew` | Homebrew in `/home/linuxbrew/.linuxbrew`, owned by the live user, on `PATH` |
+| `0495-installer` | Calamares installer (TuringOS branding, `turingos-install` launcher, autologin + Homebrew handed to the new account) |
 | `0500-install-claude-cli` | Installs Claude Code (native installer, npm fallback) and OpenCode |
 
 ---

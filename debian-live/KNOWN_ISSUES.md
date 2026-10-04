@@ -18,6 +18,9 @@ default), with passwordless sudo.
   UI links had nothing to open in. Brave is now the default for `xdg-open`,
   `x-www-browser` and `$BROWSER`, with the Claude extension force-installed
   by policy (`0480-install-brave`).
+- **No persistent install.** Everything lived in RAM. Calamares now
+  installs to disk (`0495-installer`). GRUB ships in the image, so it works
+  offline.
 
 ## Open
 

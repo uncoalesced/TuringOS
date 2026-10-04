@@ -10,8 +10,12 @@
 #   - a shellprocess job pointing the kiosk autologin (0470, hardcoded to the
 #     live `user`) and Homebrew's prefix (0490) at the account created in
 #     the installer
-# GRUB comes from the ISO's own package pool (installer.list.binary), via
-# Debian's sources-media job, so installing works offline.
+#   - GRUB without network: Debian's bootloader-config helper apt-installs
+#     grub-pc or grub-efi from the network (or a package pool on the ISO,
+#     which live-build can't build here: grub-pc and grub-efi-amd64
+#     conflict). Their dependencies are in the package list; the two
+#     packages themselves ride along as .debs and our helper dpkg -i's the
+#     right one. Debian's sources-media jobs are dropped with the pool.
 
 set -euo pipefail
 
@@ -84,6 +88,42 @@ instances:
 EOF
 grep -q 'shellprocess@turingos' "${CAL}/settings.conf" \
     || { echo "ERROR: settings.conf has no displaymanager step to follow"; exit 1; }
+
+# ─── GRUB, offline ────────────────────────────────────────────────────────────
+
+GRUB_DEBS=/var/cache/turingos/grub
+rm -rf "$GRUB_DEBS"
+mkdir -p "$GRUB_DEBS"
+apt-get update -qq
+(cd "$GRUB_DEBS" && apt-get download grub-pc grub-efi-amd64 grub-efi)
+rm -rf /var/lib/apt/lists/*
+ls "$GRUB_DEBS"/grub-pc_*.deb "$GRUB_DEBS"/grub-efi-amd64_*.deb "$GRUB_DEBS"/grub-efi_*.deb >/dev/null
+
+# Replaces Debian's helper (same job, same LUKS handling, no apt)
+cat > /usr/share/calamares/helpers/calamares-bootloader-config <<'EOF'
+#!/bin/sh
+# TuringOS (hook 0495): install GRUB in the target from the .debs in
+# /var/cache/turingos/grub (the target is a copy of the live system).
+CHROOT=$(mount | grep proc | grep calamares | awk '{print $3}' | sed -e "s#/proc##g")
+DEBS=/var/cache/turingos/grub
+if [ "$(mount | grep "$CHROOT " | cut -c -16)" = "/dev/mapper/luks" ]; then
+    echo "UMASK=0077" > "$CHROOT/etc/initramfs-tools/conf.d/initramfs-permissions"
+fi
+if [ -d /sys/firmware/efi/efivars ]; then
+    echo " * Installing grub-efi (uefi)..."
+    set -- "$DEBS"/grub-efi-amd64_*.deb "$DEBS"/grub-efi_*.deb
+else
+    echo " * Installing grub-pc (bios)..."
+    set -- "$DEBS"/grub-pc_*.deb
+fi
+DEBIAN_FRONTEND=noninteractive chroot "$CHROOT" dpkg -i "$@" || exit 1
+rm -rf "${CHROOT:?}$DEBS"
+sed -i "s/#GRUB_DISABLE_OS_PROBER=false/GRUB_DISABLE_OS_PROBER=false/" "$CHROOT/etc/default/grub"
+chroot "$CHROOT" /usr/sbin/update-grub
+EOF
+chmod 755 /usr/share/calamares/helpers/calamares-bootloader-config
+
+sed -i '/^ *- sources-media$/d; /^ *- sources-media-unmount$/d' "${CAL}/settings.conf"
 
 # ─── Launcher ─────────────────────────────────────────────────────────────────
 

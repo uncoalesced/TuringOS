@@ -106,6 +106,16 @@ acpid
 calamares
 calamares-settings-debian
 qt6-qpa-plugins
+# Everything the installed system's bootloader needs except grub-pc and
+# grub-efi-amd64, which conflict: 0495 keeps those two as .debs
+grub-common
+grub2-common
+grub-pc-bin
+grub-efi-amd64-bin
+efibootmgr
+ucf
+cryptsetup-initramfs
+keyutils
 
 # ── Persistence ───────────────────────────────────────────────────────────────
 cryptsetup
