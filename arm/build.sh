@@ -41,8 +41,8 @@ cd "${ROOT}/debian-live"
 sudo lb config --distribution trixie --architectures arm64 \
     --archive-areas "main contrib non-free-firmware"
 
-mkdir -p "$(dirname "$STAMP")"
-echo arm64 > "$STAMP"
+# lb config just created .build as root
+echo arm64 | sudo tee "$STAMP" >/dev/null
 
 sudo lb build
 echo ""
