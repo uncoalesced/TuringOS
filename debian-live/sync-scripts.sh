@@ -28,7 +28,8 @@ UI="${INC}/opt/turingos-ui"
 MODULE_DIRS=(core agent sandbox monitor game bazaar voice)
 
 echo "→ Staging TuringOS into ${INC}"
-rm -rf "$LIB" "$DOC" "$UI" "${INC}/usr/bin/turingos" "${INC}/etc/profile.d/turingos-first-run.sh" \n    "${INC}/usr/share/pixmaps/turingos.png"
+rm -rf "$LIB" "$DOC" "$UI" "${INC}/usr/bin/turingos" "${INC}/etc/profile.d/turingos-first-run.sh" \
+    "${INC}/usr/share/pixmaps/turingos.png"
 install -d "${LIB}/pkg" "${INC}/usr/bin" "${INC}/etc/profile.d" "$DOC" "$UI"
 
 for dir in "${MODULE_DIRS[@]}"; do
