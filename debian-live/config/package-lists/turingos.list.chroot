@@ -149,3 +149,7 @@ gvfs
 shared-mime-info
 xdg-utils
 desktop-file-utils
+# The dock's Settings button (Qt is already here for Calamares)
+lxqt-config
+# hwclock (moved out of util-linux in trixie); Calamares sets the RTC with it
+util-linux-extra

@@ -36,7 +36,11 @@ fn dock_commands(id: &str) -> Option<(&'static str, Commands)> {
         "install" => ("Installer", vec![("turingos-install", vec![])]),
         "settings" => (
             "Settings",
-            vec![("systemsettings", vec![]), ("systemsettings5", vec![])],
+            vec![
+                ("lxqt-config", vec![]),
+                ("systemsettings", vec![]),
+                ("systemsettings5", vec![]),
+            ],
         ),
         _ => return None,
     })

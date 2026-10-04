@@ -82,9 +82,11 @@ clawd.addEventListener('mouseenter', () => flashClawd('love', 1800));
 // so this is effectively "anywhere on the OS". A "shake" is several quick
 // direction reversals close together, not just fast motion in one
 // direction (that's just someone moving the mouse across the screen).
-const CLAWD_SHAKE_WINDOW_MS = 450;
-const CLAWD_SHAKE_MIN_DIST = 220; // px of total horizontal travel inside the window
-const CLAWD_SHAKE_MIN_REVERSALS = 3;
+// About three full back-and-forth swipes inside a second; a small wiggle
+// while aiming at something shouldn't open the chat.
+const CLAWD_SHAKE_WINDOW_MS = 800;
+const CLAWD_SHAKE_MIN_DIST = 600; // px of total horizontal travel inside the window
+const CLAWD_SHAKE_MIN_REVERSALS = 6;
 
 let clawdShakeSamples = []; // { x, t }
 
