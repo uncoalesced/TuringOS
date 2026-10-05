@@ -1,5 +1,5 @@
 #!/bin/bash
-# launch-ui.sh — starts the UI web server and browser
+# launch-ui.sh — starts the browser on the UI served by turingos-bridged-ws
 
 set -euo pipefail
 
@@ -16,19 +16,14 @@ if [[ ! -d "$UI_DIR" ]]; then
     exit 1
 fi
 
-# Start the bridge WebSocket server in background
-log "Starting bridge WebSocket server on port 8080..."
-cd /usr/lib/turingos
-python3 -m uvicorn daemons.bridged_ws:app --host 0.0.0.0 --port 8080 &
-BRIDGE_PID=$!
+# The bridge is turingos-bridged-ws.service (systemd restarts it on failure);
+# the page shows "Reconnecting..." while it is down, so don't start it here.
 
-# Give the bridge a moment to start
-sleep 2
-
-# Launch the browser in kiosk mode
+# Launch the browser in kiosk mode. turingos-respawn restarts Brave after a
+# crash and opens a terminal if it keeps crashing.
 log "Launching Brave in kiosk mode..."
-exec brave-browser \
-    --app=http://localhost:8080 \
+TURINGOS_RESPAWN_TERMINAL=foot exec turingos-respawn brave-browser \
+    --app="http://localhost:${UI_PORT}" \
     --start-fullscreen \
     --disable-infobars \
     --no-first-run \

@@ -12,18 +12,22 @@
 # Runs in the binary tree before the ISO is written. arm64 images are
 # EFI/GRUB-only (no isolinux/), amd64 images have both menus: clone into
 # whichever are present and fail if none was found at all.
+#
+# The same cloner adds a "(safe mode)" entry with `turingos.safe`: no agent,
+# no TuringOS UI, just openbox + a terminal (Phase 3 fallback). The openbox
+# autostart and the agent/UI systemd units check for it.
 
 set -euo pipefail
 
 shopt -s nullglob
-found=()
 
+# Both cloners take: <id suffix> <menu label suffix> <kernel arg>
 # ── isolinux (BIOS): clone the first label block that boots the live system ──
 clone_isolinux() {
     local f out
     for f in isolinux/*.cfg; do
-        out="${f}.persistence-tmp"
-        if awk '
+        out="${f}.${1}-tmp"
+        if awk -v suffix="$1" -v label="$2" -v arg="$3" '
             function emit(    i, line, indent, rest, kw, name, tail) {
                 for (i = 1; i <= n; i++) print buf[i]
                 if (live && !done) {
@@ -37,11 +41,11 @@ clone_isolinux() {
                             rest = substr(rest, RLENGTH + 1)
                             match(rest, /^[^ \t]+/);     name = substr(rest, 1, RLENGTH)
                             tail = substr(rest, RLENGTH + 1)
-                            print indent kw name "-persistence" tail
+                            print indent kw name "-" suffix tail
                         } else if (line ~ /^[ \t]*menu label[ \t]/) {
-                            print line " (persistence)"
+                            print line " (" label ")"
                         } else if (line ~ /boot=live/) {
-                            print line " persistence"
+                            print line " " arg
                         } else {
                             print line
                         }
@@ -79,8 +83,8 @@ clone_isolinux() {
 clone_grub() {
     local f out
     for f in boot/grub/*.cfg; do
-        out="${f}.persistence-tmp"
-        if awk '
+        out="${f}.${1}-tmp"
+        if awk -v suffix="$1" -v label="$2" -v arg="$3" '
             function braces(line,    t, o, c) {
                 t = line
                 o = gsub(/{/, "", t)
@@ -98,14 +102,14 @@ clone_grub() {
                         if ((pos = match(rest, /\047/)) > 0) {
                             tail = substr(rest, pos)
                             return head "\047" substr(rest, 1, pos - 1) \
-                                   " (persistence)" tail
+                                   " (" label ")" tail
                         }
                     } else if (rest ~ /^"/) {
                         sub(/^"/, "", rest)
                         if ((pos = match(rest, /"/)) > 0) {
                             tail = substr(rest, pos)
                             return head "\"" substr(rest, 1, pos - 1) \
-                                   " (persistence)" tail
+                                   " (" label ")" tail
                         }
                     }
                 }
@@ -121,7 +125,7 @@ clone_grub() {
                     sub(/^\047/, "", rest)
                     if ((q = match(rest, /\047/)) > 0) {
                         return substr(line, 1, p + l - 1) "\047" \
-                               substr(rest, 1, q - 1) "-persistence" substr(rest, q)
+                               substr(rest, 1, q - 1) "-" suffix substr(rest, q)
                     }
                 }
                 return line
@@ -136,7 +140,7 @@ clone_grub() {
                             line = retitle(line)
                             line = reid(line)
                         }
-                        if (line ~ /boot=live/) line = line " persistence"
+                        if (line ~ /boot=live/) line = line " " arg
                         print line
                     }
                 }
@@ -181,12 +185,16 @@ clone_grub() {
     done
 }
 
-clone_isolinux
-clone_grub
+add_entry() {
+    found=()
+    clone_isolinux "$@"
+    clone_grub "$@"
+    if [[ ${#found[@]} -eq 0 ]]; then
+        echo "ERROR: [0910-persistence-menu] no boot=live menu entry found to clone" >&2
+        exit 1
+    fi
+    echo "==> [0910-persistence-menu] $2 entry added to: ${found[*]}"
+}
 
-if [[ ${#found[@]} -eq 0 ]]; then
-    echo "ERROR: [0910-persistence-menu] no boot=live menu entry found to clone" >&2
-    exit 1
-fi
-
-echo "==> [0910-persistence-menu] persistence entry added to: ${found[*]}"
+add_entry persistence persistence persistence
+add_entry safe "safe mode" turingos.safe

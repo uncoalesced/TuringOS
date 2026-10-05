@@ -43,6 +43,8 @@ cage
 sway
 labwc
 wayland-protocols
+# Wayland-native terminal for Super+Esc under sway/labwc (Phase 3 fallback)
+foot
 
 # X11 fallback (Openbox kiosk mode for live ISO compatibility)
 xserver-xorg-core

@@ -20,6 +20,7 @@
     voiceStop: () => invoke('voice_stop'),
     onVoice: (cb) => tauri.event.listen('voice', (e) => cb(e.payload)),
     openExternal: (url) => invoke('open_external', { url }),
+    runShell: (command) => invoke('shell_run', { command }),
   };
 
   // The window is frameless (fullscreen in kiosk mode): Ctrl/⌘+Q quits

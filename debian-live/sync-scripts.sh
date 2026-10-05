@@ -5,6 +5,7 @@
 #   /usr/lib/turingos/         modules `turingos` sources, registry, voice helper,
 #                              Claude CLI installer
 #   /usr/bin/turingos          -> ../lib/turingos/turingos
+#   /usr/bin/turingos-respawn  UI crash watchdog (openbox autostart, launch-ui.sh)
 #   /etc/profile.d/turingos-first-run.sh
 #   /usr/share/doc/turingos/   copyright (LICENSE), WORKFLOW.md
 #   /usr/share/pixmaps/turingos.png  installer logo (hook 0495)
@@ -28,7 +29,7 @@ UI="${INC}/opt/turingos-ui"
 MODULE_DIRS=(core agent sandbox monitor game bazaar voice)
 
 echo "→ Staging TuringOS into ${INC}"
-rm -rf "$LIB" "$DOC" "$UI" "${INC}/usr/bin/turingos" "${INC}/etc/profile.d/turingos-first-run.sh" \
+rm -rf "$LIB" "$DOC" "$UI" "${INC}/usr/bin/turingos" "${INC}/usr/bin/turingos-respawn" "${INC}/etc/profile.d/turingos-first-run.sh" \
     "${INC}/usr/share/pixmaps/turingos.png"
 install -d "${LIB}/pkg" "${INC}/usr/bin" "${INC}/etc/profile.d" "$DOC" "$UI"
 
@@ -38,6 +39,7 @@ done
 install -m755 "${REPO_ROOT}/turingos" "${LIB}/turingos"
 install -m755 "${REPO_ROOT}/pkg/turingos-install-claude-cli.sh" "${LIB}/pkg/"
 ln -sfn ../lib/turingos/turingos "${INC}/usr/bin/turingos"
+install -m755 "${REPO_ROOT}/pkg/turingos-respawn.sh" "${INC}/usr/bin/turingos-respawn"
 install -m644 "${REPO_ROOT}/pkg/turingos-first-run.sh" "${INC}/etc/profile.d/turingos-first-run.sh"
 install -m644 "${REPO_ROOT}/LICENSE" "${DOC}/copyright"
 install -m644 "${REPO_ROOT}/WORKFLOW.md" "${DOC}/"

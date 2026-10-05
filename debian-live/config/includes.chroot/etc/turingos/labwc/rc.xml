@@ -94,6 +94,10 @@
 
   <keyboard>
     <chainQuitKey>C-g</chainQuitKey>
+    <!-- Super+Esc: plain terminal, bypasses the agent (Phase 3 fallback) -->
+    <keybind key="W-Escape">
+      <action name="Execute" command="foot"/>
+    </keybind>
     <keybind key="C-q">
       <action name="Close"/>
     </keybind>

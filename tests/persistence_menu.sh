@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # tests/persistence_menu.sh — boot-menu hooks. 0900 sets boot timeouts and
-# 0910 adds a Kali-style "Live system (persistence)" entry, for amd64-style
+# 0910 adds Kali-style "Live system (persistence)" and "(safe mode)" entries, for amd64-style
 # trees (isolinux + GRUB) and arm64-style trees (GRUB only, no isolinux/).
 set -euo pipefail
 
@@ -63,7 +63,10 @@ grep -qx 'label live-amd64-persistence' "$live" || fail "isolinux persistence la
 grep -qx 'menu label ^Live system (amd64) (persistence)' "$live" || fail "isolinux menu label suffix"
 grep -qx 'append initrd=/live/initrd.img-6.12.9-amd64 boot=live components quiet splash persistence' \
     "$live" || fail "isolinux persistence cmdline"
-[[ $(grep -c '^label ' "$live") -eq 3 ]] || fail "isolinux: want 2 original + 1 persistence labels"
+grep -qx 'label live-amd64-safe' "$live" || fail "isolinux safe mode label missing"
+grep -qx 'menu label ^Live system (amd64) (safe mode)' "$live" || fail "isolinux safe mode menu label"
+grep -qx 'append initrd=/live/initrd.img-6.12.9-amd64 boot=live components quiet splash turingos.safe'     "$live" || fail "isolinux safe mode cmdline"
+[[ $(grep -c '^label ' "$live") -eq 4 ]] || fail "isolinux: want 2 original + persistence + safe mode labels"
 grep -qx 'label live-amd64' "$live" || fail "isolinux original entry lost"
 
 grep -Fqx "menuentry 'Live system (amd64) (persistence)' --class gnu-linux --id 'gnulinux-simple-x-persistence' {" "$grub" \
@@ -71,6 +74,9 @@ grep -Fqx "menuentry 'Live system (amd64) (persistence)' --class gnu-linux --id 
 grep -Fqx 'linux /live/vmlinuz-6.12.9-amd64 boot=live components quiet splash persistence' \
     "$grub" || fail "grub persistence cmdline"
 [[ $(grep -c '(persistence)' "$grub") -eq 1 ]] || fail "grub: want exactly one persistence entry"
+grep -Fqx "menuentry 'Live system (amd64) (safe mode)' --class gnu-linux --id 'gnulinux-simple-x-safe' {" "$grub"     || fail "grub safe mode title/id"
+grep -Fqx 'linux /live/vmlinuz-6.12.9-amd64 boot=live components quiet splash turingos.safe'     "$grub" || fail "grub safe mode cmdline"
+grep -q 'persistence turingos.safe\|turingos.safe persistence' "$grub" && fail "safe mode cloned the persistence entry"
 grep -Fqx "menuentry 'Live system (amd64)' --class gnu-linux --id 'gnulinux-simple-x' {" "$grub" || fail "grub original entry lost"
 
 # ─── arm64-style tree: GRUB only (live-build skips isolinux on arm64) ────────
@@ -93,6 +99,7 @@ grep -Fqx "menuentry 'Live system (arm64) (persistence)' {" "${arm64}/boot/grub/
     || fail "arm64 grub persistence entry"
 grep -Fqx 'linux /live/vmlinuz-6.12.1-arm64 boot=live components quiet splash persistence' \
     "${arm64}/boot/grub/grub.cfg" || fail "arm64 grub persistence cmdline"
+grep -Fqx "menuentry 'Live system (arm64) (safe mode)' {" "${arm64}/boot/grub/grub.cfg"     || fail "arm64 grub safe mode entry"
 
 # ─── empty tree: both hooks must refuse to guess ─────────────────────────────
 mkdir -p "${WORK}/empty"
@@ -103,4 +110,4 @@ if (cd "${WORK}/empty" && bash "$PERSIST_HOOK" 2>/dev/null); then
     fail "0910 accepted a tree with no live entries"
 fi
 
-echo "OK: boot menu hooks (timeouts + persistence) on amd64 and arm64 trees"
+echo "OK: boot menu hooks (timeouts + persistence + safe mode) on amd64 and arm64 trees"

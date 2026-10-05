@@ -23,6 +23,20 @@
 .composer-answer:empty { display: none; }
 .composer-answer.is-pending { color: var(--muted); font-style: italic; }
 .composer-answer.is-error { color: var(--danger); }
+.composer-answer.is-shell { font: 13px/1.5 var(--mono); font-style: normal; }
+
+/* Shell mode badge (AI unreachable): click to go back to the AI */
+.composer-shell {
+  flex: none;
+  padding: 2px 10px;
+  border: 1px solid var(--danger);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--danger);
+  font: 12px/18px var(--mono);
+  cursor: pointer;
+}
+.composer-shell:hover { background: var(--danger); color: var(--bg); }
 .composer-answer:not(:empty) { animation: enter 400ms var(--ease-out) both; }
 
 .composer-box {

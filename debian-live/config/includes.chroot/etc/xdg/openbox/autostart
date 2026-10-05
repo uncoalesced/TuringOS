@@ -9,10 +9,18 @@ picom --config /dev/null --backend xrender -b &
 # Solid dark background; the UI covers the whole screen in kiosk mode
 xsetroot -solid "#0a0a0f" &
 
+# ── Safe mode (boot menu "safe mode", kernel arg turingos.safe) ───────────────
+# No agent, no UI: just openbox and a terminal.
+if grep -qw turingos.safe /proc/cmdline; then
+    x-terminal-emulator &
+else
 # ── TuringOS UI ───────────────────────────────────────────────────────────────
 # KIOSK=1 → fullscreen, no window chrome. Software rendering kicks in by
 # itself when there's no GPU render node (VMs without 3D acceleration).
+# turingos-respawn restarts it after a crash (Ctrl+Q quits for good) and
+# opens a terminal if it keeps crashing. Super+Esc opens a terminal any time.
 (
     sleep 1  # let the compositor settle before launching
-    KIOSK=1 /usr/bin/turingos-ui
+    KIOSK=1 exec turingos-respawn /usr/bin/turingos-ui
 ) &
+fi

@@ -132,6 +132,7 @@
           <button type="button" class="icon-button" id="composer-add" aria-label="Pick a project">
             <svg class="icon" aria-hidden="true"><use href="#ic-plus" /></svg>
           </button>
+          <button type="button" class="composer-shell" id="composer-shell" hidden title="Back to the AI">Shell mode</button>
           <span class="composer-hint" id="composer-hint">Type <kbd>@</kbd> to pick a project</span>
 
           <div class="model-picker">
@@ -317,8 +318,15 @@
     <div class="clawd-answer" id="clawd-answer"></div>
   </section>
 
+  <!-- Bridge down (trust-model stack): js/reconnect.js shows this -->
+  <div class="reconnect" id="reconnect" role="alert" hidden>
+    <p class="reconnect-title">Reconnecting…</p>
+    <p class="reconnect-hint">The TuringOS bridge is restarting. <kbd>Super</kbd>+<kbd>Esc</kbd> opens a terminal.</p>
+  </div>
+
   <!-- Classic scripts sharing one global scope, in dependency order -->
   <script src="js/bridge.js"></script>
+  <script src="js/reconnect.js"></script>
   <script src="js/base.js"></script>
   <script src="js/notifications.js"></script>
   <script src="js/weather.js"></script>

@@ -74,3 +74,15 @@ These are the platform. Everything else is plumbing.
   shell.toml
   grants.toml
 ```
+
+## Fallback (Phase 3)
+
+If the AI, the bridge or the browser fails, the machine stays usable:
+
+| Failure | What happens |
+|---------|--------------|
+| Model unreachable | The composer switches to shell mode: what you type runs as a plain command (`$ cmd` does it any time). `bridged-ws` serves the same as `/shell`, loopback and same-origin only. |
+| `bridged-ws` down | systemd restarts it; the page shows "Reconnecting…" until `/health` answers (`ui/web/js/reconnect.js`, which also provides `window.turingosSocket` for auto-reconnecting sockets). |
+| Brave / `turingos-ui` crash | `turingos-respawn` restarts it; after more than 5 crashes in 60s it opens a terminal instead. |
+| Anything else | Super+Esc opens a terminal in openbox, sway and labwc. cage has no keybindings: use Ctrl+Alt+F2 for a text console. |
+| Broken agent stack | Boot menu "safe mode" (`turingos.safe`): no agent or UI units, just openbox and a terminal. |
