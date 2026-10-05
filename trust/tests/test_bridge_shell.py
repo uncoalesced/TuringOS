@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """bridged-ws /shell (Phase 3 fallback): only the bridge's own localhost page
 may open it; commands get output, exit code, a timeout and an output cap.
+Also covers where the bridge finds the UI (APP_DIR).
 
     python3 -m unittest trust/tests/test_bridge_shell.py   (needs fastapi, httpx)
 """
 import asyncio
 import importlib.util
+import os
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -84,6 +87,24 @@ class ServesUi(unittest.TestCase):
         self.assertEqual(client.get("/js/reconnect.js").status_code, 200)
         self.assertEqual(client.get("/css/base.css").status_code, 200)
         self.assertEqual(client.get("/health").json(), {"status": "ok"})
+
+    def test_env_override_wins(self):
+        """TURINGOS_UI_DIR points the bridge at any tree (installed or not)."""
+        self.addCleanup(spec.loader.exec_module, bridge)  # restore for other tests
+        with tempfile.TemporaryDirectory() as ui:
+            Path(ui, "index.html").write_text("<html>override</html>")
+            os.environ["TURINGOS_UI_DIR"] = ui
+            try:
+                spec.loader.exec_module(bridge)
+            finally:
+                del os.environ["TURINGOS_UI_DIR"]
+            self.assertEqual(bridge.APP_DIR, Path(ui))
+            self.assertIn("override", TestClient(bridge.app).get("/").text)
+
+    def test_default_is_the_installed_path_or_the_checkout(self):
+        src = (Path(__file__).parent.parent / "daemons" / "bridged-ws.py").read_text()
+        self.assertIn('"/usr/lib/turingos/ui/web"', src)
+        self.assertIn("TURINGOS_UI_DIR", src)
 
 
 class Defaults(unittest.TestCase):

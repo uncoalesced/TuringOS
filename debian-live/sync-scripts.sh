@@ -3,7 +3,8 @@
 #
 # Writes the final installed layout, so no copy of the repo lands in the image:
 #   /usr/lib/turingos/         modules `turingos` sources, registry, voice helper,
-#                              Claude CLI installer
+#                              Claude CLI installer, daemons, and the web UI
+#                              (ui/web — what turingos-bridged-ws serves)
 #   /usr/bin/turingos          -> ../lib/turingos/turingos
 #   /usr/bin/turingos-respawn  UI crash watchdog (openbox autostart, launch-ui.sh)
 #   /etc/profile.d/turingos-first-run.sh
@@ -51,6 +52,12 @@ install -Dm644 "${REPO_ROOT}/ui/web/assets/brand/app-icon.png" "${INC}/usr/share
 
 # UI: page + Tauri source, never build output
 rsync -a --exclude='src-tauri/target/' --exclude='src-tauri/gen/' "${REPO_ROOT}/ui/" "${UI}/"
+
+# The web UI at its installed path: launch-ui.sh and turingos-bridged-ws
+# (APP_DIR) both serve /usr/lib/turingos/ui/web. Only the page, not the
+# Tauri source — hook 0450 deletes /opt/turingos-ui, this must survive it.
+install -d "${LIB}/ui/web"
+rsync -a --chmod=D755,F644 "${REPO_ROOT}/ui/web/" "${LIB}/ui/web/"
 
 # Trust model source for hook 0480 (which installs and then removes it)
 rsync -a --exclude='__pycache__/' "${REPO_ROOT}/trust/" "$TRUST_SRC/"

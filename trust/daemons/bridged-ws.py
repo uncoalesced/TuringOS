@@ -12,7 +12,21 @@ import uvicorn
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
 
-APP_DIR = Path(__file__).parent.parent.parent / "ui" / "web"
+# The installed UI lives at /usr/lib/turingos/ui/web (sync-scripts stages it;
+# launch-ui.sh expects the same path). In a checkout, __file__ resolves to
+# trust/daemons/bridged-ws.py, so fall back to the repo's ui/web — that is
+# what trust/tests/test_bridge_shell.py serves. TURINGOS_UI_DIR overrides both.
+def _app_dir() -> Path:
+    override = os.environ.get("TURINGOS_UI_DIR")
+    if override:
+        return Path(override)
+    installed = Path("/usr/lib/turingos/ui/web")
+    if installed.exists():
+        return installed
+    return Path(__file__).resolve().parent.parent.parent / "ui" / "web"
+
+
+APP_DIR = _app_dir()
 CAP_SOCKET = "/run/turingos/cap.sock"
 PLAN_SOCKET = "/run/turingos/agent-plan.sock"
 AGENT_LLM_SOCKET = "/run/turingos/agent-llm.sock"
