@@ -33,6 +33,9 @@ done
 [[ -f "${INC}/etc/profile.d/turingos-first-run.sh" ]] || fail "first-run banner not staged"
 [[ -f "${INC}/opt/turingos-ui/src-tauri/Cargo.lock" ]] || fail "UI source (with Cargo.lock) not staged"
 [[ ! -e "${INC}/opt/turingos" ]] || fail "a full repo copy is staged into /opt/turingos again"
+# Hook 0480 installs the trust stack from this path and then deletes it
+[[ -f "${INC}/usr/src/turingos/trust/daemons/bridged-ws.py" ]] || fail "trust source not staged for hook 0480"
+[[ -f "${INC}/usr/src/turingos/trust/daemons/turingos-bridged-ws.service" ]] || fail "trust units not staged for hook 0480"
 
 # The staged layout runs on its own (modules from /usr/lib/turingos, not the checkout)
 HOME="${WORK}/home" "${INC}/usr/bin/turingos" version >/dev/null || fail "staged turingos does not run"

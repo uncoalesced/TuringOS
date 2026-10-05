@@ -11,6 +11,8 @@
 #   /usr/share/pixmaps/turingos.png  installer logo (hook 0495)
 #   /opt/turingos-ui/          UI source; hook 0450 builds it into
 #                              /usr/bin/turingos-ui and deletes the source
+#   /usr/src/turingos/trust/   trust model source; hook 0480 installs it into
+#                              /usr/lib/turingos and deletes the source
 #
 # Run from anywhere, before building:
 #   ./debian-live/sync-scripts.sh && cd debian-live && sudo lb build
@@ -23,15 +25,16 @@ INC="${SCRIPT_DIR}/config/includes.chroot"
 LIB="${INC}/usr/lib/turingos"
 DOC="${INC}/usr/share/doc/turingos"
 UI="${INC}/opt/turingos-ui"
+TRUST_SRC="${INC}/usr/src/turingos/trust"
 
 # Every directory the `turingos` entrypoint sources modules from
 # (tests/install_parity.sh keeps this list honest)
 MODULE_DIRS=(core agent sandbox monitor game bazaar voice)
 
 echo "→ Staging TuringOS into ${INC}"
-rm -rf "$LIB" "$DOC" "$UI" "${INC}/usr/bin/turingos" "${INC}/usr/bin/turingos-respawn" "${INC}/etc/profile.d/turingos-first-run.sh" \
+rm -rf "$LIB" "$DOC" "$UI" "${INC}/usr/src/turingos" "${INC}/usr/bin/turingos" "${INC}/usr/bin/turingos-respawn" "${INC}/etc/profile.d/turingos-first-run.sh" \
     "${INC}/usr/share/pixmaps/turingos.png"
-install -d "${LIB}/pkg" "${INC}/usr/bin" "${INC}/etc/profile.d" "$DOC" "$UI"
+install -d "${LIB}/pkg" "${INC}/usr/bin" "${INC}/etc/profile.d" "$DOC" "$UI" "$(dirname "$TRUST_SRC")"
 
 for dir in "${MODULE_DIRS[@]}"; do
     rsync -a --chmod=D755,F644 --exclude='__pycache__/' "${REPO_ROOT}/${dir}/" "${LIB}/${dir}/"
@@ -49,7 +52,10 @@ install -Dm644 "${REPO_ROOT}/ui/web/assets/brand/app-icon.png" "${INC}/usr/share
 # UI: page + Tauri source, never build output
 rsync -a --exclude='src-tauri/target/' --exclude='src-tauri/gen/' "${REPO_ROOT}/ui/" "${UI}/"
 
-echo "  ✓ $(find "$LIB" -type f | wc -l) runtime files, $(find "$UI" -type f | wc -l) UI source files"
+# Trust model source for hook 0480 (which installs and then removes it)
+rsync -a --exclude='__pycache__/' "${REPO_ROOT}/trust/" "$TRUST_SRC/"
+
+echo "  ✓ $(find "$LIB" -type f | wc -l) runtime files, $(find "$UI" -type f | wc -l) UI source files, $(find "$TRUST_SRC" -type f | wc -l) trust files"
 echo ""
 echo "Next: cd ${SCRIPT_DIR} && sudo lb build"
 echo "Clean rebuild: sudo lb clean --purge && sudo lb build"

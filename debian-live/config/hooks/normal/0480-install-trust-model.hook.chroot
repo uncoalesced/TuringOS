@@ -129,4 +129,7 @@ systemctl enable turingos-shell.service
 # Disable services by default in live mode (they'll be started by launch script)
 # systemctl mask turingos-auditd.service  # etc.
 
+# The staged source is an install input, not image content (sync-scripts stages it)
+rm -rf /usr/src/turingos
+
 echo "==> [0480-trust-model] Done."
