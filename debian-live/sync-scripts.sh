@@ -51,7 +51,7 @@ install -m644 "${REPO_ROOT}/WORKFLOW.md" "${DOC}/"
 install -Dm644 "${REPO_ROOT}/ui/web/assets/brand/app-icon.png" "${INC}/usr/share/pixmaps/turingos.png"
 
 # UI: page + Tauri source, never build output
-rsync -a --exclude='src-tauri/target/' --exclude='src-tauri/gen/' "${REPO_ROOT}/ui/" "${UI}/"
+rsync -a --exclude='src-tauri/target/' --exclude='src-tauri/gen/' --exclude='node_modules/' "${REPO_ROOT}/ui/" "${UI}/"
 
 # The web UI at its installed path: launch-ui.sh and turingos-bridged-ws
 # (APP_DIR) both serve /usr/lib/turingos/ui/web. Only the page, not the
