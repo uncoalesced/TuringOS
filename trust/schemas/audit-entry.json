@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://turingos.ai/schemas/audit-entry.json",
+  "title": "AuditEntry",
+  "description": "An append-only, hash-chained record of every action in the system. Owned by turingos-auditd. Cannot be rewritten.",
+  "type": "object",
+  "required": ["version", "seq", "prev_hash", "timestamp", "subject", "session_id", "action", "provenance", "outcome", "hash"],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1
+    },
+    "seq": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Monotonically increasing sequence number"
+    },
+    "prev_hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$",
+      "description": "Hash of the previous entry in the chain"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "subject": {
+      "type": "object",
+      "required": ["kind", "id"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["user", "agent", "tool", "service"]
+        },
+        "id": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "session_id": {
+      "type": "string"
+    },
+    "grant_id": {
+      "type": "string",
+      "description": "The grant that authorized this action, if any"
+    },
+    "action": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["fs.read", "fs.write", "fs.execute", "net.egress", "sandbox.spawn", "memory.read", "memory.write", "bridge.egress", "grant.issue", "grant.revoke", "process.kill", "plan.create", "plan.approve", "plan.execute", "ui.create", "ui.dismiss", "ui.ttl_expire"]
+        },
+        "path": {
+          "type": "string"
+        },
+        "domain": {
+          "type": "string"
+        },
+        "command": {
+          "type": "string"
+        },
+        "plan_id": {
+          "type": "string"
+        },
+        "fragment_id": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["origin", "taint"],
+      "properties": {
+        "origin": {
+          "type": "string",
+          "enum": ["user_request", "agent_plan", "tool_output", "web_fetch", "file_read", "model_response"]
+        },
+        "taint": {
+          "type": "string",
+          "enum": ["trusted", "untrusted", "derived"]
+        },
+        "chain": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Provenance trail back to the originating message"
+        }
+      },
+      "additionalProperties": false
+    },
+    "outcome": {
+      "type": "string",
+      "enum": ["allowed", "denied", "error", "terminated", "initiated", "complete"]
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$",
+      "description": "SHA-256 of this entry's canonical JSON"
+    }
+  },
+  "additionalProperties": false
+}

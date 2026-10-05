@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://turingos.ai/schemas/plan.json",
+  "title": "Plan",
+  "description": "The unit of user consent. The agent emits a plan, the user approves or edits it, then execution proceeds step by step.",
+  "type": "object",
+  "required": ["version", "plan_id", "session_id", "created_at", "intent", "steps", "approval", "dry_run"],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1
+    },
+    "plan_id": {
+      "type": "string",
+      "pattern": "^01[A-Z0-9]{20,}$"
+    },
+    "session_id": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "revised_from": {
+      "type": "string",
+      "description": "If this plan is a revision, the plan_id it replaces"
+    },
+    "intent": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Natural-language description of what the agent wants to do"
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["step_id", "kind", "status"],
+        "properties": {
+          "step_id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["tool_call", "model_call", "ui"]
+          },
+          "tool": {
+            "type": "string",
+            "description": "Tool identifier (for tool_call steps)"
+          },
+          "args": {
+            "type": "object",
+            "description": "Tool arguments (for tool_call steps)"
+          },
+          "capabilities_required": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["kind"],
+              "properties": {
+                "kind": {
+                  "type": "string"
+                },
+                "paths": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "domains": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            }
+          },
+          "risk": {
+            "type": "string",
+            "enum": ["low", "medium", "high"]
+          },
+          "prompt_template": {
+            "type": "string",
+            "description": "For model_call steps"
+          },
+          "input_refs": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "References to previous step outputs"
+          },
+          "component": {
+            "type": "string",
+            "description": "For ui steps"
+          },
+          "payload_ref": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "approved", "running", "completed", "failed", "skipped"]
+          },
+          "output_ref": {
+            "type": "string",
+            "description": "Reference to the result of this step"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "approval": {
+      "type": "object",
+      "required": ["required", "mode"],
+      "properties": {
+        "required": {
+          "type": "boolean"
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["plan", "step", "never"]
+        },
+        "granted_by": {
+          "type": "string"
+        },
+        "granted_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    },
+    "dry_run": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "additionalProperties": false
+}

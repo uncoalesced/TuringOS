@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://turingos.ai/schemas/ui-fragment.json",
+  "title": "UIFRagment",
+  "description": "A temporary UI component emitted by the agent alongside text_delta. Fragments are views, not state — data lives in memoryd.",
+  "type": "object",
+  "required": ["version", "type", "component", "id", "ephemeral", "payload"],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1
+    },
+    "type": {
+      "type": "string",
+      "const": "ui"
+    },
+    "component": {
+      "type": "string",
+      "enum": ["table", "form", "card", "file-preview", "diff"]
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^01[A-Z0-9]{20,}$"
+    },
+    "ephemeral": {
+      "type": "boolean",
+      "default": true
+    },
+    "persistent": {
+      "type": "boolean",
+      "default": false,
+      "description": "If true, re-rendered on session resume from memoryd state"
+    },
+    "ttl_seconds": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 600,
+      "description": "Time-to-live in seconds. Default 10 minutes."
+    },
+    "payload": {
+      "type": "object",
+      "description": "Component-specific data"
+    }
+  },
+  "additionalProperties": false
+}

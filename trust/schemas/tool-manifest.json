@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://turingos.ai/schemas/tool-manifest.json",
+  "title": "ToolManifest",
+  "description": "Declares what a tool does, what it needs, and how to run it. The contract between tool authors and the platform.",
+  "type": "object",
+  "required": ["version", "id", "version", "description", "runtime", "capabilities_required", "tools"],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "description": {
+      "type": "string"
+    },
+    "runtime": {
+      "type": "object",
+      "required": ["kind", "path"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["binary", "script", "mcp"]
+        },
+        "path": {
+          "type": "string"
+        },
+        "sandbox_profile": {
+          "type": "string",
+          "default": "default"
+        }
+      },
+      "additionalProperties": false
+    },
+    "capabilities_required": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind"],
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "paths": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "domains": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "tools": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name", "input_schema", "output_schema"],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "input_schema": {
+            "type": "object"
+          },
+          "output_schema": {
+            "type": "object"
+          },
+          "ui_fragments": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["file-preview", "table", "form", "card", "diff"]
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
