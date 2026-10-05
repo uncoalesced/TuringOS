@@ -1,0 +1,14 @@
+[Unit]
+Description=TuringOS Agent Plan Daemon
+After=turingos-capd.service turingos-sandboxd.service turingos-memoryd.service turingos-auditd.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /usr/lib/turingos/daemons/agentd-plan.py
+Restart=on-failure
+RestartSec=1
+User=turingos
+Group=turingos
+
+[Install]
+WantedBy=multi-user.target
