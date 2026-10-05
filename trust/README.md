@@ -34,6 +34,7 @@ These are the platform. Everything else is plumbing.
 | `turingos-agentd-plan` | Plan state, grant requests, tool dispatch | capd, sandboxd, memoryd, auditd |
 | `turingos-memoryd` | Session + long-term memory | agentd, auditd |
 | `turingos-bridged` | Network egress, domain allowlist, taint tagging | sandboxd, auditd |
+| `turingos-shell-helper` | Runs `/shell` commands in your login session (per-user unit) | nothing (started by your session) |
 
 ## Build Order
 
@@ -66,6 +67,7 @@ These are the platform. Everything else is plumbing.
   memory.sock
   bridge.sock
   toolreg.sock
+  session/          1777 drop-box: session/<uid>.sock per login session
 
 ~/.turingos/
   memory.db
@@ -81,7 +83,7 @@ If the AI, the bridge or the browser fails, the machine stays usable:
 
 | Failure | What happens |
 |---------|--------------|
-| Model unreachable | The composer switches to shell mode: what you type runs as a plain command (`$ cmd` does it any time). `bridged-ws` serves the same as `/shell`, loopback and same-origin only. |
+| Model unreachable | The composer switches to shell mode: what you type runs as a plain command (`$ cmd` does it any time). `bridged-ws` serves the same as `/shell`, loopback and same-origin only, forwarded to `turingos-shell-helper` in your login session — commands run as you, not as the system user `turingos`. |
 | `bridged-ws` down | systemd restarts it; the page shows "Reconnecting…" until `/health` answers (`ui/web/js/reconnect.js`, which also provides `window.turingosSocket` for auto-reconnecting sockets). |
 | Brave / `turingos-ui` crash | `turingos-respawn` restarts it; after more than 5 crashes in 60s it opens a terminal instead. |
 | Anything else | Super+Esc opens a terminal in openbox, sway and labwc. cage has no keybindings: use Ctrl+Alt+F2 for a text console. |

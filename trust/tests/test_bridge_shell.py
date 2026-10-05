@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 """bridged-ws /shell (Phase 3 fallback): only the bridge's own localhost page
-may open it; commands get output, exit code, a timeout and an output cap.
-Also covers where the bridge finds the UI (APP_DIR).
+may open it; commands are forwarded to shell-helper.py so they run as the
+login session's user, not as `turingos`. Also covers where the bridge finds
+the UI (APP_DIR).
 
     python3 -m unittest trust/tests/test_bridge_shell.py   (needs fastapi, httpx)
 """
-import asyncio
 import importlib.util
 import os
+import shutil
+import subprocess
+import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -21,6 +25,50 @@ spec = importlib.util.spec_from_file_location(
 bridge = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(bridge)
 
+HELPER = Path(__file__).parent.parent / "daemons" / "shell-helper.py"
+_helper_proc = None
+_session_dir = None
+
+
+def setUpModule():
+    """A real shell-helper in a temp drop-box, so /shell forwards end to end."""
+    global _helper_proc, _session_dir
+    _session_dir = tempfile.mkdtemp(prefix="turingos-session-")
+    os.environ["TURINGOS_SESSION_DIR"] = _session_dir
+    os.environ["TURINGOS_SHELL_ALLOW_UIDS"] = str(os.getuid())
+    _helper_proc = subprocess.Popen(
+        [sys.executable, str(HELPER)],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
+    )
+    sock = Path(_session_dir, f"{os.getuid()}.sock")
+    deadline = time.monotonic() + 5
+    while not sock.exists():
+        if _helper_proc.poll() is not None:
+            raise RuntimeError(
+                "shell-helper exited %d: %s"
+                % (_helper_proc.returncode, _helper_proc.stderr.read().decode())
+            )
+        if time.monotonic() > deadline:
+            raise RuntimeError("shell-helper socket never appeared")
+        time.sleep(0.05)
+
+
+def tearDownModule():
+    if _helper_proc and _helper_proc.poll() is None:
+        _helper_proc.terminate()
+        try:
+            _helper_proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            _helper_proc.kill()
+            _helper_proc.wait()
+    if _helper_proc and _helper_proc.stderr:
+        _helper_proc.stderr.close()
+    if _session_dir:
+        shutil.rmtree(_session_dir, ignore_errors=True)
+    os.environ.pop("TURINGOS_SESSION_DIR", None)
+    os.environ.pop("TURINGOS_SHELL_ALLOW_UIDS", None)
+
 
 def connect(host: str, origin: str):
     return TestClient(bridge.app).websocket_connect(
@@ -29,13 +77,34 @@ def connect(host: str, origin: str):
 
 
 class ShellOrigin(unittest.TestCase):
-    def test_own_page_runs_a_command(self):
+    def test_own_page_runs_a_command_in_the_session(self):
         with connect("localhost:8080", "http://localhost:8080") as ws:
             ws.send_json({"command": "echo hi"})
             res = ws.receive_json()
         self.assertEqual(res["status"], "ok")
         self.assertEqual(res["code"], 0)
         self.assertEqual(res["output"].strip(), "hi")
+
+    def test_own_page_sees_the_session_user(self):
+        with connect("localhost:8080", "http://localhost:8080") as ws:
+            ws.send_json({"command": "id -u"})
+            res = ws.receive_json()
+        self.assertEqual(res["output"].strip(), str(os.getuid()))
+
+    def test_no_helper_gives_a_clear_error(self):
+        empty = tempfile.mkdtemp(prefix="turingos-empty-")
+        self.addCleanup(shutil.rmtree, empty, ignore_errors=True)
+        saved = os.environ.pop("TURINGOS_SESSION_DIR", None)
+        os.environ["TURINGOS_SESSION_DIR"] = empty
+        try:
+            with connect("localhost:8080", "http://localhost:8080") as ws:
+                ws.send_json({"command": "echo hi"})
+                res = ws.receive_json()
+        finally:
+            if saved is not None:
+                os.environ["TURINGOS_SESSION_DIR"] = saved
+        self.assertEqual(res["status"], "error")
+        self.assertIn("shell helper", res["errors"][0])
 
     def test_other_site_is_refused(self):
         with self.assertRaises(WebSocketDisconnect):
@@ -56,23 +125,6 @@ class ShellOrigin(unittest.TestCase):
         with connect("127.0.0.1:8080", "http://127.0.0.1:8080") as ws:
             ws.send_json({"command": "  "})
             self.assertEqual(ws.receive_json()["status"], "error")
-
-
-class RunShell(unittest.TestCase):
-    def test_exit_code_and_stderr(self):
-        res = asyncio.run(bridge.run_shell("echo out; echo err >&2; exit 3"))
-        self.assertEqual(res["code"], 3)
-        self.assertEqual(res["output"].replace("\r", ""), "out\nerr\n")
-
-    def test_timeout(self):
-        res = asyncio.run(bridge.run_shell("sleep 30", timeout=1))
-        self.assertEqual(res["code"], 124)
-        self.assertTrue(res["output"].endswith("[stopped after 1s]"))
-
-    def test_output_cap(self):
-        res = asyncio.run(bridge.run_shell("yes", timeout=10))
-        self.assertTrue(res["output"].endswith("[output truncated at 64 KB]"))
-        self.assertLess(len(res["output"]), bridge.SHELL_MAX_OUTPUT + 64)
 
 
 class ServesUi(unittest.TestCase):

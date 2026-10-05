@@ -30,6 +30,7 @@ install -m 755 -o root -g root \
     /usr/src/turingos/trust/daemons/toolreg.py \
     /usr/src/turingos/trust/daemons/bridged.py \
     /usr/src/turingos/trust/daemons/bridged-ws.py \
+    /usr/src/turingos/trust/daemons/shell-helper.py \
     /usr/src/turingos/trust/daemons/launch-shell.sh \
     /usr/src/turingos/trust/daemons/launch-ui.sh \
     "$DAEMON_DIR/"
@@ -128,6 +129,21 @@ systemctl enable turingos-shell.service
 
 # Disable services by default in live mode (they'll be started by launch script)
 # systemctl mask turingos-auditd.service  # etc.
+
+# Session shell helper: a systemd *user* unit, one per graphical session, so
+# /shell runs as the person at the keyboard (bridged-ws runs as `turingos`)
+mkdir -p /usr/lib/systemd/user
+install -m 644 -o root -g root \
+    /usr/src/turingos/trust/daemons/turingos-shell-helper.service \
+    /usr/lib/systemd/user/
+systemctl --global enable turingos-shell-helper.service
+
+# /run is a fresh tmpfs at boot: recreate the daemons' runtime dir and the
+# 1777 session drop-box where bridge and helper meet
+mkdir -p /usr/lib/tmpfiles.d
+install -m 644 -o root -g root \
+    /usr/src/turingos/trust/daemons/turingos-tmpfiles.conf \
+    /usr/lib/tmpfiles.d/turingos.conf
 
 # The staged source is an install input, not image content (sync-scripts stages it)
 rm -rf /usr/src/turingos

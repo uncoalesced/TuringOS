@@ -36,6 +36,9 @@ done
 # Hook 0480 installs the trust stack from this path and then deletes it
 [[ -f "${INC}/usr/src/turingos/trust/daemons/bridged-ws.py" ]] || fail "trust source not staged for hook 0480"
 [[ -f "${INC}/usr/src/turingos/trust/daemons/turingos-bridged-ws.service" ]] || fail "trust units not staged for hook 0480"
+[[ -f "${INC}/usr/src/turingos/trust/daemons/shell-helper.py" ]] || fail "shell helper source not staged for hook 0480"
+[[ -f "${INC}/usr/src/turingos/trust/daemons/turingos-shell-helper.service" ]] || fail "shell helper unit not staged for hook 0480"
+[[ -f "${INC}/usr/src/turingos/trust/daemons/turingos-tmpfiles.conf" ]] || fail "session drop-box tmpfiles not staged for hook 0480"
 # What turingos-bridged-ws (APP_DIR) and launch-ui.sh serve; hook 0450
 # deletes /opt/turingos-ui, so this copy must be at the installed path
 [[ -f "${INC}/usr/lib/turingos/ui/web/index.html" ]] || fail "web UI not staged at /usr/lib/turingos/ui/web"
