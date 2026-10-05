@@ -43,7 +43,24 @@
   /* Motion */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 
+  /* Frosted glass, by surface size. Every backdrop-filter goes through
+     these so the lighter graphics levels can switch it off in one place. */
+  --glass-sm: blur(20px);
+  --glass-md: blur(24px) saturate(1.4);
+  --glass-lg: blur(28px) saturate(1.5);
+  --glass-xl: blur(40px) saturate(1.6);
+
   --menubar-h: 34px;
+}
+
+/* Graphics levels (data-gfx on <html>): "lite" and "minimal" are for
+   machines drawing without a GPU, where backdrop blur is the costly part. */
+:root[data-gfx="lite"],
+:root[data-gfx="minimal"] {
+  --glass-sm: none;
+  --glass-md: none;
+  --glass-lg: none;
+  --glass-xl: none;
 }
 
 :root[data-theme="light"] {

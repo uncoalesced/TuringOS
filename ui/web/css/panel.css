@@ -47,7 +47,7 @@
   background: color-mix(in srgb, var(--surface) 82%, transparent);
   border: 1px solid var(--line);
   color: var(--muted);
-  backdrop-filter: blur(20px);
+  backdrop-filter: var(--glass-sm);
   transition: transform 160ms var(--ease-out);
 }
 .panel-clear .icon { width: 13px; height: 13px; }
@@ -63,7 +63,7 @@
   corner-shape: squircle;
   background: color-mix(in srgb, var(--surface) 84%, transparent);
   border: 1px solid var(--line);
-  backdrop-filter: blur(28px) saturate(1.5);
+  backdrop-filter: var(--glass-lg);
   box-shadow: 0 8px 24px -12px rgb(0 0 0 / 0.25);
 }
 

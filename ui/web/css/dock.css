@@ -26,7 +26,7 @@
   border-radius: 22px;
   corner-shape: squircle; /* continuous iOS/macOS-style corner, not a plain circular arc */
   background: color-mix(in srgb, var(--surface) 82%, transparent);
-  backdrop-filter: blur(24px) saturate(1.4);
+  backdrop-filter: var(--glass-md);
   border: 1px solid var(--line);
   /* Hidden below the viewport edge; the dock's own height + bottom offset
      + a little extra covers the shadow so nothing peeks. */
