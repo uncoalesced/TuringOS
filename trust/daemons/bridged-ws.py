@@ -3,16 +3,27 @@ import argparse
 import asyncio
 import json
 import os
-import signal
-import socket
-import sys
 from pathlib import Path
 
 import uvicorn
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
 
-APP_DIR = Path(__file__).parent.parent.parent / "ui" / "web"
+# The installed UI lives at /usr/lib/turingos/ui/web (sync-scripts stages it;
+# launch-ui.sh expects the same path). In a checkout, __file__ resolves to
+# trust/daemons/bridged-ws.py, so fall back to the repo's ui/web — that is
+# what trust/tests/test_bridge_shell.py serves. TURINGOS_UI_DIR overrides both.
+def _app_dir() -> Path:
+    override = os.environ.get("TURINGOS_UI_DIR")
+    if override:
+        return Path(override)
+    installed = Path("/usr/lib/turingos/ui/web")
+    if installed.exists():
+        return installed
+    return Path(__file__).resolve().parent.parent.parent / "ui" / "web"
+
+
+APP_DIR = _app_dir()
 CAP_SOCKET = "/run/turingos/cap.sock"
 PLAN_SOCKET = "/run/turingos/agent-plan.sock"
 AGENT_LLM_SOCKET = "/run/turingos/agent-llm.sock"
@@ -20,9 +31,11 @@ BRIDGE_SOCKET = "/run/turingos/bridge.sock"
 MEMORY_SOCKET = "/run/turingos/memory.sock"
 
 # Local shell mode (Phase 3 fallback): when the model is unreachable the UI
-# runs what the user types as a plain command, like a terminal would
+# runs what the user types as a plain command, like a terminal would. The
+# bridge runs as the system user `turingos`, which is nobody's login session,
+# so run_shell() forwards to shell-helper.py (a per-session user unit) — the
+# 60s/64KB budget lives there; this is just how long we wait for it.
 SHELL_TIMEOUT = 60
-SHELL_MAX_OUTPUT = 64 * 1024
 LOCAL_HOSTS = {"localhost", "127.0.0.1"}
 
 app = FastAPI(title="TuringOS Bridge")
@@ -181,48 +194,52 @@ def origin_allowed(ws: WebSocket) -> bool:
     )
 
 
-async def run_shell(command: str, timeout: float = SHELL_TIMEOUT) -> dict:
-    proc = await asyncio.create_subprocess_exec(
-        "bash", "-c", "exec 2>&1\n" + command,
-        stdin=asyncio.subprocess.DEVNULL,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.DEVNULL,
-        cwd=os.path.expanduser("~"),
-        start_new_session=True,
+def session_dir() -> Path:
+    # 1777 drop-box (turingos-tmpfiles.conf): each session's helper drops
+    # <uid>.sock here; read at call time so tests can point it anywhere
+    return Path(os.environ.get("TURINGOS_SESSION_DIR", "/run/turingos/session"))
+
+
+async def run_shell(command: str, timeout: float = SHELL_TIMEOUT + 15) -> dict:
+    """Forward to the login session's shell-helper so commands run as the
+    person at the keyboard, not as the system user `turingos`."""
+    socks = sorted(
+        (p for p in session_dir().glob("*.sock") if p.is_socket()),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
     )
-    buf = b""
-
-    async def collect():
-        nonlocal buf
-        while len(buf) <= SHELL_MAX_OUTPUT:
-            chunk = await proc.stdout.read(65536)
-            if not chunk:
-                break
-            buf += chunk
-
-    loop = asyncio.get_running_loop()
-    deadline = loop.time() + timeout
-    timed_out = False
+    if not socks:
+        return {
+            "status": "error",
+            "errors": ["no login session: shell helper is not running"],
+        }
     try:
-        await asyncio.wait_for(collect(), timeout)
-        if len(buf) <= SHELL_MAX_OUTPUT:
-            await asyncio.wait_for(proc.wait(), max(0.0, deadline - loop.time()))
+        reader, writer = await asyncio.wait_for(
+            asyncio.open_unix_connection(str(socks[0])), 5
+        )
+    except Exception as e:
+        return {"status": "error", "errors": [f"shell helper unreachable: {e}"]}
+    data = b""
+    try:
+        writer.write((json.dumps({"command": command}) + "\n").encode())
+        await writer.drain()
+        # the helper replies then closes; output can reach 64 KB, so read
+        # everything rather than one chunk
+        data = await asyncio.wait_for(reader.read(), timeout)
     except asyncio.TimeoutError:
-        timed_out = True
-    if proc.returncode is None:  # timed out or flooding output: kill the whole group
+        return {"status": "error", "errors": ["shell helper timed out"]}
+    except Exception as e:
+        return {"status": "error", "errors": [str(e)]}
+    finally:
+        writer.close()
         try:
-            os.killpg(proc.pid, signal.SIGKILL)
-        except (AttributeError, ProcessLookupError):
-            proc.kill()
-    code = await proc.wait()
-
-    output = buf[:SHELL_MAX_OUTPUT].decode(errors="replace")
-    if len(buf) > SHELL_MAX_OUTPUT:
-        output += "\n[output truncated at 64 KB]"
-    if timed_out:
-        code = 124
-        output += f"\n[stopped after {timeout:g}s]"
-    return {"status": "ok", "code": code, "output": output}
+            await writer.wait_closed()
+        except Exception:
+            pass
+    try:
+        return json.loads(data.decode().strip())
+    except (json.JSONDecodeError, UnicodeDecodeError, ValueError):
+        return {"status": "error", "errors": ["bad reply from shell helper"]}
 
 
 @app.websocket("/shell")

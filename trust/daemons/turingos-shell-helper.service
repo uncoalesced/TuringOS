@@ -1,0 +1,18 @@
+[Unit]
+Description=TuringOS Session Shell Helper
+Documentation=man:turingos-shell-helper(8)
+# Only turingos-bridged-ws (/shell) talks to this, so it lives and dies with it
+ConditionPathExists=!/etc/turingos/disable-bridged-ws
+# Safe mode boot (Phase 3 fallback): no agent, no UI
+ConditionKernelCommandLine=!turingos.safe
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /usr/lib/turingos/daemons/shell-helper.py
+Restart=on-failure
+RestartSec=1
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target

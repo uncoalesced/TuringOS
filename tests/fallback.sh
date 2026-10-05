@@ -87,7 +87,7 @@ grep -qx foot "${ROOT}/debian-live/config/package-lists/turingos.list.chroot" ||
 AUTOSTART="${INC}/etc/xdg/openbox/autostart"
 grep -q 'grep -qw turingos.safe /proc/cmdline' "$AUTOSTART" || fail "openbox autostart has no safe-mode branch"
 grep -q 'turingos-respawn /usr/bin/turingos-ui' "$AUTOSTART" || fail "openbox autostart doesn't respawn the UI"
-for u in agentd-llm agentd-plan bridged-ws shell; do
+for u in agentd-llm agentd-plan bridged-ws shell shell-helper; do
     grep -qx 'ConditionKernelCommandLine=!turingos.safe' "${ROOT}/trust/daemons/turingos-${u}.service" \
         || fail "turingos-${u}.service starts in safe mode"
 done

@@ -30,10 +30,10 @@ jobs:
             echo "::endgroup::"
           done
 
-      - name: Bridge /shell tests (trust/daemons/bridged-ws.py)
+      - name: Bridge /shell tests (trust/daemons/bridged-ws.py, shell-helper.py)
         run: |
           python3 -m pip install --quiet --user --break-system-packages fastapi httpx uvicorn
-          python3 -m unittest trust/tests/test_bridge_shell.py
+          python3 -m unittest trust/tests/test_bridge_shell.py trust/tests/test_shell_helper.py
 
   ui:
     strategy:
