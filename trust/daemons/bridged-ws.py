@@ -11,7 +11,6 @@ from pathlib import Path
 import uvicorn
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 
 APP_DIR = Path(__file__).parent.parent.parent / "ui" / "web"
 CAP_SOCKET = "/run/turingos/cap.sock"
@@ -252,12 +251,10 @@ async def health():
     return {"status": "ok"}
 
 
+# The page loads its assets relative to / (css/..., js/...), so serve the UI
+# at the root. Mounted last: /health and the WebSocket routes above win.
 if APP_DIR.exists():
-    app.mount("/static", StaticFiles(directory=APP_DIR), name="static")
-
-    @app.get("/")
-    async def root():
-        return FileResponse(APP_DIR / "index.html")
+    app.mount("/", StaticFiles(directory=APP_DIR, html=True), name="ui")
 
 
 def main():

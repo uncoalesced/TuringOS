@@ -18,6 +18,9 @@ WINDOW="${TURINGOS_RESPAWN_WINDOW:-60}"
 DELAY="${TURINGOS_RESPAWN_DELAY:-1}"
 TERMINAL="${TURINGOS_RESPAWN_TERMINAL:-x-terminal-emulator}"
 
+# Logout/shutdown signals us too: stop instead of restarting into a dying session
+trap 'exit 0' TERM HUP INT
+
 crashes=()
 while :; do
     "$@"

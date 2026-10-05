@@ -44,6 +44,12 @@ TURINGOS_RESPAWN_MAX=2 bash "$RESPAWN" "${WORK}/flaky" "${WORK}/count3" 99 2>/de
 [[ $(cat "${WORK}/count3") -eq 3 ]] || fail "want MAX+1=3 runs before giving up, got $(cat "${WORK}/count3")"
 grep -qx opened "${WORK}/terminal.log" || fail "terminal not opened after the crash loop"
 
+# ─── logout (SIGTERM to the watchdog): stop, don't restart ───────────────────
+# shellcheck disable=SC2016  # $PPID/$1 expand in the child shell
+bash "$RESPAWN" sh -c 'echo run >> "$1"; kill -TERM "$PPID"; exit 1' _ "${WORK}/count4" 2>/dev/null \
+    || fail "SIGTERM should end respawn cleanly"
+[[ $(wc -l < "${WORK}/count4") -eq 1 ]] || fail "respawn restarted after SIGTERM"
+
 # ─── no command: usage error ─────────────────────────────────────────────────
 if bash "$RESPAWN" 2>/dev/null; then fail "respawn without a command should fail"; fi
 

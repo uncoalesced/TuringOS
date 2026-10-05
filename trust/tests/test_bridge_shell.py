@@ -72,6 +72,20 @@ class RunShell(unittest.TestCase):
         self.assertLess(len(res["output"]), bridge.SHELL_MAX_OUTPUT + 64)
 
 
+class ServesUi(unittest.TestCase):
+    """The page loads css/ and js/ relative to /, so the bridge must serve
+    them there; otherwise reconnect.js (the "Reconnecting..." overlay) never
+    loads. /health and the WebSocket routes must still win over the mount."""
+
+    def test_page_and_assets(self):
+        client = TestClient(bridge.app)
+        self.assertEqual(client.get("/").status_code, 200)
+        self.assertIn("js/reconnect.js", client.get("/").text)
+        self.assertEqual(client.get("/js/reconnect.js").status_code, 200)
+        self.assertEqual(client.get("/css/base.css").status_code, 200)
+        self.assertEqual(client.get("/health").json(), {"status": "ok"})
+
+
 class Defaults(unittest.TestCase):
     def test_binds_loopback_by_default(self):
         src = (Path(__file__).parent.parent / "daemons" / "bridged-ws.py").read_text()
