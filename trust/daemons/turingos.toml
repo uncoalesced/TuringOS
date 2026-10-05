@@ -1,0 +1,33 @@
+# TuringOS system configuration
+# Place in /etc/turingos/turingos.toml
+
+[system]
+# Default compositor: cage, sway, or labwc
+compositor = "cage"
+
+# UI port for bridge WebSocket server
+ui_port = 8080
+
+# Default model settings
+[model]
+default_provider = "anthropic"
+default_model = "claude-sonnet-4-20250514"
+
+# Capability policy
+[policy]
+# Default grant expiry in minutes
+default_grant_expiry_minutes = 5
+
+# Maximum grant expiry in minutes
+max_grant_expiry_minutes = 60
+
+# Whether to allow grant delegation (v2)
+allow_delegation = false
+
+# Sandbox settings
+[sandbox]
+# Default seccomp profile
+default_profile = "default"
+
+# Network access for sandboxed tools
+allow_network = false

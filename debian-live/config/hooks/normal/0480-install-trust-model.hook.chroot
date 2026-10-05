@@ -1,0 +1,132 @@
+#!/bin/bash
+# 0480-install-trust-model.hook.chroot
+# Installs the TuringOS trust model daemons, configs, and tool manifests
+
+set -euo pipefail
+
+echo "==> [0480-trust-model] Installing trust model daemons..."
+
+# System users
+if ! id turingos &>/dev/null; then
+    useradd -r -s /usr/sbin/nologin -d /nonexistent -c "TuringOS daemon" turingos
+fi
+if ! id turingos-audit &>/dev/null; then
+    useradd -r -s /usr/sbin/nologin -d /nonexistent -c "TuringOS audit daemon" turingos-audit
+fi
+
+# Daemon binaries
+DAEMON_DIR="/usr/lib/turingos/daemons"
+mkdir -p "$DAEMON_DIR"
+install -m 755 -o root -g root \
+    /usr/src/turingos/trust/daemons/auditd.py \
+    /usr/src/turingos/trust/daemons/audit_cli.py \
+    /usr/src/turingos/trust/daemons/capd.py \
+    /usr/src/turingos/trust/daemons/cap_cli.py \
+    /usr/src/turingos/trust/daemons/sandboxd.py \
+    /usr/src/turingos/trust/daemons/sandbox_cli.py \
+    /usr/src/turingos/trust/daemons/agentd-llm.py \
+    /usr/src/turingos/trust/daemons/agentd-plan.py \
+    /usr/src/turingos/trust/daemons/memoryd.py \
+    /usr/src/turingos/trust/daemons/toolreg.py \
+    /usr/src/turingos/trust/daemons/bridged.py \
+    /usr/src/turingos/trust/daemons/bridged-ws.py \
+    /usr/src/turingos/trust/daemons/launch-shell.sh \
+    /usr/src/turingos/trust/daemons/launch-ui.sh \
+    "$DAEMON_DIR/"
+
+# Trust model CLI wrappers
+mkdir -p /usr/bin
+cat > /usr/bin/turingos-audit <<'EOF'
+#!/bin/bash
+exec python3 /usr/lib/turingos/daemons/audit_cli.py "$@"
+EOF
+chmod 755 /usr/bin/turingos-audit
+
+cat > /usr/bin/turingos-cap <<'EOF'
+#!/bin/bash
+exec python3 /usr/lib/turingos/daemons/cap_cli.py "$@"
+EOF
+chmod 755 /usr/bin/turingos-cap
+
+cat > /usr/bin/turingos-sandbox <<'EOF'
+#!/bin/bash
+exec python3 /usr/lib/turingos/daemons/sandbox_cli.py "$@"
+EOF
+chmod 755 /usr/bin/turingos-sandbox
+
+# Tool binaries
+TOOL_DIR="/usr/lib/turingos/tools"
+mkdir -p "$TOOL_DIR"
+install -m 755 -o root -g root \
+    /usr/src/turingos/trust/tools/file-reader.py \
+    /usr/src/turingos/trust/tools/shell-exec \
+    /usr/src/turingos/trust/tools/browser-open \
+    /usr/src/turingos/trust/tools/file-writer \
+    /usr/src/turingos/trust/tools/file-lister \
+    "$TOOL_DIR/"
+
+# Tool manifests
+MANIFEST_DIR="/etc/turingos/tools.d"
+mkdir -p "$MANIFEST_DIR"
+install -m 644 -o root -g root \
+    /usr/src/turingos/trust/tools/file-read.json \
+    /usr/src/turingos/trust/tools/file-write.json \
+    /usr/src/turingos/trust/tools/file-list.json \
+    /usr/src/turingos/trust/tools/shell-exec.json \
+    /usr/src/turingos/trust/tools/browser-open.json \
+    "$MANIFEST_DIR/"
+
+# System configuration
+CONFIG_DIR="/etc/turingos"
+mkdir -p "$CONFIG_DIR"
+install -m 644 -o root -g root \
+    /usr/src/turingos/trust/daemons/turingos.toml \
+    /usr/src/turingos/trust/daemons/policy.toml \
+    "$CONFIG_DIR/"
+
+# Runtime directories
+mkdir -p /run/turingos
+chown turingos:turingos /run/turingos
+chmod 755 /run/turingos
+
+# State directories
+mkdir -p /var/lib/turingos
+chown turingos-audit:turingos-audit /var/lib/turingos
+chmod 700 /var/lib/turingos
+
+# User config skeleton
+SKEL_DIR="/etc/skel/.turingos"
+mkdir -p "$SKEL_DIR/tools.d"
+
+# Systemd services
+SYSTEMD_DIR="/etc/systemd/system"
+mkdir -p "$SYSTEMD_DIR"
+install -m 644 -o root -g root \
+    /usr/src/turingos/trust/daemons/turingos-auditd.service \
+    /usr/src/turingos/trust/daemons/turingos-capd.service \
+    /usr/src/turingos/trust/daemons/turingos-sandboxd.service \
+    /usr/src/turingos/trust/daemons/turingos-agentd-llm.service \
+    /usr/src/turingos/trust/daemons/turingos-agentd-plan.service \
+    /usr/src/turingos/trust/daemons/turingos-memoryd.service \
+    /usr/src/turingos/trust/daemons/turingos-toolreg.service \
+    /usr/src/turingos/trust/daemons/turingos-bridged.service \
+    /usr/src/turingos/trust/daemons/turingos-bridged-ws.service \
+    /usr/src/turingos/trust/daemons/turingos-shell.service \
+    "$SYSTEMD_DIR/"
+
+# Enable services
+systemctl enable turingos-auditd.service
+systemctl enable turingos-capd.service
+systemctl enable turingos-sandboxd.service
+systemctl enable turingos-agentd-llm.service
+systemctl enable turingos-agentd-plan.service
+systemctl enable turingos-memoryd.service
+systemctl enable turingos-toolreg.service
+systemctl enable turingos-bridged.service
+systemctl enable turingos-bridged-ws.service
+systemctl enable turingos-shell.service
+
+# Disable services by default in live mode (they'll be started by launch script)
+# systemctl mask turingos-auditd.service  # etc.
+
+echo "==> [0480-trust-model] Done."

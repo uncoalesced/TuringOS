@@ -1,0 +1,28 @@
+[Unit]
+Description=TuringOS Shell (Wayland Compositor + UI)
+Documentation=man:turingos-shell(8)
+After=graphical.target turingos-bridged-ws.service
+Wants=turingos-bridged-ws.service
+ConditionPathExists=!/etc/turingos/disable-shell
+
+[Service]
+Type=simple
+ExecStart=/usr/lib/turingos/launch-shell.sh
+Restart=on-failure
+RestartSec=2
+User=turingos
+Group=turingos
+StandardOutput=journal
+StandardError=journal
+
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/run/turingos ~/.turingos /usr/lib/turingos/ui/web
+
+Environment=WAYLAND_DISPLAY=wayland-0
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+
+[Install]
+WantedBy=graphical.target

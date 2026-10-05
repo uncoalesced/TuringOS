@@ -1,7 +1,9 @@
 [Unit]
 Description=TuringOS Audit Daemon
+Documentation=man:turingos-auditd(8)
 After=local-fs.target
-Before=turingos-capd.service turingos-sandboxd.service turingos-agentd.service
+Before=turingos-capd.service turingos-sandboxd.service turingos-agentd-llm.service turingos-agentd-plan.service turingos-bridged-ws.service
+ConditionPathExists=!/etc/turingos/disable-auditd
 
 [Service]
 Type=simple
@@ -10,6 +12,16 @@ Restart=on-failure
 RestartSec=1
 User=turingos-audit
 Group=turingos-audit
+StandardOutput=journal
+StandardError=journal
+
+# Security hardening
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/turingos /run/turingos
+CapabilityBoundingSet=CAP_DAC_OVERRIDE CAP_FOWNER
 
 [Install]
 WantedBy=multi-user.target

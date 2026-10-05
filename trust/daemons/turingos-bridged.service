@@ -1,7 +1,9 @@
 [Unit]
-Description=TuringOS Bridge Daemon
+Description=TuringOS Bridge Daemon (Egress Control)
+Documentation=man:turingos-bridged(8)
 After=turingos-auditd.service
-Before=turingos-agentd.service
+Before=turingos-agentd-llm.service turingos-bridged-ws.service
+ConditionPathExists=!/etc/turingos/disable-bridged
 
 [Service]
 Type=simple
@@ -10,6 +12,14 @@ Restart=on-failure
 RestartSec=1
 User=turingos
 Group=turingos
+StandardOutput=journal
+StandardError=journal
+
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/run/turingos
 
 [Install]
 WantedBy=multi-user.target

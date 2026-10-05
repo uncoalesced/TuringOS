@@ -1,0 +1,31 @@
+# TuringOS sway configuration
+# Fullscreen kiosk mode for the trust model UI
+
+# Disable all window decorations
+default_border none
+default_floating_border none
+
+# No gaps
+gaps inner 0
+gaps outer 0
+
+# Hide titlebars
+titlebar_border_thickness 0
+titlebar_padding 0
+titlebar_h_padding 0
+
+# Fullscreen the UI window on startup
+for_window [app_id="turingos-ui"] fullscreen enable
+
+# Disable focus indicators
+focus_wrapping off
+
+# Input
+input * xkb_layout us
+input * xkb_variant intl
+
+# Output
+output * bg #0a0a0f solid_color
+
+# Autostart the UI
+exec /usr/lib/turingos/launch-shell.sh

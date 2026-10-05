@@ -1,0 +1,48 @@
+# TuringOS capability policy
+# Place in /etc/turingos/policy.toml
+
+# Default capabilities granted to tools by category
+[defaults]
+# Capabilities for file-read tools
+file_read = [
+    { kind = "fs.read", paths = ["$HOME/**"] }
+]
+
+# Capabilities for file-write tools
+file_write = [
+    { kind = "fs.write", paths = ["$HOME/**"] }
+]
+
+# Capabilities for shell tools
+shell_exec = [
+    { kind = "fs.execute", paths = ["$HOME/**"] }
+]
+
+# Capabilities for browser tools
+browser_open = [
+    { kind = "net.egress", domains = ["*"] }
+]
+
+# Tool-specific overrides
+[tool_overrides]
+"shell.exec" = [
+    { kind = "fs.execute", paths = ["$HOME/**"] }
+]
+
+"file.read" = [
+    { kind = "fs.read", paths = ["$HOME/**"] }
+]
+
+"file.write" = [
+    { kind = "fs.write", paths = ["$HOME/**"] }
+]
+
+"browser.open" = [
+    { kind = "net.egress", domains = ["*"] }
+]
+
+# Capabilities that require explicit user approval regardless of policy
+[high_risk_capabilities]
+"fs.execute" = true
+"fs.write" = true
+"net.egress" = true

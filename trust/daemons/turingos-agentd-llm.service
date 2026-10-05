@@ -1,7 +1,9 @@
 [Unit]
 Description=TuringOS Agent LLM Daemon
+Documentation=man:turingos-agentd-llm(8)
 After=turingos-bridged.service turingos-auditd.service
-Before=turingos-agentd-plan.service
+Before=turingos-agentd-plan.service turingos-bridged-ws.service
+ConditionPathExists=!/etc/turingos/disable-agentd-llm
 
 [Service]
 Type=simple
@@ -10,6 +12,14 @@ Restart=on-failure
 RestartSec=1
 User=turingos
 Group=turingos
+StandardOutput=journal
+StandardError=journal
+
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/run/turingos ~/.turingos
 
 [Install]
 WantedBy=multi-user.target
