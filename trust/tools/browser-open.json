@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "id": "browser.open",
+  "version": "0.1.0",
+  "description": "Open URLs in the system browser (Brave kiosk)",
+  "runtime": {
+    "kind": "binary",
+    "path": "/usr/lib/turingos/tools/browser-open",
+    "sandbox_profile": "browser"
+  },
+  "capabilities_required": [
+    { "kind": "net.egress", "domains": ["$USER_SCOPED"] },
+    { "kind": "fs.execute", "paths": ["/usr/bin/brave-browser"] }
+  ],
+  "tools": [
+    {
+      "name": "open",
+      "description": "Open a URL in the system browser",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "url": { "type": "string" },
+          "new_tab": { "type": "boolean", "default": false }
+        },
+        "required": ["url"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" }
+        }
+      },
+      "ui_fragments": []
+    }
+  ]
+}

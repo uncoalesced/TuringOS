@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "id": "file.read",
+  "version": "0.1.0",
+  "description": "Read files from the filesystem",
+  "runtime": {
+    "kind": "binary",
+    "path": "/usr/lib/turingos/tools/file-reader",
+    "sandbox_profile": "default"
+  },
+  "capabilities_required": [
+    { "kind": "fs.read", "paths": ["$USER_SCOPED"] }
+  ],
+  "tools": [
+    {
+      "name": "read",
+      "description": "Read a file and return its contents",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string" },
+          "encoding": { "type": "string", "default": "utf-8" }
+        },
+        "required": ["path"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "content": { "type": "string" }
+        }
+      },
+      "ui_fragments": ["file-preview", "text"]
+    }
+  ]
+}

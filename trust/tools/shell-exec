@@ -1,0 +1,46 @@
+#!/usr/bin/env python3
+import sys
+import subprocess
+import os
+import json
+
+
+def main():
+    if len(sys.argv) < 2:
+        print(json.dumps({"error": "usage: shell-exec <cmd> [cwd] [timeout]"}))
+        sys.exit(1)
+
+    cmd = sys.argv[1]
+    cwd = sys.argv[2] if len(sys.argv) > 2 else os.getcwd()
+    timeout = int(sys.argv[3]) if len(sys.argv) > 3 else 30
+
+    try:
+        result = subprocess.run(
+            cmd,
+            shell=True,
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+        print(json.dumps({
+            "exit_code": result.returncode,
+            "stdout": result.stdout,
+            "stderr": result.stderr
+        }))
+    except subprocess.TimeoutExpired:
+        print(json.dumps({
+            "exit_code": -1,
+            "stdout": "",
+            "stderr": f"command timed out after {timeout}s"
+        }))
+    except Exception as e:
+        print(json.dumps({
+            "exit_code": -1,
+            "stdout": "",
+            "stderr": str(e)
+        }))
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "id": "shell.exec",
+  "version": "0.1.0",
+  "description": "Execute shell commands in a sandboxed environment",
+  "runtime": {
+    "kind": "binary",
+    "path": "/usr/lib/turingos/tools/shell-exec",
+    "sandbox_profile": "shell"
+  },
+  "capabilities_required": [
+    { "kind": "fs.execute", "paths": ["$USER_SCOPED"] }
+  ],
+  "tools": [
+    {
+      "name": "exec",
+      "description": "Execute a shell command and return stdout/stderr",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "cmd": { "type": "string" },
+          "cwd": { "type": "string" },
+          "timeout": { "type": "integer", "default": 30 }
+        },
+        "required": ["cmd"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "exit_code": { "type": "integer" },
+          "stdout": { "type": "string" },
+          "stderr": { "type": "string" }
+        }
+      },
+      "ui_fragments": ["terminal-output"]
+    }
+  ]
+}

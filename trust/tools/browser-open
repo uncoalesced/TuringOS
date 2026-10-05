@@ -1,0 +1,28 @@
+#!/usr/bin/env python3
+import sys
+import json
+import subprocess
+
+
+def main():
+    if len(sys.argv) < 2:
+        print(json.dumps({"success": False, "error": "usage: browser-open <url> [new_tab]"}))
+        sys.exit(1)
+
+    url = sys.argv[1]
+    new_tab = sys.argv[2].lower() == "true" if len(sys.argv) > 2 else False
+
+    try:
+        # In kiosk mode, Brave is already running fullscreen
+        # Use xdotool to navigate the existing Brave window
+        if new_tab:
+            subprocess.run(["xdotool", "key", "ctrl+t"], check=False)
+        subprocess.run(["xdotool", "type", url], check=False)
+        subprocess.run(["xdotool", "key", "Return"], check=False)
+        print(json.dumps({"success": True}))
+    except Exception as e:
+        print(json.dumps({"success": False, "error": str(e)}))
+
+
+if __name__ == "__main__":
+    main()

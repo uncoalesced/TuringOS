@@ -1,0 +1,52 @@
+#!/usr/bin/env python3
+import sys
+import json
+import os
+
+
+def main():
+    if len(sys.argv) < 2:
+        print(json.dumps({"error": "usage: file-lister <path> [recursive]"}))
+        sys.exit(1)
+
+    path = sys.argv[1]
+    recursive = sys.argv[2].lower() == "true" if len(sys.argv) > 2 else False
+
+    try:
+        entries = []
+        if recursive:
+            for root, dirs, files in os.walk(path):
+                for d in dirs:
+                    full = os.path.join(root, d)
+                    stat = os.stat(full)
+                    entries.append({
+                        "name": os.path.relpath(full, path),
+                        "type": "directory",
+                        "size": stat.st_size,
+                        "modified": stat.st_mtime
+                    })
+                for f in files:
+                    full = os.path.join(root, f)
+                    stat = os.stat(full)
+                    entries.append({
+                        "name": os.path.relpath(full, path),
+                        "type": "file",
+                        "size": stat.st_size,
+                        "modified": stat.st_mtime
+                    })
+        else:
+            for entry in os.scandir(path):
+                stat = entry.stat()
+                entries.append({
+                    "name": entry.name,
+                    "type": "directory" if entry.is_dir() else "file" if entry.is_file() else "symlink",
+                    "size": stat.st_size,
+                    "modified": stat.st_mtime
+                })
+        print(json.dumps({"entries": entries}))
+    except Exception as e:
+        print(json.dumps({"error": str(e)}))
+
+
+if __name__ == "__main__":
+    main()

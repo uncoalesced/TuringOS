@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "id": "file.list",
+  "version": "0.1.0",
+  "description": "List directory contents",
+  "runtime": {
+    "kind": "binary",
+    "path": "/usr/lib/turingos/tools/file-lister",
+    "sandbox_profile": "default"
+  },
+  "capabilities_required": [
+    { "kind": "fs.read", "paths": ["$USER_SCOPED"] }
+  ],
+  "tools": [
+    {
+      "name": "list",
+      "description": "List directory contents",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string" },
+          "recursive": { "type": "boolean", "default": false }
+        },
+        "required": ["path"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "type": { "type": "string", "enum": ["file", "directory", "symlink"] },
+                "size": { "type": "integer" },
+                "modified": { "type": "string" }
+              }
+            }
+          }
+        }
+      },
+      "ui_fragments": ["table", "file-preview"]
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "id": "file.write",
+  "version": "0.1.0",
+  "description": "Write files to the filesystem",
+  "runtime": {
+    "kind": "binary",
+    "path": "/usr/lib/turingos/tools/file-writer",
+    "sandbox_profile": "default"
+  },
+  "capabilities_required": [
+    { "kind": "fs.write", "paths": ["$USER_SCOPED"] }
+  ],
+  "tools": [
+    {
+      "name": "write",
+      "description": "Write content to a file",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string" },
+          "content": { "type": "string" },
+          "encoding": { "type": "string", "default": "utf-8" }
+        },
+        "required": ["path", "content"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" }
+        }
+      },
+      "ui_fragments": ["file-preview"]
+    }
+  ]
+}
