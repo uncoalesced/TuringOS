@@ -4,6 +4,8 @@ Documentation=man:turingos-shell(8)
 After=graphical.target turingos-bridged-ws.service
 Wants=turingos-bridged-ws.service
 ConditionPathExists=!/etc/turingos/disable-shell
+# Safe mode boot (Phase 3 fallback): no agent, no UI
+ConditionKernelCommandLine=!turingos.safe
 
 [Service]
 Type=simple

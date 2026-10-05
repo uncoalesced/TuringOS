@@ -3,6 +3,7 @@ import argparse
 import asyncio
 import json
 import os
+import signal
 import socket
 import sys
 from pathlib import Path
@@ -10,7 +11,6 @@ from pathlib import Path
 import uvicorn
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 
 APP_DIR = Path(__file__).parent.parent.parent / "ui" / "web"
 CAP_SOCKET = "/run/turingos/cap.sock"
@@ -18,6 +18,12 @@ PLAN_SOCKET = "/run/turingos/agent-plan.sock"
 AGENT_LLM_SOCKET = "/run/turingos/agent-llm.sock"
 BRIDGE_SOCKET = "/run/turingos/bridge.sock"
 MEMORY_SOCKET = "/run/turingos/memory.sock"
+
+# Local shell mode (Phase 3 fallback): when the model is unreachable the UI
+# runs what the user types as a plain command, like a terminal would
+SHELL_TIMEOUT = 60
+SHELL_MAX_OUTPUT = 64 * 1024
+LOCAL_HOSTS = {"localhost", "127.0.0.1"}
 
 app = FastAPI(title="TuringOS Bridge")
 
@@ -164,22 +170,97 @@ async def memory_ws(ws: WebSocket):
         await ws.send_text(json.dumps({"status": "error", "errors": [str(e)]}))
 
 
+def origin_allowed(ws: WebSocket) -> bool:
+    """Only the UI page this bridge serves may open /shell. Browsers don't
+    apply CORS to WebSockets, so without this any site open in Brave could
+    run commands; a DNS-rebound name fails the localhost check."""
+    host = ws.headers.get("host", "")
+    return (
+        host.rsplit(":", 1)[0] in LOCAL_HOSTS
+        and ws.headers.get("origin", "") == f"http://{host}"
+    )
+
+
+async def run_shell(command: str, timeout: float = SHELL_TIMEOUT) -> dict:
+    proc = await asyncio.create_subprocess_exec(
+        "bash", "-c", "exec 2>&1\n" + command,
+        stdin=asyncio.subprocess.DEVNULL,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.DEVNULL,
+        cwd=os.path.expanduser("~"),
+        start_new_session=True,
+    )
+    buf = b""
+
+    async def collect():
+        nonlocal buf
+        while len(buf) <= SHELL_MAX_OUTPUT:
+            chunk = await proc.stdout.read(65536)
+            if not chunk:
+                break
+            buf += chunk
+
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + timeout
+    timed_out = False
+    try:
+        await asyncio.wait_for(collect(), timeout)
+        if len(buf) <= SHELL_MAX_OUTPUT:
+            await asyncio.wait_for(proc.wait(), max(0.0, deadline - loop.time()))
+    except asyncio.TimeoutError:
+        timed_out = True
+    if proc.returncode is None:  # timed out or flooding output: kill the whole group
+        try:
+            os.killpg(proc.pid, signal.SIGKILL)
+        except (AttributeError, ProcessLookupError):
+            proc.kill()
+    code = await proc.wait()
+
+    output = buf[:SHELL_MAX_OUTPUT].decode(errors="replace")
+    if len(buf) > SHELL_MAX_OUTPUT:
+        output += "\n[output truncated at 64 KB]"
+    if timed_out:
+        code = 124
+        output += f"\n[stopped after {timeout:g}s]"
+    return {"status": "ok", "code": code, "output": output}
+
+
+@app.websocket("/shell")
+async def shell_ws(ws: WebSocket):
+    if not origin_allowed(ws):
+        await ws.close(code=1008)
+        return
+    await ws.accept()
+    try:
+        while True:
+            msg = json.loads(await ws.receive_text())
+            command = str(msg.get("command", "")).strip()
+            if not command:
+                result = {"status": "error", "errors": ["missing command"]}
+            else:
+                result = await run_shell(command)
+            await ws.send_text(json.dumps(result))
+    except WebSocketDisconnect:
+        pass
+    except Exception as e:
+        await ws.send_text(json.dumps({"status": "error", "errors": [str(e)]}))
+
+
 @app.get("/health")
 async def health():
     return {"status": "ok"}
 
 
+# The page loads its assets relative to / (css/..., js/...), so serve the UI
+# at the root. Mounted last: /health and the WebSocket routes above win.
 if APP_DIR.exists():
-    app.mount("/static", StaticFiles(directory=APP_DIR), name="static")
-
-    @app.get("/")
-    async def root():
-        return FileResponse(APP_DIR / "index.html")
+    app.mount("/", StaticFiles(directory=APP_DIR, html=True), name="ui")
 
 
 def main():
     parser = argparse.ArgumentParser(description="TuringOS Bridge WebSocket Server")
-    parser.add_argument("--host", default="0.0.0.0")
+    # Loopback only: the bridge drives the agent and /shell runs commands
+    parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8080)
     parser.add_argument("--reload", action="store_true")
     args = parser.parse_args()

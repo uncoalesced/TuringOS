@@ -4,6 +4,8 @@ Documentation=man:turingos-agentd-plan(8)
 After=turingos-capd.service turingos-sandboxd.service turingos-memoryd.service turingos-auditd.service
 Before=turingos-bridged-ws.service
 ConditionPathExists=!/etc/turingos/disable-agentd-plan
+# Safe mode boot (Phase 3 fallback): no agent, no UI
+ConditionKernelCommandLine=!turingos.safe
 
 [Service]
 Type=simple

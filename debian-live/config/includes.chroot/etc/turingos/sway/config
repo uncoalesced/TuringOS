@@ -29,3 +29,5 @@ output * bg #0a0a0f solid_color
 
 # Autostart the UI
 exec /usr/lib/turingos/launch-shell.sh
+# Super+Esc: plain terminal, bypasses the agent (Phase 3 fallback)
+bindsym Mod4+Escape exec foot

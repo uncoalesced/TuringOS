@@ -1,0 +1,36 @@
+#!/bin/bash
+# 0475-fallback.hook.chroot
+#
+# Phase 3 fallback: Super+Esc opens a plain terminal in the openbox session,
+# whatever state the TuringOS UI or the agent is in.
+#
+# Patches the openbox package's /etc/xdg/openbox/rc.xml in place instead of
+# shipping a whole copy over the conffile. (sway and labwc get the same key in
+# includes.chroot/etc/turingos/; safe mode is in the openbox autostart.)
+
+set -euo pipefail
+
+RC="${OPENBOX_RC:-/etc/xdg/openbox/rc.xml}"
+
+echo "==> [0475-fallback] Super+Esc terminal in ${RC}..."
+
+if [[ ! -f "$RC" ]]; then
+    echo "ERROR: [0475-fallback] ${RC} missing (is openbox installed?)" >&2
+    exit 1
+fi
+
+if grep -q 'key="W-Escape"' "$RC"; then
+    echo "==> [0475-fallback] already bound, nothing to do."
+    exit 0
+fi
+
+if ! grep -q '<keyboard>' "$RC"; then
+    echo "ERROR: [0475-fallback] no <keyboard> section in ${RC}" >&2
+    exit 1
+fi
+
+sed -i '0,/<keyboard>/s|<keyboard>|<keyboard>\n    <keybind key="W-Escape">\n      <action name="Execute"><command>x-terminal-emulator</command></action>\n    </keybind>|' "$RC"
+
+grep -q 'key="W-Escape"' "$RC" || { echo "ERROR: [0475-fallback] keybind not added" >&2; exit 1; }
+
+echo "==> [0475-fallback] Done."

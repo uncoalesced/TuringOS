@@ -125,6 +125,46 @@ function sync() {
   send.disabled = !input.value.trim();
 }
 
+// ─── Shell mode (Phase 3 fallback) ───────────────────────────────────────────
+// The AI is unreachable (a chat failed): what you type runs as a plain shell
+// command, like a terminal, so the machine stays usable. "$ cmd" runs one
+// command any time. The badge goes back to the AI.
+const shellBadge = $('#composer-shell');
+const AI_PLACEHOLDER = input.placeholder;
+let shellMode = false;
+let lastQuestion = '';
+
+function setShellMode(on) {
+  shellMode = on;
+  shellBadge.hidden = !on;
+  input.placeholder = on ? '$ type a command' : AI_PLACEHOLDER;
+}
+
+shellBadge.addEventListener('click', () => {
+  setShellMode(false);
+  if (!input.value.trim()) input.value = lastQuestion;
+  sync();
+  input.focus();
+});
+
+async function submitShell(command) {
+  const answer = $('#composer-answer');
+  send.disabled = true;
+  answer.className = 'composer-answer is-shell is-pending';
+  answer.textContent = `$ ${command}`;
+  const res = await window.shell.runShell(command);
+  send.disabled = !input.value.trim();
+  if (!res.ok) {
+    answer.className = 'composer-answer is-shell is-error';
+    answer.textContent = `$ ${command}\n${res.error}`;
+    return;
+  }
+  answer.className = 'composer-answer is-shell';
+  answer.textContent = `$ ${command}\n${res.output.replace(/\n$/, '')}${res.code ? `\n[exit ${res.code}]` : ''}`;
+  input.value = '';
+  sync();
+}
+
 async function submitTask(task) {
   const res = await window.shell.startAgent(project.path, task, { model: modelChoice, effort: effortChoice });
   if (!res.ok) {
@@ -160,8 +200,13 @@ async function submitChat(question) {
   const res = await window.shell.askChat(question, modelChoice, effortChoice);
   send.disabled = !input.value.trim();
   if (!res.ok) {
+    // Don't leave the question in the box: in shell mode Enter would run it
+    lastQuestion = question;
+    input.value = '';
+    sync();
+    setShellMode(true);
     answer.className = 'composer-answer is-error';
-    answer.textContent = res.error;
+    answer.textContent = `${res.error}\n\nThe AI is unreachable, so shell mode is on: what you type now runs as a command. Click "Shell mode" to go back to the AI.`;
     return;
   }
   answer.className = 'composer-answer';
@@ -175,6 +220,11 @@ async function submit() {
   if (!task) return;
   if (!window.shell || !lastSnap?.live) {
     setHint('Sample mode: nothing was started', 'error');
+    return;
+  }
+  const command = task.startsWith('$') ? task.slice(1).trim() : shellMode ? task : null;
+  if (command !== null) {
+    if (command) await submitShell(command);
     return;
   }
   if (project) {

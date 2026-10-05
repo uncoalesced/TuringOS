@@ -24,7 +24,6 @@ if [[ -f ~/.turingos/shell.toml ]]; then
 fi
 
 COMPOSITOR="${COMPOSITOR:-cage}"
-UI_DIR="/usr/lib/turingos/ui/web"
 
 log() {
     echo "[$(date '+%H:%M:%S')] $*" >&2
@@ -37,7 +36,7 @@ case "$COMPOSITOR" in
     cage)
         if command -v cage &>/dev/null; then
             log "Starting cage compositor..."
-            exec cage -- /usr/lib/turingos/launch-ui.sh
+            exec cage -- /usr/lib/turingos/daemons/launch-ui.sh
         else
             log "cage not found, falling back to sway"
             COMPOSITOR="sway"
@@ -63,6 +62,6 @@ case "$COMPOSITOR" in
         ;;
     *)
         log "Unknown compositor: $COMPOSITOR, defaulting to cage"
-        exec cage -- /usr/lib/turingos/launch-ui.sh
+        exec cage -- /usr/lib/turingos/daemons/launch-ui.sh
         ;;
 esac

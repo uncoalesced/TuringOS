@@ -4,6 +4,8 @@ Documentation=man:turingos-bridged-ws(8)
 After=turingos-capd.service turingos-agentd-plan.service turingos-agentd-llm.service turingos-memoryd.service turingos-bridged.service turingos-toolreg.service turingos-auditd.service
 Before=turingos-shell.service
 ConditionPathExists=!/etc/turingos/disable-bridged-ws
+# Safe mode boot (Phase 3 fallback): no agent, no UI
+ConditionKernelCommandLine=!turingos.safe
 
 [Service]
 Type=simple

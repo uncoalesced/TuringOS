@@ -4,6 +4,8 @@ Documentation=man:turingos-agentd-llm(8)
 After=turingos-bridged.service turingos-auditd.service
 Before=turingos-agentd-plan.service turingos-bridged-ws.service
 ConditionPathExists=!/etc/turingos/disable-agentd-llm
+# Safe mode boot (Phase 3 fallback): no agent, no UI
+ConditionKernelCommandLine=!turingos.safe
 
 [Service]
 Type=simple

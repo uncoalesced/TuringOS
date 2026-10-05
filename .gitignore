@@ -5,3 +5,4 @@
 /debian-live/config/includes.chroot/usr/
 /debian-live/config/includes.chroot/opt/
 /debian-live/config/includes.chroot/etc/profile.d/
+__pycache__/

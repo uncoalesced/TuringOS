@@ -10,6 +10,7 @@ mod github;
 mod google;
 mod launch;
 mod projects;
+mod shell;
 mod state;
 mod system;
 mod voice;
@@ -36,6 +37,7 @@ fn main() {
             anthropic::chat_ask,
             voice::voice_start,
             voice::voice_stop,
+            shell::shell_run,
         ])
         .setup(move |app| {
             WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))
