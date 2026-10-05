@@ -49,10 +49,10 @@ def init_db(db_path: Path) -> sqlite3.Connection:
     return conn
 
 
-def audit(entry: dict):
+def audit(entry: dict, audit_socket: Path = Path(AUDIT_SOCKET)):
     try:
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        sock.connect(AUDIT_SOCKET)
+        sock.connect(str(audit_socket))
         sock.sendall(json.dumps(entry).encode() + b"\n")
         sock.recv(4096)
         sock.close()
@@ -81,7 +81,7 @@ def validate_grant(grant: dict) -> list[str]:
     return errors
 
 
-def issue_grant(conn: sqlite3.Connection, grant: dict) -> dict:
+def issue_grant(conn: sqlite3.Connection, grant: dict, audit_socket: Path = Path(AUDIT_SOCKET)) -> dict:
     errors = validate_grant(grant)
     if errors:
         return {"status": "error", "errors": errors}
@@ -116,12 +116,12 @@ def issue_grant(conn: sqlite3.Connection, grant: dict) -> dict:
         "action": {"kind": "grant.issue"},
         "provenance": {"origin": "agent_plan", "taint": "trusted", "chain": []},
         "outcome": "allowed",
-    })
+    }, audit_socket)
 
     return {"status": "ok", "grant_id": grant["grant_id"], "expires_at": grant["expires_at"]}
 
 
-def revoke_grant(conn: sqlite3.Connection, grant_id: str, reason: str, revoked_by: str = "user") -> dict:
+def revoke_grant(conn: sqlite3.Connection, grant_id: str, reason: str, revoked_by: str = "user", audit_socket: Path = Path(AUDIT_SOCKET)) -> dict:
     row = conn.execute("SELECT * FROM grants WHERE grant_id = ?", (grant_id,)).fetchone()
     if not row:
         return {"status": "error", "errors": [f"grant not found: {grant_id}"]}
@@ -145,7 +145,7 @@ def revoke_grant(conn: sqlite3.Connection, grant_id: str, reason: str, revoked_b
         "action": {"kind": "grant.revoke", "reason": reason},
         "provenance": {"origin": "user_request", "taint": "trusted", "chain": []},
         "outcome": "complete",
-    })
+    }, audit_socket)
 
     return {"status": "ok", "grant_id": grant_id, "revoked_at": now, "reason": reason}
 
@@ -186,7 +186,7 @@ def list_grants(conn: sqlite3.Connection, session_id: str = None, active_only: b
     return grants
 
 
-def handle_client(conn: sqlite3.Connection, client: socket.socket):
+def handle_client(conn: sqlite3.Connection, client: socket.socket, audit_socket: Path):
     try:
         data = b""
         while True:
@@ -208,9 +208,9 @@ def handle_client(conn: sqlite3.Connection, client: socket.socket):
 
         action = msg.get("action")
         if action == "issue":
-            result = issue_grant(conn, msg.get("grant", {}))
+            result = issue_grant(conn, msg.get("grant", {}), audit_socket)
         elif action == "revoke":
-            result = revoke_grant(conn, msg.get("grant_id", ""), msg.get("reason", ""), msg.get("revoked_by", "user"))
+            result = revoke_grant(conn, msg.get("grant_id", ""), msg.get("reason", ""), msg.get("revoked_by", "user"), audit_socket)
         elif action == "list":
             grants = list_grants(conn, msg.get("session_id"), msg.get("active_only", False))
             result = {"status": "ok", "grants": grants}
@@ -227,7 +227,7 @@ def handle_client(conn: sqlite3.Connection, client: socket.socket):
         client.close()
 
 
-def run_daemon(db_path: Path, socket_path: Path):
+def run_daemon(db_path: Path, socket_path: Path, audit_socket: Path = Path(AUDIT_SOCKET)):
     conn = init_db(db_path)
 
     socket_path.parent.mkdir(parents=True, exist_ok=True)
@@ -244,7 +244,7 @@ def run_daemon(db_path: Path, socket_path: Path):
     while True:
         try:
             client, _ = server.accept()
-            handle_client(conn, client)
+            handle_client(conn, client, audit_socket)
         except KeyboardInterrupt:
             break
         except Exception as e:
@@ -258,8 +258,9 @@ def main():
     parser = argparse.ArgumentParser(description="TuringOS capability daemon")
     parser.add_argument("--db", type=Path, default=Path(DB_PATH))
     parser.add_argument("--socket", type=Path, default=Path(SOCKET_PATH))
+    parser.add_argument("--audit-socket", type=Path, default=Path(AUDIT_SOCKET))
     args = parser.parse_args()
-    run_daemon(args.db, args.socket)
+    run_daemon(args.db, args.socket, args.audit_socket)
 
 
 if __name__ == "__main__":

@@ -25,10 +25,10 @@ def audit(entry: dict):
         pass
 
 
-def check_grant(grant_id: str) -> dict:
+def check_grant(grant_id: str, cap_socket: Path) -> dict:
     try:
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        sock.connect(CAP_SOCKET)
+        sock.connect(str(cap_socket))
         sock.sendall(json.dumps({"action": "list", "active_only": True}).encode() + b"\n")
         data = b""
         while True:
@@ -141,7 +141,7 @@ def run_tool(grant: dict, tool_path: str, tool_args: list[str], session_id: str)
         return {"status": "error", "errors": [str(e)]}
 
 
-def handle_client(client: socket.socket):
+def handle_client(client: socket.socket, cap_socket: Path):
     try:
         data = b""
         while True:
@@ -168,7 +168,7 @@ def handle_client(client: socket.socket):
                 client.sendall(json.dumps({"status": "error", "errors": ["missing grant_id"]}).encode() + b"\n")
                 return
 
-            grant = check_grant(grant_id)
+            grant = check_grant(grant_id, cap_socket)
             if not grant:
                 client.sendall(json.dumps({"status": "error", "errors": [f"grant not found or expired: {grant_id}"]}).encode() + b"\n")
                 return
@@ -192,7 +192,7 @@ def handle_client(client: socket.socket):
         client.close()
 
 
-def run_daemon(socket_path: Path):
+def run_daemon(socket_path: Path, cap_socket: Path = Path(CAP_SOCKET)):
     socket_path.parent.mkdir(parents=True, exist_ok=True)
     if socket_path.exists():
         os.unlink(socket_path)
@@ -207,7 +207,7 @@ def run_daemon(socket_path: Path):
     while True:
         try:
             client, _ = server.accept()
-            handle_client(client)
+            handle_client(client, cap_socket)
         except KeyboardInterrupt:
             break
         except Exception as e:
@@ -219,8 +219,9 @@ def run_daemon(socket_path: Path):
 def main():
     parser = argparse.ArgumentParser(description="TuringOS sandbox daemon")
     parser.add_argument("--socket", type=Path, default=Path(SOCKET_PATH))
+    parser.add_argument("--cap-socket", type=Path, default=Path(CAP_SOCKET))
     args = parser.parse_args()
-    run_daemon(args.socket)
+    run_daemon(args.socket, args.cap_socket)
 
 
 if __name__ == "__main__":
