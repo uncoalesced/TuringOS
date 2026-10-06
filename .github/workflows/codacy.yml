@@ -35,7 +35,14 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Drop binary files from the scan
+        # With a project token the CLI uses Codacy's remote config and ignores
+        # .codacy.yml exclude_paths, so a flagged binary still reaches the SARIF
+        # writer, which crashes (MalformedInputException) and hangs to the timeout.
+        run: find . -path ./.git -prune -o -type f \( -name '*.png' -o -name '*.ico' -o -name '*.ttf' -o -name '*.mp4' -o -name '*.woff*' -o -name '*.jpg' \) -print -delete
+
       - name: Run Codacy Analysis CLI
+        timeout-minutes: 30
         # v1.1.0 (CLI 4.0.0) crashed writing SARIF (IndexOutOfBoundsException)
         uses: codacy/codacy-analysis-cli-action@562ee3e92b8e92df8b67e0a5ff8aa8e261919c08 # v4.4.7
         with:
