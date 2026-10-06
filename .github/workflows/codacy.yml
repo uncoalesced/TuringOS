@@ -39,7 +39,8 @@ jobs:
         # With a project token the CLI uses Codacy's remote config and ignores
         # .codacy.yml exclude_paths, so a flagged binary still reaches the SARIF
         # writer, which crashes (MalformedInputException) and hangs to the timeout.
-        run: find . -not -path './.git/*' -type f \( -name '*.png' -o -name '*.ico' -o -name '*.ttf' -o -name '*.mp4' -o -name '*.woff*' -o -name '*.jpg' \) -print -delete
+        # The CLI lists files from the git index, so delete from it, not just disk.
+        run: git rm -q --ignore-unmatch -- '*.png' '*.ico' '*.ttf' '*.mp4' '*.woff' '*.woff2' '*.jpg'
 
       - name: Run Codacy Analysis CLI
         timeout-minutes: 30
