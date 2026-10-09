@@ -41,8 +41,8 @@ On a Debian 13 machine:
 ```bash
 sudo apt install live-build rsync git
 
-git clone https://github.com/uncoalesced/turingos
-cd turingos
+git clone https://github.com/uncoalesced/TuringOS
+cd TuringOS
 ./debian-live/sync-scripts.sh
 
 cd debian-live

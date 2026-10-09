@@ -32,7 +32,20 @@ We ship it as a bootable Debian live ISO with the UI and all tooling pre-install
 
 ### Download
 
-**[Download the latest ISO](https://github.com/uncoalesced/turingos/releases/latest)** (`live-image-amd64.hybrid.iso`, with a `.sha256` next to it).
+Latest release: [TuringOS 1.2](https://github.com/uncoalesced/TuringOS/releases/latest).
+
+| Image | Checksum |
+|---|---|
+| [`live-image-amd64.hybrid.iso`](https://github.com/uncoalesced/TuringOS/releases/latest/download/live-image-amd64.hybrid.iso) | [`.sha256`](https://github.com/uncoalesced/TuringOS/releases/latest/download/live-image-amd64.hybrid.iso.sha256) |
+| [`live-image-arm64.hybrid.iso`](https://github.com/uncoalesced/TuringOS/releases/latest/download/live-image-arm64.hybrid.iso) | not published for 1.2 yet |
+
+Check the amd64 image before booting it:
+
+```bash
+sha256sum -c live-image-amd64.hybrid.iso.sha256
+```
+
+The 1.2 release has no `.sha256` for arm64, so compare `sha256sum live-image-arm64.hybrid.iso` against a hash from a maintainer until one is published. The arm64 image boots on Apple Silicon through UTM.
 
 Boot it in a VM (VMware, VirtualBox, QEMU: 4 GB RAM, 2 CPUs, EFI or BIOS) or write it to a USB stick. It logs in by itself and opens the TuringOS UI fullscreen. Brave is the default browser and comes with the Claude extension, so `claude` → `/login`, the [Anthropic Console](https://console.anthropic.com) (API keys) and Google sign-in open right there. Homebrew is ready too: `brew install <formula>`.
 
@@ -45,6 +58,13 @@ Debug login: `user` / `live`.
 TuringOS is built for AI-first consumer hardware: a laptop, tablet, or phone whose whole job is working with Claude. You boot straight into Claude. The agent sandbox is the environment, not an app you open, and help is always one cursor shake away. We want a distro that a hardware maker could put on a Claude-dedicated device and ship.
 
 It also runs on hardware without a cloud connection. If the device has a decent GPU, you can point TuringOS at a local model and keep working (see [Models](#models)).
+
+### Known issues
+
+- BIOS installs and Secure Boot haven't been tested yet.
+- Raspberry Pi bootloaders and BIOS on arm64 haven't been tested yet.
+- The installer's "Erase disk" option makes a swap partition as large as your RAM.
+- TuringOS is a work in progress. Please file what breaks.
 
 ---
 
@@ -167,8 +187,8 @@ turingos/
 Requires: `git`, `jq`. Optional but recommended: `gum`, `fzf`.
 
 ```bash
-git clone https://github.com/uncoalesced/turingos
-cd turingos
+git clone https://github.com/uncoalesced/TuringOS
+cd TuringOS
 chmod +x turingos
 ./turingos init
 ```
@@ -198,8 +218,8 @@ Requires a Debian Trixie machine with `live-build` installed.
 sudo apt install live-build
 
 # Clone the repo
-git clone https://github.com/uncoalesced/turingos
-cd turingos
+git clone https://github.com/uncoalesced/TuringOS
+cd TuringOS
 
 # Stage TuringOS + the UI source into the image
 ./debian-live/sync-scripts.sh

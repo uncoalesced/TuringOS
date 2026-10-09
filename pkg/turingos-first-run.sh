@@ -16,7 +16,7 @@ _turingos_welcome() {
     for line in "" "Welcome to TuringOS" "Agentic Substrate - Debian Edition" "" \
         "TuringOS gives Claude Code a safe" "execution layer:" "" \
         "- Btrfs sandboxes protect your files" "- Review every change before merge" \
-        "- MCP Bazaar: one-command tool installs" "- Game Mode keeps agents backgrounded" ""; do
+        "- Clawd Bazaar: one-command MCP installs" "- Game Mode keeps agents backgrounded" ""; do
         printf '  ║   %-40s║\n' "$line"
     done
     printf '  ╚═══════════════════════════════════════════╝\n\n'
