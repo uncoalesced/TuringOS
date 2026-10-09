@@ -7,7 +7,7 @@
 
 set -euo pipefail
 
-TURINGOS_VERSION="0.1.0"
+TURINGOS_VERSION="1.2"
 
 # ─── Resolve Library Path ─────────────────────────────────────────────────────
 

@@ -50,7 +50,7 @@ def fetch_url(url: str, allowlist: list[str]) -> dict:
         }
 
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "TuringOS/1.0"})
+        req = urllib.request.Request(url, headers={"User-Agent": "TuringOS/1.2"})
         response = urllib.request.urlopen(req, timeout=30)
         content = response.read().decode("utf-8", errors="replace")
 

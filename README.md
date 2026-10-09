@@ -70,11 +70,11 @@ It also runs on hardware without a cloud connection. If the device has a decent 
 
 ## Preview
 
-<video src="assets/turingos-ui-v1-demo.mp4" controls width="720">
-  Your browser doesn't support inline video. <a href="assets/turingos-ui-v1-demo.mp4">download the clip</a> instead.
+<video src="assets/turingos-v1.2-demo.mp4" controls width="720">
+  Your browser doesn't support inline video. <a href="assets/turingos-v1.2-demo.mp4">download the clip</a> instead.
 </video>
 
-*Early walkthrough of the v1 desktop UI.*
+*Walkthrough of the v1.2 desktop UI.*
 
 ---
 

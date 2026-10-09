@@ -1,6 +1,6 @@
 [package]
 name = "turingos-ui"
-version = "0.1.0"
+version = "1.2.0"
 description = "TuringOS desktop shell"
 edition = "2021"
 # Built with Debian 13's rustc-web/cargo-web (security-updated, 1.96 today):
