@@ -6,7 +6,8 @@ import os
 from pathlib import Path
 
 import uvicorn
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 
 # The installed UI lives at /usr/lib/turingos/ui/web (sync-scripts stages it;
@@ -40,6 +41,23 @@ LOCAL_HOSTS = {"localhost", "127.0.0.1"}
 
 app = FastAPI(title="TuringOS Bridge")
 
+# Every response: the page runs no inline script or style and talks to
+# nothing but this bridge. 'self' covers ws:// to the same host and port.
+CSP = (
+    "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; "
+    "font-src 'self'; connect-src 'self'; worker-src 'self'; "
+    "frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
+)
+
+
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["Content-Security-Policy"] = CSP
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers.setdefault("Cache-Control", "no-cache")
+    return response
+
 
 class UnixSocketClient:
     def __init__(self, socket_path: str):
@@ -68,6 +86,9 @@ memory_client = UnixSocketClient(MEMORY_SOCKET)
 
 @app.websocket("/plan")
 async def plan_ws(ws: WebSocket):
+    if not origin_allowed(ws):
+        await ws.close(code=1008)
+        return
     await ws.accept()
     try:
         while True:
@@ -93,6 +114,9 @@ async def plan_ws(ws: WebSocket):
 
 @app.websocket("/agent")
 async def agent_ws(ws: WebSocket):
+    if not origin_allowed(ws):
+        await ws.close(code=1008)
+        return
     await ws.accept()
     try:
         while True:
@@ -113,6 +137,9 @@ async def agent_ws(ws: WebSocket):
 
 @app.websocket("/bridge")
 async def bridge_ws(ws: WebSocket):
+    if not origin_allowed(ws):
+        await ws.close(code=1008)
+        return
     await ws.accept()
     try:
         while True:
@@ -133,6 +160,9 @@ async def bridge_ws(ws: WebSocket):
 
 @app.websocket("/cap")
 async def cap_ws(ws: WebSocket):
+    if not origin_allowed(ws):
+        await ws.close(code=1008)
+        return
     await ws.accept()
     try:
         while True:
@@ -157,6 +187,9 @@ async def cap_ws(ws: WebSocket):
 
 @app.websocket("/memory")
 async def memory_ws(ws: WebSocket):
+    if not origin_allowed(ws):
+        await ws.close(code=1008)
+        return
     await ws.accept()
     try:
         while True:
@@ -184,9 +217,10 @@ async def memory_ws(ws: WebSocket):
 
 
 def origin_allowed(ws: WebSocket) -> bool:
-    """Only the UI page this bridge serves may open /shell. Browsers don't
-    apply CORS to WebSockets, so without this any site open in Brave could
-    run commands; a DNS-rebound name fails the localhost check."""
+    """Only the UI page this bridge serves may open a WebSocket. Browsers
+    don't apply CORS to WebSockets, so without this any site open in Brave
+    could run commands or drive the agent; a DNS-rebound name fails the
+    localhost check."""
     host = ws.headers.get("host", "")
     return (
         host.rsplit(":", 1)[0] in LOCAL_HOSTS
@@ -263,9 +297,93 @@ async def shell_ws(ws: WebSocket):
         await ws.send_text(json.dumps({"status": "error", "errors": [str(e)]}))
 
 
+# ─── Desktop (turingosd) ──────────────────────────────────────────────────────
+# The desktop's own service runs in the login session, like shell-helper, and
+# drops <uid>.desktop.sock in the same drop-box. /desktop copies the page's
+# frames to it and back, one JSON message per line, without reading them:
+# the messages are protocol/v1 (protocol/v1/README.md).
+
+DESKTOP_MAX_LINE = 1024 * 1024
+
+
+def desktop_socket():
+    socks = sorted(
+        (p for p in session_dir().glob("*.desktop.sock") if p.is_socket()),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    return socks[0] if socks else None
+
+
+@app.websocket("/desktop")
+async def desktop_ws(ws: WebSocket):
+    if not origin_allowed(ws):
+        await ws.close(code=1008)
+        return
+    sock = desktop_socket()
+    reader = writer = None
+    if sock:
+        try:
+            reader, writer = await asyncio.wait_for(
+                asyncio.open_unix_connection(str(sock), limit=DESKTOP_MAX_LINE), 5
+            )
+        except Exception:
+            reader = writer = None
+    await ws.accept()
+    if writer is None:
+        # Not running yet (or restarting): the page tries again
+        await ws.close(code=1013)
+        return
+
+    async def page_to_desktop():
+        while True:
+            text = await ws.receive_text()
+            # One message per line: a newline inside a frame would split it
+            writer.write(text.replace("\n", " ").encode() + b"\n")
+            await writer.drain()
+
+    async def desktop_to_page():
+        while True:
+            line = await reader.readline()
+            if not line:
+                return
+            await ws.send_text(line.decode(errors="replace").rstrip("\n"))
+
+    tasks = [asyncio.create_task(page_to_desktop()), asyncio.create_task(desktop_to_page())]
+    try:
+        await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+    finally:
+        for t in tasks:
+            t.cancel()
+        writer.close()
+        try:
+            await writer.wait_closed()
+        except Exception:
+            pass
+        try:
+            await ws.close()
+        except Exception:
+            pass
+
+
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+@app.get("/boot.js")
+async def boot_js():
+    """The page's boot.js, told it is live: on the bridge, not opened from
+    disk or a plain web server (where it draws sample data instead)."""
+    try:
+        tail = (APP_DIR / "boot.js").read_text()
+    except OSError:
+        tail = ""
+    return Response(
+        content="window.__TURINGOS__ = { v: 1 };\n" + tail,
+        media_type="text/javascript",
+        headers={"Cache-Control": "no-store"},
+    )
 
 
 # The page loads its assets relative to / (css/..., js/...), so serve the UI
