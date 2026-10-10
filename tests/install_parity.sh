@@ -31,7 +31,14 @@ done
 [[ "$(readlink "${INC}/usr/bin/turingos")" == ../lib/turingos/turingos ]] || fail "/usr/bin/turingos symlink"
 [[ -x "${INC}/usr/lib/turingos/turingos" ]] || fail "staged turingos is not executable"
 [[ -f "${INC}/etc/profile.d/turingos-first-run.sh" ]] || fail "first-run banner not staged"
-[[ -f "${INC}/opt/turingos-ui/src-tauri/Cargo.lock" ]] || fail "UI source (with Cargo.lock) not staged"
+[[ -f "${INC}/opt/turingosd-src/Cargo.lock" ]] || fail "desktop service source (with Cargo.lock) not staged"
+[[ ! -e "${INC}/opt/turingosd-src/target" ]] || fail "the desktop service's build output is staged"
+[[ -f "${INC}/usr/lib/systemd/user/turingosd.service" ]] || fail "turingosd user unit not staged"
+for f in turingos-kiosk turingos-gfx-detect turingos-omni; do
+    [[ -x "${INC}/usr/lib/turingos/session/${f}" ]] || fail "session/${f} not staged as an executable"
+done
+[[ -f "${INC}/usr/share/doc/turingos/protocol-v1.md" ]] || fail "desktop protocol notes not staged"
+[[ -f "${INC}/usr/lib/turingos/ui/web/boot.js" ]] || fail "the page's boot.js not staged"
 [[ ! -e "${INC}/opt/turingos" ]] || fail "a full repo copy is staged into /opt/turingos again"
 # Hook 0480 installs the trust stack from this path and then deletes it
 [[ -f "${INC}/usr/src/turingos/trust/daemons/bridged-ws.py" ]] || fail "trust source not staged for hook 0480"
@@ -39,8 +46,7 @@ done
 [[ -f "${INC}/usr/src/turingos/trust/daemons/shell-helper.py" ]] || fail "shell helper source not staged for hook 0480"
 [[ -f "${INC}/usr/src/turingos/trust/daemons/turingos-shell-helper.service" ]] || fail "shell helper unit not staged for hook 0480"
 [[ -f "${INC}/usr/src/turingos/trust/daemons/turingos-tmpfiles.conf" ]] || fail "session drop-box tmpfiles not staged for hook 0480"
-# What turingos-bridged-ws (APP_DIR) and launch-ui.sh serve; hook 0450
-# deletes /opt/turingos-ui, so this copy must be at the installed path
+# What turingos-bridged-ws (APP_DIR) and launch-ui.sh serve
 [[ -f "${INC}/usr/lib/turingos/ui/web/index.html" ]] || fail "web UI not staged at /usr/lib/turingos/ui/web"
 [[ -f "${INC}/usr/lib/turingos/ui/web/js/reconnect.js" ]] || fail "reconnect overlay not staged with the web UI"
 

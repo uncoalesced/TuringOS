@@ -55,8 +55,9 @@ xserver-xorg-video-fbdev
 xserver-xorg-video-vesa
 #endif
 openbox
+# The panel in safe mode only: otherwise the shell window is the desktop. No
+# compositor: nothing needs one, and it costs a screen copy per frame in VMs.
 tint2
-picom
 x11-utils
 x11-xserver-utils
 xterm
@@ -64,9 +65,14 @@ lightdm
 # A file manager for poking around the filesystem
 thunar
 
-# Sandbox & compositor tooling
+# Sandbox & compositor tooling; xdotool also brings the shell forward on
+# Super+Space (session/turingos-omni)
 bubblewrap
 xdotool
+# Software OpenGL (llvmpipe) and the DRI drivers, named so they don't depend
+# on what Brave happens to pull in; glxinfo tells the session which it got
+libgl1-mesa-dri
+mesa-utils
 
 # ── Terminal tools ────────────────────────────────────────────────────────────
 tmux
@@ -82,14 +88,10 @@ jq
 fzf
 libnotify-bin
 
-# ── Desktop UI runtime (turingos-ui, built by hook 0450) ─────────────────────
+# ── turingosd runtime (built by hook 0450; voice input needs both) ───────────
 # Listed explicitly so purging the build toolchain afterwards keeps them
-libwebkit2gtk-4.1-0
-libgtk-3-0t64
 libasound2t64
-libxdo3
 libgomp1
-gstreamer1.0-plugins-base
 
 # ── Node.js (MCP tools, Claude Code / OpenCode npm fallback) ──────────────────
 nodejs
@@ -115,6 +117,9 @@ live-config
 live-config-systemd
 systemd
 systemd-sysv
+# The per-user systemd that runs turingosd and shell-helper
+libpam-systemd
+dbus-user-session
 dbus
 udev
 acpid

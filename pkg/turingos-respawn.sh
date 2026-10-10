@@ -3,8 +3,8 @@
 #
 #   turingos-respawn <command> [args...]
 #
-# Restarts <command> when it crashes (non-zero exit). A clean exit (Ctrl+Q in
-# turingos-ui) ends the loop. More than TURINGOS_RESPAWN_MAX crashes within
+# Restarts <command> when it crashes (non-zero exit). A clean exit ends the
+# loop (turingos-kiosk exits 0 only when the session is stopping it). More than TURINGOS_RESPAWN_MAX crashes within
 # TURINGOS_RESPAWN_WINDOW seconds means it won't come up: stop and open a
 # terminal so the user never sits on a black screen.
 #

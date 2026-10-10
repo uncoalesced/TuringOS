@@ -10,8 +10,11 @@
 #   /etc/profile.d/turingos-first-run.sh
 #   /usr/share/doc/turingos/   copyright (LICENSE), WORKFLOW.md
 #   /usr/share/pixmaps/turingos.png  installer logo (hook 0495)
-#   /opt/turingos-ui/          UI source; hook 0450 builds it into
-#                              /usr/bin/turingos-ui and deletes the source
+#   /usr/lib/turingos/session/ the shell window's launcher (turingos-kiosk),
+#                              graphics detection, Super+Space
+#   /usr/lib/systemd/user/turingosd.service   the desktop service
+#   /opt/turingosd-src/        desktop service source; hook 0450 builds it into
+#                              /usr/bin/turingosd and deletes the source
 #   /usr/src/turingos/trust/   trust model source; hook 0480 installs it into
 #                              /usr/lib/turingos and deletes the source
 #
@@ -25,7 +28,7 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 INC="${SCRIPT_DIR}/config/includes.chroot"
 LIB="${INC}/usr/lib/turingos"
 DOC="${INC}/usr/share/doc/turingos"
-UI="${INC}/opt/turingos-ui"
+DAEMON_SRC="${INC}/opt/turingosd-src"
 TRUST_SRC="${INC}/usr/src/turingos/trust"
 
 # Every directory the `turingos` entrypoint sources modules from
@@ -33,9 +36,11 @@ TRUST_SRC="${INC}/usr/src/turingos/trust"
 MODULE_DIRS=(core agent sandbox monitor game bazaar voice)
 
 echo "→ Staging TuringOS into ${INC}"
-rm -rf "$LIB" "$DOC" "$UI" "${INC}/usr/src/turingos" "${INC}/usr/bin/turingos" "${INC}/usr/bin/turingos-respawn" "${INC}/etc/profile.d/turingos-first-run.sh" \
+# /opt/turingos-ui: what an older checkout staged (the Tauri app's source)
+rm -rf "$LIB" "$DOC" "$DAEMON_SRC" "${INC}/opt/turingos-ui" "${INC}/usr/lib/systemd/user/turingosd.service" "${INC}/usr/src/turingos" "${INC}/usr/bin/turingos" "${INC}/usr/bin/turingos-respawn" "${INC}/etc/profile.d/turingos-first-run.sh" \
     "${INC}/usr/share/pixmaps/turingos.png"
-install -d "${LIB}/pkg" "${INC}/usr/bin" "${INC}/etc/profile.d" "$DOC" "$UI" "$(dirname "$TRUST_SRC")"
+install -d "${LIB}/pkg" "${INC}/usr/bin" "${INC}/etc/profile.d" "$DOC" "$DAEMON_SRC" "$(dirname "$TRUST_SRC")" \
+    "${INC}/usr/lib/systemd/user"
 
 for dir in "${MODULE_DIRS[@]}"; do
     rsync -a --chmod=D755,F644 --exclude='__pycache__/' "${REPO_ROOT}/${dir}/" "${LIB}/${dir}/"
@@ -50,19 +55,24 @@ install -m644 "${REPO_ROOT}/WORKFLOW.md" "${DOC}/"
 # Installer branding (hook 0495)
 install -Dm644 "${REPO_ROOT}/ui/web/assets/brand/app-icon.png" "${INC}/usr/share/pixmaps/turingos.png"
 
-# UI: page + Tauri source, never build output
-rsync -a --exclude='src-tauri/target/' --exclude='src-tauri/gen/' --exclude='node_modules/' "${REPO_ROOT}/ui/" "${UI}/"
+install -m644 "${REPO_ROOT}/protocol/v1/README.md" "${DOC}/protocol-v1.md"
+
+# The desktop service's source, never build output (hook 0450 builds it)
+rsync -a --exclude='target/' "${REPO_ROOT}/daemon/" "${DAEMON_SRC}/"
+
+# The shell window's launcher and its helpers (scripts keep their modes)
+rsync -a --exclude='turingosd.service' "${REPO_ROOT}/session/" "${LIB}/session/"
+install -m644 "${REPO_ROOT}/session/turingosd.service" "${INC}/usr/lib/systemd/user/"
 
 # The web UI at its installed path: launch-ui.sh and turingos-bridged-ws
-# (APP_DIR) both serve /usr/lib/turingos/ui/web. Only the page, not the
-# Tauri source — hook 0450 deletes /opt/turingos-ui, this must survive it.
+# (APP_DIR) both serve /usr/lib/turingos/ui/web
 install -d "${LIB}/ui/web"
 rsync -a --chmod=D755,F644 "${REPO_ROOT}/ui/web/" "${LIB}/ui/web/"
 
 # Trust model source for hook 0480 (which installs and then removes it)
 rsync -a --exclude='__pycache__/' "${REPO_ROOT}/trust/" "$TRUST_SRC/"
 
-echo "  ✓ $(find "$LIB" -type f | wc -l) runtime files, $(find "$UI" -type f | wc -l) UI source files, $(find "$TRUST_SRC" -type f | wc -l) trust files"
+echo "  ✓ $(find "$LIB" -type f | wc -l) runtime files, $(find "$DAEMON_SRC" -type f | wc -l) desktop service source files, $(find "$TRUST_SRC" -type f | wc -l) trust files"
 echo ""
 echo "Next: cd ${SCRIPT_DIR} && sudo lb build"
 echo "Clean rebuild: sudo lb clean --purge && sudo lb build"

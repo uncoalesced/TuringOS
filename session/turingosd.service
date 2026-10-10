@@ -1,0 +1,12 @@
+[Unit]
+Description=TuringOS desktop service (the page's state, widgets, agent start, dock, voice)
+Documentation=file:///usr/share/doc/turingos/protocol-v1.md
+# Safe mode boot (Phase 3 fallback): no agent, no UI
+ConditionKernelCommandLine=!turingos.safe
+
+[Service]
+# Started by the openbox autostart once DISPLAY is known, not at login:
+# the dock's apps need it
+ExecStart=/usr/bin/turingosd
+Restart=always
+RestartSec=1

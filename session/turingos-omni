@@ -1,0 +1,25 @@
+#!/bin/sh
+# turingos-omni — Super+Space: get every other window out of the way, bring
+# the shell forward and open its command bar.
+#
+# Standalone and small on purpose (the full turingos CLI sources fourteen
+# modules; a hotkey can't wait for that). The shell window sits below all
+# others, so "bring it forward" means minimising what covers it; Alt+Tab
+# brings those windows back. If turingosd is down the shell still comes
+# forward; only the command bar waits for it.
+
+sock="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/turingos/control.sock"
+
+shell=""
+for id in $(xprop -root _NET_CLIENT_LIST 2>/dev/null | sed -n 's/.*# //p' | tr -d ','); do
+    case "$(xprop -id "$id" WM_CLASS 2>/dev/null)" in
+        *'"turingos-shell"'*) shell="$id" ;;
+        *) xdotool windowminimize "$id" 2>/dev/null ;;
+    esac
+done
+if [ -n "$shell" ]; then
+    xdotool windowactivate "$shell" 2>/dev/null
+fi
+
+curl -fsS --max-time 1 --unix-socket "$sock" -X POST http://d/omni >/dev/null 2>&1
+exit 0
