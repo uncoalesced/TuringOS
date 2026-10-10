@@ -1,7 +1,7 @@
 # ARM64 build & test
 
 TuringOS builds for **amd64 and arm64**. The debian-live config is shared,
-so an arm64 image has every feature the x86 one has: the Tauri desktop UI,
+so an arm64 image has every feature the x86 one has: the desktop UI,
 kiosk autologin, Claude Code + OpenCode, the Bazaar MCP registry, Game Mode,
 and the Kali-style **Live system (persistence)** boot entry.
 

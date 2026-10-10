@@ -7,12 +7,14 @@ default), with passwordless sudo.
 ## Fixed and verified
 
 - **Kiosk autologin.** lightdm now starts after live-config
-  (`0470-autologin-kiosk`), so the boot goes straight to openbox and
-  `turingos-ui` with no greeter.
+  (`0470-autologin-kiosk`), so the boot goes straight to openbox and the
+  UI with no greeter.
 - **Boot menu waited for a key.** `0900-boot-timeout` starts the live entry
   after 3 seconds.
-- **Blank or blurred UI on VMware.** WebKitGTK's DMA-BUF renderer is disabled
-  by the app; VMs without a render node fall back to software drawing.
+- **Blank, blurred or slow UI in VMs.** The UI no longer runs in WebKitGTK:
+  it is a Brave app window. VMs without 3D (or with only llvmpipe) get
+  Brave's software path and a lighter graphics level
+  (`session/turingos-gfx-detect`).
 
 - **No browser.** `claude` /login, the Anthropic Console, Google sign-in and
   UI links had nothing to open in. Brave is now the default for `xdg-open`,
@@ -24,9 +26,6 @@ default), with passwordless sudo.
 
 ## Open
 
-- **`glib` 0.18 Dependabot alert.** Tauri's GTK 0.18 stack pins it; nothing to
-  upgrade to until Tauri moves to gtk-rs 0.20+. TuringOS's own code doesn't
-  call the affected API (`VariantStrIter`).
 - **OpenCode is large.** The npm package is about 730 MB unpacked, the biggest
   single item in the image. See `pkg/ISO_SIZE_TRIM.md`.
 - **No microphone is never reported.** PulseAudio always offers a capture

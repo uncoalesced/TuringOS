@@ -47,7 +47,7 @@ fi
 
 # The virt machine has no display or input devices of its own. Without a GPU
 # the UI lands on a bare EFI framebuffer with software drawing (no DRM render
-# node, see ui/src-tauri/src/system.rs) and the pointer lags: virtio-gpu gives
+# node, see session/turingos-gfx-detect) and the pointer lags: virtio-gpu gives
 # Xorg a KMS device, the USB tablet absolute pointing.
 # QEMU_DISPLAY overrides the window (e.g. vnc=:1 on a headless host).
 display="${QEMU_DISPLAY:-gtk}"

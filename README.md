@@ -94,7 +94,7 @@ When you launch a game, TuringOS drops agent and build processes to low priority
 
 ### Live desktop UI
 
-A desktop shell (Tauri: the system's WebKitGTK plus a small Rust backend) that shows agent state, sandbox status, system stats, and MCP connections in real time. It launches fullscreen on boot. The mic button dictates into the composer with local Whisper (the model downloads on first use), or with Wispr Flow via `turingos voice wispr-import` (unofficial, opt-in). The image ships Brave as its browser: links and Google sign-in open there, and being Chromium-based it runs the Claude in Chrome extension.
+A desktop shell (a web page in a Brave app window, served by the trust stack's bridge, with a small Rust desktop service behind it) that shows agent state, sandbox status, system stats, and MCP connections in real time. It launches fullscreen on boot. The mic button dictates into the composer with local Whisper (the model downloads on first use), or with Wispr Flow via `turingos voice wispr-import` (unofficial, opt-in). The image ships Brave as its browser: links and Google sign-in open there, and being Chromium-based it runs the Claude in Chrome extension.
 
 ### Models
 
@@ -166,7 +166,8 @@ turingos/
 ├── monitor/
 │   └── system.sh             # GPU / CPU / RAM / agent HUD
 ├── voice/                    # `turingos voice` + Wispr Flow helper
-├── ui/                       # desktop shell: page (css/, js/) + Tauri app (src-tauri/)
+├── ui/                       # desktop shell: the page (web/: css/, js/)
+├── daemon/                   # turingosd, the desktop service behind the bridge
 ├── assets/                   # branding, palette, UI preview media
 ├── pkg/                      # Claude CLI installer, persistence setup, first-run banner, ISO docs
 ├── debian-live/              # Debian live-build config + hooks
@@ -307,7 +308,7 @@ turingos help                           Full command list
 | `0300-locale-trim` | Strips locale data, man pages, docs (~200MB) |
 | `0400-install-turingos` | Checks the staged install, adds gum and the launcher entry |
 | `0420-install-brave` | Brave from its signed apt repo as the default browser (`xdg-open`, `x-www-browser`, `$BROWSER`), Claude extension installed and pinned by policy |
-| `0450-build-ui` | Builds the Tauri UI against the image's libraries, then removes the toolchain |
+| `0450-build-daemon` | Builds the desktop service (`turingosd`) against the image's libraries, then removes the toolchain |
 | `0470-autologin-kiosk` | lightdm autologin into openbox, ordered after live-config |
 | `0490-install-homebrew` | Homebrew in `/home/linuxbrew/.linuxbrew`, owned by the live user, on `PATH` |
 | `0495-installer` | Calamares installer (TuringOS branding, `turingos-install` launcher, autologin + Homebrew handed to the new account) |

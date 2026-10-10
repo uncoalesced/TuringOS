@@ -21,8 +21,10 @@ The ISO is the only install target: there is no separate .deb or Arch package.
 | `0300-locale-trim` | Strips locales, man pages and docs (keeps `/usr/share/doc/turingos`) |
 | `0400-install-turingos` | Checks the staged install, adds gum and the app-launcher entry |
 | `0420-install-brave` | Brave from its signed apt repo as the default browser (`xdg-open`, `x-www-browser`, `$BROWSER`), Claude extension installed and pinned by policy |
-| `0450-build-ui` | Builds the Tauri UI (`ui/src-tauri`) with Debian's Rust, installs `/usr/bin/turingos-ui`, removes the toolchain and source |
+| `0450-build-daemon` | Builds the desktop service (`daemon/`) with Debian's Rust, installs `/usr/bin/turingosd`, removes the toolchain and source |
 | `0470-autologin-kiosk` | lightdm autologin into openbox, ordered after live-config |
+| `0475-fallback` | Openbox key bindings (Super+Esc terminal, Super+Space command bar) and the rule that makes the shell window the desktop |
+| `0480-install-trust-model` | The trust daemons, the bridge (`turingos-bridged-ws`, which serves the UI) and their system units |
 | `0490-install-homebrew` | Homebrew in `/home/linuxbrew/.linuxbrew`, owned by the live user, on `PATH` |
 | `0495-installer` | Calamares installer (TuringOS branding, `turingos-install` launcher, autologin + Homebrew handed to the new account) |
 | `0500-install-claude-cli` | Installs Claude Code (native installer, npm fallback) and OpenCode; first-login API key prompt |
@@ -30,7 +32,9 @@ The ISO is the only install target: there is no separate .deb or Arch package.
 | `0910-persistence-menu` (binary) | Clones the live entry into a Kali-style *Live system (persistence)* entry (isolinux and GRUB) |
 
 On boot, lightdm logs `user` into openbox, and
-`includes.chroot/etc/xdg/openbox/autostart` starts `turingos-ui` fullscreen.
+`includes.chroot/etc/xdg/openbox/autostart` starts `turingosd` and opens the
+UI that `turingos-bridged-ws` serves in a Brave app window
+(`session/turingos-kiosk`), restarted by `turingos-respawn` if it crashes.
 
 ---
 
@@ -52,7 +56,7 @@ sudo lb build
 ```
 
 Expect 20–40 minutes. The build needs internet: hook 0450 fetches Rust
-crates (pinned by `ui/src-tauri/Cargo.lock`), hooks 0420/0490 fetch Brave and
+crates (pinned by `daemon/Cargo.lock`), hooks 0420/0490 fetch Brave and
 Homebrew (no offline mode either) and hook 0500 downloads Claude
 Code and OpenCode. Without network, 0500 skips both and `turingos init`
 offers to install Claude Code later; 0450 has no offline mode.
@@ -138,7 +142,7 @@ file in `$HOME`, reboot and confirm it is still there.
 
 ## First boot
 
-1. lightdm autologins `user`; openbox starts `turingos-ui` in kiosk mode
+1. lightdm autologins `user`; openbox opens the UI in a Brave app window
 2. The first interactive terminal shows the welcome banner
    (`/etc/profile.d/turingos-first-run.sh`) and asks for an Anthropic API key
    once (`/etc/profile.d/turingos-setup-apikey.sh`)
@@ -150,7 +154,7 @@ file in `$HOME`, reboot and confirm it is still there.
 
 ```
 /usr/bin/turingos             → ../lib/turingos/turingos
-/usr/bin/turingos-ui          desktop UI (built by hook 0450)
+/usr/bin/turingosd            desktop service behind the bridge (built by hook 0450)
 /usr/lib/turingos/
 ├── turingos                  entrypoint
 ├── core/      config.sh ui.sh logging.sh init.sh
@@ -160,7 +164,10 @@ file in `$HOME`, reboot and confirm it is still there.
 ├── game/      gamemode.sh
 ├── monitor/   system.sh
 ├── voice/     voice.sh wispr_transcribe.py
-└── pkg/       turingos-install-claude-cli.sh
+├── pkg/       turingos-install-claude-cli.sh
+├── session/   turingos-kiosk turingos-gfx-detect turingos-omni
+├── daemons/   the trust daemons and turingos-bridged-ws (hook 0480)
+└── ui/web/    the page the bridge serves
 /usr/share/doc/turingos/      copyright, WORKFLOW.md
 /etc/profile.d/               turingos-first-run.sh, turingos-setup-apikey.sh
 /usr/local/bin/               claude, opencode
