@@ -1,0 +1,22 @@
+/* Lighter graphics levels (data-gfx on <html>, set by /boot.js) for machines
+   drawing without a GPU. tokens.css already turns the backdrop blur off; here
+   the surfaces close up so nothing shows through, and blur leaves the motion.
+   */
+
+:root:is([data-gfx="lite"], [data-gfx="minimal"]) {
+  --bar: color-mix(in srgb, var(--bg) 96%, transparent);
+}
+
+:root:is([data-gfx="lite"], [data-gfx="minimal"]) :is(.dock, .palette, .panel-card, .notif, .panel-clear, .app-window) {
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
+}
+
+/* A filter on a moving element is repainted every frame in software */
+:root:is([data-gfx="lite"], [data-gfx="minimal"]) * {
+  filter: none !important;
+}
+
+:root[data-gfx="minimal"] :is(.dock, .palette, .panel-card, .notif, .app-window, .weather-card, .clawd-chat) {
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--line);
+}

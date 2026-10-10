@@ -20,7 +20,7 @@
   overflow: hidden;
   color: var(--text);
   background: color-mix(in srgb, var(--surface) 78%, transparent);
-  backdrop-filter: blur(28px) saturate(1.5);
+  backdrop-filter: var(--glass-lg);
   border: 1px solid var(--line);
   border-radius: 22px;
   corner-shape: squircle;

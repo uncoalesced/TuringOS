@@ -149,13 +149,14 @@ main() {
 
     case "$cmd" in
         ui)
-            # Installed: the turingos-ui binary. Checkout: ui/run.sh.
-            if command -v turingos-ui &>/dev/null; then
-                exec turingos-ui ${sub:+"$sub"} "$@"
-            elif [[ -x "${TURINGOS_ROOT}/ui/run.sh" ]]; then
+            # Checkout: ui/run.sh. Installed: open the shell window (the
+            # openbox session already keeps one open; this is for elsewhere).
+            if [[ -x "${TURINGOS_ROOT}/ui/run.sh" ]]; then
                 exec "${TURINGOS_ROOT}/ui/run.sh" ${sub:+"$sub"} "$@"
+            elif [[ -x /usr/lib/turingos/session/turingos-kiosk ]]; then
+                exec /usr/lib/turingos/session/turingos-kiosk
             fi
-            ui::fail "TuringOS UI not found (no turingos-ui, no ui/run.sh)"
+            ui::fail "TuringOS UI not found (no ui/run.sh, no turingos-kiosk)"
             exit 1
             ;;
         init)      init::run ;;

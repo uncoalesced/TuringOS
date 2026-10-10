@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   pull_request:
+  # The kiosk job checks the current Brave: an update can break the shell window
+  schedule:
+    - cron: "17 4 * * 1"
 
 jobs:
   shell:
@@ -12,15 +15,22 @@ jobs:
       matrix:
         os: [ubuntu-latest, ubuntu-24.04-arm]
     runs-on: ${{ matrix.os }}
+    env:
+      # The session's scripts have no extension: they are installed as commands
+      SESSION_BASH: session/turingos-kiosk session/turingos-gfx-detect
+      SESSION_SH: session/turingos-omni
     steps:
       - uses: actions/checkout@v4
 
       - name: Syntax check
         run: |
-          for f in $(git ls-files '*.sh' '*.hook.chroot' '*.hook.binary' turingos); do bash -n "$f" || exit 1; done
+          for f in $(git ls-files '*.sh' '*.hook.chroot' '*.hook.binary' turingos) $SESSION_BASH; do bash -n "$f" || exit 1; done
+          for f in $SESSION_SH; do sh -n "$f" || exit 1; done
 
       - name: ShellCheck
-        run: git ls-files '*.sh' '*.hook.chroot' '*.hook.binary' turingos | xargs shellcheck --shell=bash
+        run: |
+          { git ls-files '*.sh' '*.hook.chroot' '*.hook.binary' turingos; printf '%s\n' $SESSION_BASH; } | xargs shellcheck --shell=bash
+          shellcheck --shell=sh $SESSION_SH
 
       - name: Tests
         run: |
@@ -30,10 +40,11 @@ jobs:
             echo "::endgroup::"
           done
 
-      - name: Bridge /shell tests (trust/daemons/bridged-ws.py, shell-helper.py)
+      - name: Bridge tests (trust/daemons/bridged-ws.py, shell-helper.py)
         run: |
           python3 -m pip install --quiet --user --break-system-packages fastapi httpx uvicorn
-          python3 -m unittest trust/tests/test_bridge_shell.py trust/tests/test_shell_helper.py
+          python3 -m unittest trust/tests/test_bridge_shell.py trust/tests/test_shell_helper.py \
+            trust/tests/test_bridge_desktop.py
 
   ui:
     strategy:
@@ -45,11 +56,11 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: JS syntax
-        run: for f in ui/web/js/*.js; do node --check "$f"; done
+        run: for f in ui/web/js/*.js ui/web/boot.js; do node --check "$f"; done
 
   # Same Debian release, rustc and build packages as the ISO hook
-  # (debian-live/config/hooks/normal/0450-build-ui.hook.chroot)
-  ui-rust:
+  # (debian-live/config/hooks/normal/0450-build-daemon.hook.chroot)
+  daemon:
     strategy:
       fail-fast: false
       matrix:
@@ -62,7 +73,7 @@ jobs:
           apt-get update -qq
           apt-get install -y --no-install-recommends git ca-certificates \
             cargo-web rustc-web rustfmt-web rust-web-clippy build-essential pkg-config cmake clang libclang-dev \
-            libwebkit2gtk-4.1-dev libasound2-dev libxdo-dev
+            libasound2-dev
 
       - uses: actions/checkout@v4
 
@@ -71,21 +82,72 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            ui/src-tauri/target
-          key: ui-rust-${{ matrix.os }}-${{ hashFiles('ui/src-tauri/Cargo.lock') }}
+            daemon/target
+          key: daemon-${{ matrix.os }}-${{ hashFiles('daemon/Cargo.lock') }}
 
       - name: Format
-        working-directory: ui/src-tauri
+        working-directory: daemon
         run: cargo fmt --check
 
       - name: Clippy
-        working-directory: ui/src-tauri
+        working-directory: daemon
         run: cargo clippy --locked --all-targets -- -D warnings
 
       - name: Test
-        working-directory: ui/src-tauri
+        working-directory: daemon
         run: cargo test --locked
 
       - name: Release build (as the ISO does)
-        working-directory: ui/src-tauri
+        working-directory: daemon
         run: cargo build --release --locked
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: turingosd-${{ matrix.os }}
+          path: daemon/target/release/turingosd
+
+  # The shell window for real: Openbox, the bridge, turingosd and the current
+  # Brave on a virtual display (tests/kiosk_contract.sh)
+  kiosk:
+    needs: daemon
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.os }}
+    container: debian:trixie
+    steps:
+      - name: Display, window manager, Brave
+        run: |
+          apt-get update -qq
+          apt-get install -y --no-install-recommends git ca-certificates curl jq python3 python3-fastapi \
+            python3-uvicorn xvfb openbox xterm xdotool x11-utils imagemagick mesa-utils libasound2t64 \
+            libgomp1 fonts-dejavu-core
+          install -d -m755 /etc/apt/keyrings
+          curl -fsSL --retry 3 -o /etc/apt/keyrings/brave.gpg \
+            https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg
+          echo "deb [signed-by=/etc/apt/keyrings/brave.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main" \
+            > /etc/apt/sources.list.d/brave.list
+          apt-get update -qq
+          apt-get install -y brave-browser
+          useradd -m tester
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: turingosd-${{ matrix.os }}
+          path: /opt/turingosd
+
+      - name: Kiosk contract
+        run: |
+          chmod +x /opt/turingosd/turingosd
+          chown -R tester "$GITHUB_WORKSPACE"
+          su tester -c "cd '$GITHUB_WORKSPACE' && KIOSK_CONTRACT=require KIOSK_ARTIFACTS=/tmp/kiosk \
+            TURINGOSD=/opt/turingosd/turingosd bash tests/kiosk_contract.sh"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: kiosk-${{ matrix.os }}
+          path: /tmp/kiosk

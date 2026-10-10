@@ -1,0 +1,1 @@
+{ "v": 1, "type": "hello", "id": "s-1", "re": "p-1", "seq": 1, "ts": 1790000000001, "data": { "version": "0.2.0", "gfx": { "path": "sw", "tier": "lite" }, "safe": false } }

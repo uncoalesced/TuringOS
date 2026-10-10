@@ -3,8 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- ipc: is how the Tauri backend answers; there is no other network access from the page -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'; connect-src ipc: http://ipc.localhost" />
+  <!-- The page only ever talks to turingos-bridged-ws, the bridge that served it
+       (it sends the same policy as a header) -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data:; connect-src 'self'" />
   <title>TuringOS</title>
   <link rel="stylesheet" href="css/tokens.css" />
   <link rel="stylesheet" href="css/base.css" />
@@ -22,6 +23,8 @@
   <link rel="stylesheet" href="css/palette.css" />
   <link rel="stylesheet" href="css/app-window.css" />
   <link rel="stylesheet" href="css/bazaar.css" />
+  <link rel="stylesheet" href="css/gfx.css" />
+  <script src="boot.js"></script>
   <script src="js/theme.js"></script>
 </head>
 <body>

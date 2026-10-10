@@ -38,7 +38,7 @@ if ! dpkg -s brave-browser &>/dev/null; then
 fi
 
 # ─── Make it the default browser ─────────────────────────────────────────────
-# x-www-browser: the dock's Browser fallback (ui/src-tauri/src/launch.rs).
+# x-www-browser: the dock's Browser fallback (daemon/src/launch.rs).
 if [[ ! -e /usr/bin/brave-browser ]]; then
     echo "ERROR: /usr/bin/brave-browser missing after install"
     exit 1

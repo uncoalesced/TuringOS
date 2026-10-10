@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://turingos.dev/protocol/v1/schema.json",
+  "title": "TuringOS shell protocol v1",
+  "description": "One WebSocket text frame between the desktop page and turingosd. See README.md.",
+  "type": "object",
+  "required": ["v", "type", "id", "ts", "data"],
+  "properties": {
+    "v": { "const": 1 },
+    "type": { "type": "string" },
+    "id": { "type": "string", "minLength": 1 },
+    "re": { "type": ["string", "null"] },
+    "seq": { "type": "integer", "minimum": 0 },
+    "ts": { "type": "integer", "minimum": 0 },
+    "data": { "type": "object" }
+  },
+  "oneOf": [
+    { "$ref": "#/$defs/pageHello" },
+    { "$ref": "#/$defs/rpc" },
+    { "$ref": "#/$defs/ping" },
+    { "$ref": "#/$defs/serviceHello" },
+    { "$ref": "#/$defs/state" },
+    { "$ref": "#/$defs/voice" },
+    { "$ref": "#/$defs/omni" },
+    { "$ref": "#/$defs/rpcResult" },
+    { "$ref": "#/$defs/pong" }
+  ],
+  "$defs": {
+    "pageHello": {
+      "properties": {
+        "type": { "const": "hello" },
+        "data": {
+          "type": "object",
+          "required": ["last_seq"],
+          "properties": { "last_seq": { "type": ["integer", "null"] } }
+        }
+      },
+      "not": { "required": ["seq"] }
+    },
+    "rpc": {
+      "properties": {
+        "type": { "const": "rpc" },
+        "data": {
+          "type": "object",
+          "required": ["method", "params"],
+          "properties": {
+            "method": {
+              "enum": [
+                "state_get", "projects_list", "agent_start", "dock_launch", "open_external",
+                "google_connect", "clawd_ask", "chat_ask", "voice_start", "voice_stop",
+                "gfx_report"
+              ]
+            },
+            "params": { "type": "object" }
+          }
+        }
+      }
+    },
+    "ping": { "properties": { "type": { "const": "ping" } } },
+    "serviceHello": {
+      "required": ["seq"],
+      "properties": {
+        "type": { "const": "hello" },
+        "data": {
+          "type": "object",
+          "required": ["version", "gfx", "safe"],
+          "properties": {
+            "version": { "type": "string" },
+            "gfx": { "$ref": "#/$defs/gfx" },
+            "safe": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "state": {
+      "required": ["seq"],
+      "properties": { "type": { "const": "state" }, "data": { "$ref": "#/$defs/snapshot" } }
+    },
+    "voice": {
+      "required": ["seq"],
+      "properties": {
+        "type": { "const": "voice" },
+        "data": {
+          "type": "object",
+          "required": ["downloading"],
+          "properties": { "downloading": { "type": "number", "minimum": 0, "maximum": 100 } }
+        }
+      }
+    },
+    "omni": {
+      "required": ["seq"],
+      "properties": {
+        "type": { "const": "omni" },
+        "data": { "type": "object", "required": ["open"], "properties": { "open": { "type": "boolean" } } }
+      }
+    },
+    "rpcResult": {
+      "required": ["seq", "re"],
+      "properties": {
+        "type": { "const": "rpc_result" },
+        "re": { "type": "string" },
+        "data": {
+          "oneOf": [
+            { "type": "object", "required": ["ok", "result"], "properties": { "ok": { "const": true } } },
+            {
+              "type": "object",
+              "required": ["ok", "error"],
+              "properties": { "ok": { "const": false }, "error": { "type": "string" } }
+            }
+          ]
+        }
+      }
+    },
+    "pong": { "required": ["seq", "re"], "properties": { "type": { "const": "pong" }, "re": { "type": "string" } } },
+    "gfx": {
+      "type": "object",
+      "required": ["path", "tier"],
+      "properties": { "path": { "enum": ["gpu", "sw"] }, "tier": { "enum": ["full", "lite", "minimal"] } }
+    },
+    "snapshot": {
+      "type": "object",
+      "required": ["live", "user", "agent", "sandbox", "gameMode", "system", "weather", "github", "calendar"],
+      "properties": {
+        "live": { "type": "boolean" },
+        "user": { "type": "object", "properties": { "name": { "type": ["string", "null"] } } },
+        "agent": {
+          "type": "object",
+          "required": ["running", "task"],
+          "properties": { "running": { "type": "boolean" }, "task": { "type": ["string", "null"] } }
+        },
+        "sandbox": { "type": ["string", "null"] },
+        "gameMode": { "type": "boolean" },
+        "system": {
+          "type": "object",
+          "required": ["host", "cpu", "mem", "battery", "wifi", "installer"],
+          "properties": {
+            "host": { "type": "string" },
+            "cpu": { "type": "integer", "minimum": 0, "maximum": 100 },
+            "mem": { "type": "integer", "minimum": 0, "maximum": 100 },
+            "battery": { "type": ["object", "null"] },
+            "wifi": { "type": ["object", "null"] },
+            "installer": { "type": "boolean" }
+          }
+        },
+        "weather": { "type": ["object", "null"] },
+        "github": { "type": ["object", "null"] },
+        "calendar": { "type": "object", "required": ["connected"], "properties": { "connected": { "type": "boolean" } } }
+      }
+    }
+  }
+}

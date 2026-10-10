@@ -1,26 +1,28 @@
 # /etc/xdg/openbox/autostart
 # Runs when Openbox starts — launches the TuringOS UI in kiosk mode.
 
-# ── System tray / compositor (lightweight, fast) ──────────────────────────────
-tint2 &
-picom --config /dev/null --backend xrender -b &
-
 # ── Wallpaper ─────────────────────────────────────────────────────────────────
-# Solid dark background; the UI covers the whole screen in kiosk mode
+# Solid dark background, until the shell window covers the screen
 xsetroot -solid "#0a0a0f" &
 
 # ── Safe mode (boot menu "safe mode", kernel arg turingos.safe) ───────────────
-# No agent, no UI: just openbox and a terminal.
+# No agent, no UI: openbox, a panel and a terminal.
 if grep -qw turingos.safe /proc/cmdline; then
+    tint2 &
     x-terminal-emulator &
 else
 # ── TuringOS UI ───────────────────────────────────────────────────────────────
-# KIOSK=1 → fullscreen, no window chrome. Software rendering kicks in by
-# itself when there's no GPU render node (VMs without 3D acceleration).
-# turingos-respawn restarts it after a crash (Ctrl+Q quits for good) and
-# opens a terminal if it keeps crashing. Super+Esc opens a terminal any time.
+# turingosd (the desktop service, a systemd user unit) needs DISPLAY for the
+# dock's apps, so it starts here rather than at login. The shell window is
+# the page turingos-bridged-ws serves, in a Brave app window
+# (turingos-kiosk); turingos-respawn restarts it after a crash and opens a
+# terminal if it keeps crashing. Super+Esc opens a terminal any time.
+# No panel and no compositor: the shell is the desktop, and a compositor
+# costs a screen copy per frame on machines without a GPU.
 (
-    sleep 1  # let the compositor settle before launching
-    KIOSK=1 exec turingos-respawn /usr/bin/turingos-ui
+    dbus-update-activation-environment --systemd DISPLAY XAUTHORITY 2>/dev/null \
+        || systemctl --user import-environment DISPLAY XAUTHORITY
+    systemctl --user restart turingosd.service
 ) &
+turingos-respawn /usr/lib/turingos/session/turingos-kiosk &
 fi

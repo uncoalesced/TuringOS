@@ -7,7 +7,7 @@
 
 | Built | Not built yet |
 |---|---|
-| Tauri app in `ui/` (page + Rust backend in `ui/src-tauri`), launched with `./turingos ui`, or `/usr/bin/turingos-ui` on the ISO | Command bar, PR views, Actions menu (Ctrl/⌘+K opens the command palette prototype) |
+| The page in `ui/web`, served by `turingos-bridged-ws` and shown in a Brave app window; the desktop service `turingosd` (`daemon/`) behind it. `./turingos ui` from a checkout | Command bar, PR views, Actions menu (Ctrl/⌘+K opens the command palette prototype) |
 | Menu bar: Claude spark + "TuringOS" brand, Wi-Fi, battery, light/dark toggle, clock (click to open the side panel) | Task view, permission sheet |
 | Desktop, vertically centred: clock, greeting with the user's first name, "What do you want to cook?" composer | Notifications with Undo |
 | @ (or +) project picker listing git repos; Enter runs `turingos agent start <project> <task>` | |
@@ -36,9 +36,8 @@ The spec below describes the full target. Where it differs from what's built, th
 See [SETUP.md](SETUP.md). Short version:
 
 ```bash
-./turingos ui              # app window
-KIOSK=1 ./turingos ui      # fullscreen, use this for the demo
-LITE=1 ./turingos ui       # software drawing, for VMs without 3D (auto-detected)
+./turingos ui                  # app window
+./ui/run.sh --gfx sw.lite      # the lighter look a VM without 3D gets (auto-detected on the ISO)
 ```
 
 To preview on a Mac without the OS, run the same command or open `ui/web/index.html` in Chrome.
@@ -84,11 +83,11 @@ To preview on a Mac without the OS, run the same command or open `ui/web/index.h
 
 ## 3. Connecting the backend
 
-The page never touches the system. The Rust backend (`ui/src-tauri`) is the only part that does, and it hands the page one snapshot at a time over a bridge (`ui/web/js/bridge.js`, which defines `window.shell`).
+The page never touches the system. The desktop service `turingosd` (`daemon/`) does, behind `turingos-bridged-ws`, and hands the page one snapshot at a time over `/desktop` (`ui/web/js/bridge.js` defines `window.shell`; the messages are in `protocol/v1/README.md`).
 
 ### What's wired today
 
-`src-tauri/src/state.rs` reads these and pushes a snapshot every second:
+`daemon/src/state.rs` reads these and pushes a snapshot whenever one changes:
 
 | Snapshot field | Source |
 |---|---|
@@ -191,7 +190,7 @@ Light/dark follows the system. The half-circle icon in the menu bar overrides it
 
 [Feather](https://feathericons.com) (MIT), 24×24, 2px stroke, round caps. Only the glyphs in use ship (inline, in the sprite); `ui/web/assets/icons/feather/LICENSE` covers them. To add one, add it to the sprite in `ui/web/index.html` as `<symbol id="ic-name">`, with shape data only (no `width`/`height`/`stroke`; those come from `.icon`/`.wx`). Weather glyphs (`wx-*`) are Feather paths too. The "partly cloudy" symbols combine a small sun or moon (scaled down, shifted top-left) with Feather's cloud so they read at both 26px (menu bar) and 52px (weather card). If Feather doesn't have an icon for something, Lucide and Phosphor match its style.
 
-Brand: official Claude assets live in `ui/web/assets/brand/`. The Claude spark is the menu bar mark. `app-icon.png` is the window and launcher icon (squircle; `ui/src-tauri/icons/` holds the copies Tauri builds with). Don't use GitHub's logo.
+Brand: official Claude assets live in `ui/web/assets/brand/`. The Claude spark is the menu bar mark. `app-icon.png` is the window and launcher icon (squircle). Don't use GitHub's logo.
 
 ### Motion
 
@@ -233,7 +232,7 @@ Backup: record the full run once as a video before presenting.
 | File | Purpose |
 |---|---|
 | `ui/run.sh` | Launcher for a checkout: builds and opens the app |
-| `ui/src-tauri/src/` | Rust backend, one module per job: `state` (snapshots), `system`, `projects`, `agent`, `launch` (dock, links), `weather`, `github`, `google` (Calendar OAuth), `anthropic` (Clawd, chat), `voice` |
+| `daemon/src/` | `turingosd`, the desktop service, one module per job: `state` (snapshots), `system`, `projects`, `agent`, `launch` (dock, links), `weather`, `github`, `google` (Calendar OAuth), `anthropic` (Clawd, chat), `voice` |
 | `ui/web/js/bridge.js` | `window.shell`: the only bridge between the page and the system |
 | `ui/web/index.html` | Markup, the icon sprite (`<symbol>`s), and the script/style load order |
 | `ui/web/css/` | Design tokens (`tokens.css`), then one stylesheet per feature |

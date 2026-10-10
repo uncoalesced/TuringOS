@@ -18,7 +18,7 @@ By taking part, you agree to follow our [Code of Conduct](CODE_OF_CONDUCT.md). T
 | `core/` | Policy layer and system integration | Linux, security, Bash |
 | `game/` | Game Mode (process and GPU handling) | Linux performance, GPU drivers |
 | `monitor/` | Status HUD and monitoring | Bash, system metrics |
-| `ui/`, `ui-docs/` | Desktop shell: page (HTML/CSS/JS) + Tauri backend (`ui/src-tauri`) | JavaScript, Rust, UI design |
+| `ui/`, `ui-docs/`, `daemon/`, `session/` | Desktop shell: the page (HTML/CSS/JS), the desktop service `turingosd` (Rust), the Brave shell window | JavaScript, Rust, UI design |
 | `debian-live/`, `iso/`, `pkg/` | Live ISO build and packaging | Debian, live-build, packaging |
 | Docs | README, guides, this file | Technical writing |
 
@@ -104,7 +104,7 @@ Run `turingos model status` to check the provider and ping its endpoint. In your
 - [ ] Test environment described
 - [ ] Commits follow Conventional Commits
 - [ ] `shellcheck` clean with no warnings (CI runs it on every shell file and hook, plus `bash tests/*.sh`)
-- [ ] For `ui/src-tauri` changes: `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass. CI builds it on `debian:trixie` with Debian's rustc-web (currently 1.96, floor `rust-version` 1.88), the same toolchain the ISO uses, so keep dependencies within `rust-version`
+- [ ] For `daemon/` changes: `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass. CI builds it on `debian:trixie` with Debian's rustc-web (currently 1.96, floor `rust-version` 1.88), the same toolchain the ISO uses, so keep dependencies within `rust-version`
 - [ ] Model provider and model named (for agent changes)
 - [ ] Docs updated if behaviour changed
 - [ ] Linked the related issue (`Closes #123`)

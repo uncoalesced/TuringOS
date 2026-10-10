@@ -1,0 +1,1 @@
+{ "v": 1, "type": "rpc_result", "id": "s-6", "re": "p-9", "seq": 6, "ts": 1790000000102, "data": { "ok": false, "error": "Unknown method: nope" } }

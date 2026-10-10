@@ -1,14 +1,13 @@
 // "Reconnecting…" overlay (Phase 3 fallback). Served by turingos-bridged-ws
 // (the trust-model stack, Brave kiosk), the page loses its backend when the
 // bridge dies; systemd restarts it. Until /health answers again, cover the
-// page and point at Super+Esc. Under Tauri the backend is in-process, and a
-// page that never reached /health (a plain static server) isn't on a bridge:
-// nothing to do in either case.
+// page and point at Super+Esc. A page opened from disk or a plain web server
+// isn't on a bridge: nothing to do there.
 //
 // window.turingosSocket(path, onMessage) → { send, close }: a WebSocket to
 // the bridge that reconnects with backoff, for the Phase 1 UI to build on.
 (() => {
-  if (window.__TAURI__ || !/^https?:$/.test(location.protocol)) return;
+  if (!window.__TURINGOS__) return; // not on the bridge (boot.js): sample mode
 
   const overlay = document.getElementById('reconnect');
   let onBridge = false;

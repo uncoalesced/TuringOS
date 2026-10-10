@@ -1,0 +1,159 @@
+#!/bin/bash
+# turingos-kiosk — the TuringOS shell: the page turingos-bridged-ws serves,
+# in a Brave app window. The openbox autostart runs it under
+# turingos-respawn, which restarts it when the browser dies and opens a
+# terminal if it keeps dying.
+#
+# An app window (--app), not --kiosk or --start-fullscreen: Chromium reserves
+# no keys in app windows, so the page swallows Ctrl+W / Ctrl+T / F11 and the
+# rest itself, and an Openbox rule (hook 0475) makes the window the desktop:
+# no frame, the whole screen, below every other window.
+#
+# The shell has its own profile and runs no extensions: nothing the user
+# installs in their real browser can reach the page that drives the machine.
+#
+#   TURINGOS_BROWSER=chromium   use another Chromium-family browser
+#   TURINGOS_UI_PORT=8080       where the bridge listens
+
+set -euo pipefail
+
+SESSION_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "${SESSION_DIR}/turingos-gfx-detect"
+
+# A GPU-path browser that dies this soon after starting never drew a frame
+KIOSK_EARLY_EXIT_SECONDS=15
+
+kiosk::browser() {
+    local candidate
+    for candidate in ${TURINGOS_BROWSER:+"$TURINGOS_BROWSER"} brave-browser chromium chromium-browser google-chrome; do
+        if command -v "$candidate" &>/dev/null; then
+            echo "$candidate"
+            return 0
+        fi
+    done
+    return 1
+}
+
+# kiosk::args GFX_PATH GFX_TIER URL WIDTH HEIGHT PROFILE → one argument per line
+kiosk::args() {
+    local path="$1" tier="$2" url="$3" width="$4" height="$5" profile="$6"
+    printf '%s\n' \
+        "--user-data-dir=${profile}" \
+        "--class=turingos-shell" \
+        "--app=${url}" \
+        "--ozone-platform=x11" \
+        "--window-position=0,0" \
+        "--window-size=${width},${height}" \
+        "--no-first-run" \
+        "--no-default-browser-check" \
+        "--noerrdialogs" \
+        "--disable-session-crashed-bubble" \
+        "--hide-crash-restore-bubble" \
+        "--disable-pinch" \
+        "--overscroll-history-navigation=0" \
+        "--disable-features=Translate,GlobalMediaControls,MediaRouter" \
+        "--disable-extensions" \
+        "--disable-component-update" \
+        "--disable-background-networking" \
+        "--password-store=basic"
+    # GPU path: no GPU flags at all, Chromium's own blocklist decides.
+    # Software path: skip GL entirely; the software compositor is the fast one.
+    if [[ "$path" == sw ]]; then
+        printf '%s\n' "--disable-gpu" "--disable-smooth-scrolling"
+        if [[ "$tier" == minimal ]]; then
+            printf '%s\n' "--force-prefers-reduced-motion"
+        fi
+    fi
+}
+
+# Brave's first-run notice about its product analytics is an infobar across
+# the top of every new profile, the shell's included. Settle it before the
+# first start: analytics off, notice seen.
+kiosk::seed_profile() {
+    local profile="$1"
+    if [[ ! -e "${profile}/Local State" ]]; then
+        printf '%s\n' '{"brave":{"p3a":{"enabled":false,"notice_acknowledged":true},"stats":{"reporting_enabled":false}}}' \
+            > "${profile}/Local State"
+    fi
+}
+
+kiosk::screen_size() {
+    local size
+    # awk reads to the end: leaving early would kill xdpyinfo with SIGPIPE,
+    # which pipefail turns into a failure of the whole line
+    size="$(xdpyinfo 2>/dev/null | awk '/dimensions:/ && !seen { print $2; seen = 1 }' || true)"
+    if [[ "$size" =~ ^([0-9]+)x([0-9]+)$ ]]; then
+        echo "${BASH_REMATCH[1]} ${BASH_REMATCH[2]}"
+    else
+        echo "1440 900"
+    fi
+}
+
+# The bridge is a system service and may still be starting at login
+kiosk::wait_for_bridge() {
+    local port="$1" tries
+    for (( tries = 0; tries < 150; tries++ )); do
+        if curl -fsS --max-time 1 "http://127.0.0.1:${port}/health" &>/dev/null; then
+            return 0
+        fi
+        sleep 0.2
+    done
+    return 1
+}
+
+kiosk::main() {
+    local state="${XDG_STATE_HOME:-${HOME}/.local/state}/turingos"
+    local port="${TURINGOS_UI_PORT:-8080}"
+    local profile="${state}/kiosk-profile"
+    local browser width height started status=0 stopping=0
+    local -a args
+
+    browser="$(kiosk::browser)" || {
+        echo "turingos-kiosk: no Chromium-family browser found (brave-browser, chromium)" >&2
+        exit 1
+    }
+    # Without the bridge the window would show a connection error with no
+    # way to reload it; exiting non-zero lets turingos-respawn try again
+    kiosk::wait_for_bridge "$port" || {
+        echo "turingos-kiosk: turingos-bridged-ws is not answering on 127.0.0.1:${port}" >&2
+        exit 1
+    }
+
+    install -d -m700 "$state" "$profile"
+    kiosk::seed_profile "$profile"
+    local GFX_PATH=gpu GFX_TIER=full
+    # shellcheck disable=SC1090
+    source <(gfx::main 2>/dev/null) || true
+    read -r width height < <(kiosk::screen_size)
+
+    # One shell at a time (turingos-respawn): a lock left by a crash would
+    # only make this browser exit at once, believing another one is running
+    rm -f "${profile}/SingletonLock" "${profile}/SingletonSocket" "${profile}/SingletonCookie"
+
+    mapfile -t args < <(kiosk::args "$GFX_PATH" "$GFX_TIER" \
+        "http://127.0.0.1:${port}/?gfx=${GFX_PATH}.${GFX_TIER}" "$width" "$height" "$profile")
+    echo "turingos-kiosk: ${browser} on the ${GFX_PATH} path, level ${GFX_TIER}, ${width}x${height}" >&2
+
+    trap 'stopping=1' TERM INT HUP
+    started="$(date +%s)"
+    "$browser" "${args[@]}" || status=$?
+
+    if (( stopping )); then
+        exit 0
+    fi
+    # Died straight away on the GPU path: draw in software for the rest of
+    # this boot (turingos-gfx-detect reads this)
+    if (( status != 0 )) && [[ "$GFX_PATH" == gpu ]] \
+        && (( $(date +%s) - started < KIOSK_EARLY_EXIT_SECONDS )); then
+        cat /proc/sys/kernel/random/boot_id > "${state}/force-sw" 2>/dev/null || true
+        echo "turingos-kiosk: the browser exited ${status} within ${KIOSK_EARLY_EXIT_SECONDS}s on the GPU path; next start draws in software" >&2
+    fi
+    # The shell is the desktop: a window closed with Alt+F4 is not "quit".
+    # Non-zero, so turingos-respawn opens it again.
+    exit $(( status == 0 ? 1 : status ))
+}
+
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    kiosk::main "$@"
+fi

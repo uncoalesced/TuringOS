@@ -3,7 +3,7 @@
 #
 # Boots straight into the TuringOS UI: lightdm autologins `user` into an
 # openbox session, and /etc/xdg/openbox/autostart (includes.chroot) starts
-# turingos-ui in kiosk mode.
+# the desktop service and the shell window (session/turingos-kiosk).
 #
 # live-config creates `user` at boot. If lightdm starts first, autologin
 # fails silently and the greeter shows (see ../../../KNOWN_ISSUES.md), so

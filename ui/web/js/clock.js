@@ -3,7 +3,7 @@
 // ─── Clock ──────────────────────────────────────────────────────────────────
 
 function greeting(hour) {
-  const part = hour < 5 ? 'Good evening' : hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const part = hour < 5 ? 'Good evening' : hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
   return userName ? `${part}, ${userName}.` : `${part}.`;
 }
 

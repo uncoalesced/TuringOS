@@ -1,0 +1,1 @@
+{ "v": 1, "type": "rpc", "id": "p-2", "re": null, "ts": 1790000000100, "data": { "method": "agent_start", "params": { "project": "/home/user/code/turingos", "task": "Run the tests", "model": "claude-sonnet-5-5" } } }

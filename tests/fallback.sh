@@ -69,6 +69,13 @@ OPENBOX_RC="${WORK}/rc.xml" bash "$HOOK" >/dev/null || fail "0475 failed on a st
 OPENBOX_RC="${WORK}/rc.xml" bash "$HOOK" >/dev/null || fail "0475 failed on a second run"
 [[ $(grep -c 'key="W-Escape"' "${WORK}/rc.xml") -eq 1 ]] || fail "openbox: want exactly one W-Escape keybind"
 grep -q '<command>x-terminal-emulator</command>' "${WORK}/rc.xml" || fail "openbox: Super+Esc must open x-terminal-emulator"
+[[ $(grep -c '/usr/lib/turingos/session/turingos-omni' "${WORK}/rc.xml") -eq 1 ]] || fail "openbox: want exactly one Super+Space"
+[[ $(grep -c 'class="turingos-shell"' "${WORK}/rc.xml") -eq 1 ]] || fail "openbox: want exactly one shell-window rule"
+grep -q '<layer>below</layer>' "${WORK}/rc.xml" || fail "openbox: the shell window must sit below other windows"
+# A stock rc.xml without <applications> still gets the rule
+printf '<openbox_config>\n  <keyboard>\n  </keyboard>\n</openbox_config>\n' > "${WORK}/noapps.xml"
+OPENBOX_RC="${WORK}/noapps.xml" bash "$HOOK" >/dev/null || fail "0475 failed on an rc.xml without <applications>"
+grep -q 'class="turingos-shell"' "${WORK}/noapps.xml" || fail "openbox: no <applications>, rule lost"
 if python3 -c '' 2>/dev/null; then
     python3 -c 'import sys, xml.dom.minidom as m; m.parse(sys.argv[1])' "${WORK}/rc.xml" \
         || fail "openbox rc.xml is not valid XML after 0475"
@@ -86,7 +93,9 @@ grep -qx foot "${ROOT}/debian-live/config/package-lists/turingos.list.chroot" ||
 # ─── safe mode: autostart skips the UI, agent/UI units don't start ───────────
 AUTOSTART="${INC}/etc/xdg/openbox/autostart"
 grep -q 'grep -qw turingos.safe /proc/cmdline' "$AUTOSTART" || fail "openbox autostart has no safe-mode branch"
-grep -q 'turingos-respawn /usr/bin/turingos-ui' "$AUTOSTART" || fail "openbox autostart doesn't respawn the UI"
+grep -q 'turingos-respawn /usr/lib/turingos/session/turingos-kiosk' "$AUTOSTART" || fail "openbox autostart doesn't respawn the UI"
+grep -q 'systemctl --user restart turingosd.service' "$AUTOSTART" || fail "openbox autostart doesn't start the desktop service"
+grep -qx 'ConditionKernelCommandLine=!turingos.safe' "${ROOT}/session/turingosd.service" || fail "turingosd.service starts in safe mode"
 for u in agentd-llm agentd-plan bridged-ws shell shell-helper; do
     grep -qx 'ConditionKernelCommandLine=!turingos.safe' "${ROOT}/trust/daemons/turingos-${u}.service" \
         || fail "turingos-${u}.service starts in safe mode"
