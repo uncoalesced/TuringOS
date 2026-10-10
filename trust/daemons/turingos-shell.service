@@ -9,7 +9,7 @@ ConditionKernelCommandLine=!turingos.safe
 
 [Service]
 Type=simple
-ExecStart=/usr/lib/turingos/launch-shell.sh
+ExecStart=/usr/lib/turingos/daemons/launch-shell.sh
 Restart=on-failure
 RestartSec=2
 User=turingos

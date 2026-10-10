@@ -59,7 +59,7 @@ chmod 755 /usr/bin/turingos-sandbox
 TOOL_DIR="/usr/lib/turingos/tools"
 mkdir -p "$TOOL_DIR"
 install -m 755 -o root -g root \
-    /usr/src/turingos/trust/tools/file-reader.py \
+    /usr/src/turingos/trust/daemons/file-reader.py \
     /usr/src/turingos/trust/tools/shell-exec \
     /usr/src/turingos/trust/tools/browser-open \
     /usr/src/turingos/trust/tools/file-writer \
@@ -125,7 +125,10 @@ systemctl enable turingos-memoryd.service
 systemctl enable turingos-toolreg.service
 systemctl enable turingos-bridged.service
 systemctl enable turingos-bridged-ws.service
-systemctl enable turingos-shell.service
+# Not enabled: the shell is the Brave app window the openbox session opens
+# (/etc/xdg/openbox/autostart). turingos-shell.service starts a Wayland
+# compositor of its own and would fight that X session for the screen; it is
+# installed for the Wayland work, to be enabled when that replaces openbox.
 
 # Disable services by default in live mode (they'll be started by launch script)
 # systemctl mask turingos-auditd.service  # etc.
