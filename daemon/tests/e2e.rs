@@ -257,10 +257,11 @@ async fn a_page_conversation() {
     assert_eq!(status["gfx_report"]["p90_ms"], 31.5);
 }
 
-/// Only root and the bridge's user may connect; anyone else is hung up on
+/// Only the allowed uids (root and the bridge's user) may connect; anyone
+/// else is hung up on. 65533: not whoever runs the tests, root in CI included.
 #[tokio::test]
 async fn strangers_are_refused() {
-    let service = Service::start("refuse", Some("0")).await;
+    let service = Service::start("refuse", Some("65533")).await;
     let mut page = service.connect().await;
     let hello = format!("{}\n", fixture("page.hello.json").trim());
     let _ = page.write.write_all(hello.as_bytes()).await;
