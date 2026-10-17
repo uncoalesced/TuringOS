@@ -1,0 +1,40 @@
+#!/bin/bash
+# turingos-hyprland — the Wayland session LightDM autologins into (hook
+# 0470); /usr/share/wayland-sessions/turingos-hyprland.desktop points here.
+# Runs Hyprland when the machine can, and falls back to the X+openbox
+# session when it can't:
+#
+#   no Hyprland binary / no /dev/dri/renderD*   the box cannot composite
+#                                               Wayland at all
+#   Hyprland exits non-zero                     config, DRM or seat
+#                                               failure mid-run
+#       → both start openbox on the VT LightDM handed us (XDG_VTNR). No
+#         compositor owns that VT yet, so Xorg starts right here via
+#         xinit; openbox-session is the same client the xsessions entry
+#         would have run, so the shell, bindings and safe mode are the
+#         ones hook 0475/0470 already ship.
+#   Hyprland exits zero                         the user logged out;
+#       LightDM autologins again — the kiosk loop, as under openbox
+
+set -u
+
+CONFIG=/etc/turingos/hyprland.conf
+
+if command -v Hyprland >/dev/null 2>&1 \
+    && compgen -G '/dev/dri/renderD*' >/dev/null 2>&1 \
+    && [[ -f "$CONFIG" ]]; then
+    Hyprland -c "$CONFIG"
+    status=$?
+    (( status == 0 )) && exit 0
+    echo "turingos-hyprland: Hyprland exited ${status}, trying the X session" >&2
+fi
+
+if command -v startx >/dev/null 2>&1; then
+    if [[ -n "${XDG_VTNR:-}" ]]; then
+        exec startx /usr/bin/openbox-session -- ":0" "vt${XDG_VTNR}"
+    fi
+    exec startx /usr/bin/openbox-session
+fi
+
+echo "turingos-hyprland: no usable Hyprland and no startx — nothing to run" >&2
+exit 1

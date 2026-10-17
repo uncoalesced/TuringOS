@@ -1,0 +1,58 @@
+#!/bin/bash
+# 90-dns-fallback — NetworkManager dispatcher: pin resolvers that answer.
+#
+# The NAT gateway this image boots behind (192.168.64.1, UTM/vmnet) takes
+# the DHCP DNS slot and never answers a query — every lookup times out
+# until something rewrites resolv.conf. conf.d drop-ins cannot fix it
+# (NM ignores a system-wide [ipv4] dns there), but a dispatcher runs on
+# every lease and can edit the *connection*: keep DHCP for the address,
+# drop DHCP for the names, then reapply so the running lease picks the
+# change up without reconnecting.
+#
+#   up / dhcp4-change → method auto + no manual DNS set →
+#       ipv4.dns = 8.8.8.8 1.1.1.1 (8.8.8.8 first: 1.1.1.1 alone is
+#       flaky from some hosts), ignore both auto-DNS lists, reapply
+#
+# Static connections and manually-entered DNS are left alone; nothing
+# ever disconnects the device.
+
+IF="$1"
+EVENT="$2"
+
+case "$EVENT" in
+    up | dhcp4-change) ;;
+    *) exit 0 ;;
+esac
+
+command -v nmcli >/dev/null 2>&1 || exit 0
+[ "$IF" = lo ] && exit 0
+
+CON="$(nmcli -g GENERAL.CONNECTION device show "$IF" 2>/dev/null)" || exit 0
+[ -n "$CON" ] && [ "$CON" != "--" ] || exit 0
+
+METHOD="$(nmcli -g ipv4.method con show "$CON" 2>/dev/null)" || exit 0
+[ "$METHOD" = auto ] || exit 0
+
+IGN="$(nmcli -g ipv4.ignore-auto-dns con show "$CON" 2>/dev/null)" || IGN=""
+DNS="$(nmcli -g ipv4.dns con show "$CON" 2>/dev/null)" || DNS=""
+
+# Already ours, or somebody configured DNS by hand — both are final
+case "$DNS" in
+    *8.8.8.8*)
+        [ "$IGN" = yes ] && exit 0
+        ;;
+    ?*)
+        exit 0
+        ;;
+esac
+
+nmcli con mod "$CON" \
+    ipv4.dns "8.8.8.8 1.1.1.1" \
+    ipv4.ignore-auto-dns yes \
+    ipv6.ignore-auto-dns yes || exit 0
+
+# Push it into the live connection; a failure here is not fatal — the
+# settings stick and apply on the next lease event or reconnect
+nmcli device reapply "$IF" 2>/dev/null || true
+
+exit 0

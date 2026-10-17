@@ -36,6 +36,9 @@ network-manager
 iproute2
 iputils-ping
 openssh-client
+# sshd on the live image: poke at a running ISO from the host (and the
+# installed system keeps it — Calamares copies this rootfs)
+openssh-server
 
 # ── Display (Wayland + X fallback) ────────────────────────────────────────────
 # Wayland compositors for the trust model UI
@@ -45,6 +48,12 @@ labwc
 wayland-protocols
 # Wayland-native terminal for Super+Esc under sway/labwc (Phase 3 fallback)
 foot
+# Hyprland itself is installed from trixie-backports by hook 0350 (it never
+# entered the frozen trixie archive); these are its side pieces: the
+# wallpaper surface and the desktop portals for file pickers / screenshare
+swaybg
+xdg-desktop-portal
+xdg-desktop-portal-gtk
 
 # X11 fallback (Openbox kiosk mode for live ISO compatibility)
 xserver-xorg-core
@@ -55,6 +64,9 @@ xserver-xorg-video-fbdev
 xserver-xorg-video-vesa
 #endif
 openbox
+# startx: the Hyprland session launcher (session/turingos-hyprland) drops
+# back to X+openbox on the same VT when the machine has no render node
+xinit
 # The panel in safe mode only: otherwise the shell window is the desktop. No
 # compositor: nothing needs one, and it costs a screen copy per frame in VMs.
 tint2

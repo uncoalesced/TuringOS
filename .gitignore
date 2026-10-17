@@ -8,3 +8,4 @@
 # Built images (1+ GB)
 /debian-live/*.iso
 __pycache__/
+ui-docs/logo_preview.html

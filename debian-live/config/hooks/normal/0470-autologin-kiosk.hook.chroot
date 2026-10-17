@@ -1,9 +1,12 @@
 #!/bin/bash
 # 0470-autologin-kiosk.hook.chroot
 #
-# Boots straight into the TuringOS UI: lightdm autologins `user` into an
-# openbox session, and /etc/xdg/openbox/autostart (includes.chroot) starts
-# the desktop service and the shell window (session/turingos-kiosk).
+# Boots straight into the TuringOS UI: lightdm autologins `user` into the
+# Hyprland session (session/turingos-hyprland), which starts the desktop
+# service and the shell window (turingos-hyprland-autostart). That session
+# falls back to the X+openbox session on the same VT when the machine has
+# no render node or Hyprland dies, so both session files must exist —
+# checked here, at image build time.
 #
 # live-config creates `user` at boot. If lightdm starts first, autologin
 # fails silently and the greeter shows (see ../../../KNOWN_ISSUES.md), so
@@ -18,8 +21,20 @@ cat > /etc/lightdm/lightdm.conf.d/50-autologin.conf <<'EOF'
 [Seat:*]
 autologin-user=user
 autologin-user-timeout=0
-autologin-session=openbox
-user-session=openbox
+autologin-session=turingos-hyprland
+user-session=turingos-hyprland
+EOF
+
+# The session entry itself: includes.chroot/usr is gitignored (sync-scripts
+# owns that tree), so the .desktop is written here, like the lightdm conf
+mkdir -p /usr/share/wayland-sessions
+cat > /usr/share/wayland-sessions/turingos-hyprland.desktop <<'EOF'
+[Desktop Entry]
+Name=TuringOS
+Comment=TuringOS desktop (Hyprland; falls back to X+Openbox when the machine can't composite)
+Exec=/usr/lib/turingos/session/turingos-hyprland
+Type=Application
+DesktopNames=TuringOS
 EOF
 
 mkdir -p /etc/systemd/system/lightdm.service.d
@@ -30,8 +45,16 @@ After=live-config.service
 Wants=live-config.service
 EOF
 
+if [[ ! -x /usr/lib/turingos/session/turingos-hyprland ]]; then
+    echo "ERROR: session launcher missing (sync-scripts.sh not staged before the build?)"
+    exit 1
+fi
+if [[ ! -f /usr/share/wayland-sessions/turingos-hyprland.desktop ]]; then
+    echo "ERROR: Hyprland session file missing; autologin-session=turingos-hyprland would fail"
+    exit 1
+fi
 if [[ ! -f /usr/share/xsessions/openbox.desktop ]]; then
-    echo "ERROR: openbox session file missing; autologin-session=openbox would fail"
+    echo "ERROR: openbox session file missing; the no-GPU fallback would fail"
     exit 1
 fi
 

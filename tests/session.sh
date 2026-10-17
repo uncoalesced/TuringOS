@@ -11,7 +11,7 @@ trap 'rm -rf "$WORK"' EXIT
 
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
-for f in turingos-kiosk turingos-gfx-detect; do
+for f in turingos-kiosk turingos-gfx-detect turingos-hyprland turingos-hyprland-autostart; do
     [[ -x "${SESSION}/${f}" ]] || fail "session/${f} is not executable"
     bash -n "${SESSION}/${f}" || fail "session/${f} has syntax errors"
 done

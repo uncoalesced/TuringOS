@@ -1,0 +1,54 @@
+#!/bin/bash
+# 0350-hyprland.hook.chroot
+#
+# The desktop's default session is Hyprland (hook 0470 points autologin
+# at it), but hyprland never entered the frozen trixie archive — the
+# only source is trixie-backports (0.55.x, arch-any so amd64 and arm64
+# both resolve). Installed here rather than in turingos.list.chroot
+# because a package list cannot add a repository.
+#
+# xwayland and xdg-desktop-portal-hyprland are Recommends of hyprland,
+# which a live image that trims hard would drop: named explicitly. The
+# shell window runs on Chromium's X11 ozone platform by design (a --app
+# window's --class is ignored for Wayland app_id, which would break the
+# turingos-shell rules), so even in the Wayland session it renders
+# through XWayland — xwayland is load-bearing, not optional.
+
+set -euo pipefail
+
+export DEBIAN_FRONTEND=noninteractive
+
+echo "==> [0350-hyprland] Installing hyprland from trixie-backports..."
+
+cat > /etc/apt/sources.list.d/backports.list <<'EOF'
+deb http://deb.debian.org/debian trixie-backports main
+EOF
+
+apt-get update -qq
+
+if ! apt-cache show hyprland &>/dev/null; then
+    echo "ERROR: [0350-hyprland] no hyprland in trixie-backports (arch $(dpkg --print-architecture))" >&2
+    exit 1
+fi
+
+# -t trixie-backports matters: without it, versioned deps resolve against
+# the trixie candidates (libxkbcommon0 1.7.0 fails hyprland's >= 1.12.3)
+# and apt refuses the backports dep outright.
+apt-get install -y --no-install-recommends -t trixie-backports \
+    hyprland \
+    xwayland \
+    xdg-desktop-portal-hyprland
+
+if ! command -v Hyprland >/dev/null 2>&1; then
+    echo "ERROR: [0350-hyprland] Hyprland binary missing after install" >&2
+    exit 1
+fi
+
+# The debs are of no use on the finished image (0450 keeps apt lists for
+# its own installs; only the downloaded archives go)
+apt-get clean
+
+# dpkg-query, not `Hyprland --version`: the binary aborts with a critical
+# error in a chroot (no XDG_RUNTIME_DIR) instead of printing its version
+echo "==> [0350-hyprland] hyprland $(dpkg-query -W -f='${Version}' hyprland)"
+echo "==> [0350-hyprland] Done."

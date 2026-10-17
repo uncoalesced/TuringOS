@@ -4,21 +4,53 @@
 #
 # Standalone and small on purpose (the full turingos CLI sources fourteen
 # modules; a hotkey can't wait for that). The shell window sits below all
-# others, so "bring it forward" means minimising what covers it; Alt+Tab
-# brings those windows back. If turingosd is down the shell still comes
-# forward; only the command bar waits for it.
+# others, so "bring it forward" means clearing what covers it; the windows
+# come back with Alt+Tab (which shows the stash) and Super+1..5 (which sends
+# the focused one home). If turingosd is down the shell still comes forward;
+# only the command bar waits for it.
+#
+# Under Hyprland the X11 tools can't do the clearing — xprop/xdotool only
+# see XWayland clients — so the stash goes through hyprctl. It has to be
+# precise: movetoworkspace (non-silent) pops the stash overlay open for
+# every focused window it moves, focusing the pinned shell does not close
+# it again, and windows already stashed must be skipped so the overlay
+# never flashes — hence focus-then-movetoworkspacesilent, and a final
+# overlay close in case Super+Space was pressed while it was showing.
 
 sock="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/turingos/control.sock"
 
-shell=""
-for id in $(xprop -root _NET_CLIENT_LIST 2>/dev/null | sed -n 's/.*# //p' | tr -d ','); do
-    case "$(xprop -id "$id" WM_CLASS 2>/dev/null)" in
-        *'"turingos-shell"'*) shell="$id" ;;
-        *) xdotool windowminimize "$id" 2>/dev/null ;;
-    esac
-done
-if [ -n "$shell" ]; then
-    xdotool windowactivate "$shell" 2>/dev/null
+if [ -n "${WAYLAND_DISPLAY:-}" ] && command -v hyprctl >/dev/null 2>&1; then
+    clients="$(hyprctl clients -j 2>/dev/null)"
+    shell="$(printf '%s' "$clients" \
+        | jq -r '.[] | select(.class == "turingos-shell") | .address' \
+        | head -n 1)"
+    printf '%s' "$clients" \
+        | jq -r '.[] | select(.class != "turingos-shell"
+                              and .workspace.name != "special:turingos-omni")
+                  | .address' \
+        | while IFS= read -r addr; do
+            [ -n "$addr" ] || continue
+            hyprctl dispatch focuswindow "address:$addr" >/dev/null 2>&1
+            hyprctl dispatch movetoworkspacesilent "special:turingos-omni" >/dev/null 2>&1
+        done
+    if [ -n "$shell" ]; then
+        hyprctl dispatch focuswindow "address:$shell" >/dev/null 2>&1
+    fi
+    if [ -n "$(hyprctl monitors -j 2>/dev/null \
+              | jq -r '.[0].specialWorkspace.name // empty')" ]; then
+        hyprctl dispatch togglespecialworkspace "turingos-omni" >/dev/null 2>&1
+    fi
+elif [ -n "${DISPLAY:-}" ]; then
+    shell=""
+    for id in $(xprop -root _NET_CLIENT_LIST 2>/dev/null | sed -n 's/.*# //p' | tr -d ','); do
+        case "$(xprop -id "$id" WM_CLASS 2>/dev/null)" in
+            *'"turingos-shell"'*) shell="$id" ;;
+            *) xdotool windowminimize "$id" 2>/dev/null ;;
+        esac
+    done
+    if [ -n "$shell" ]; then
+        xdotool windowactivate "$shell" 2>/dev/null
+    fi
 fi
 
 curl -fsS --max-time 1 --unix-socket "$sock" -X POST http://d/omni >/dev/null 2>&1
