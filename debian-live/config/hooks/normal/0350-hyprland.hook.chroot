@@ -8,7 +8,9 @@
 # because a package list cannot add a repository.
 #
 # xwayland and xdg-desktop-portal-hyprland are Recommends of hyprland,
-# which a live image that trims hard would drop: named explicitly. The
+# which a live image that trims hard would drop: named explicitly, like
+# hyprland-guiutils (a standalone runtime dep whose absence makes Hyprland
+# nag at every start). The
 # shell window runs on Chromium's X11 ozone platform by design (a --app
 # window's --class is ignored for Wayland app_id, which would break the
 # turingos-shell rules), so even in the Wayland session it renders
@@ -36,6 +38,7 @@ fi
 # and apt refuses the backports dep outright.
 apt-get install -y --no-install-recommends -t trixie-backports \
     hyprland \
+    hyprland-guiutils \
     xwayland \
     xdg-desktop-portal-hyprland
 
