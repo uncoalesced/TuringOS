@@ -106,31 +106,37 @@ PURGE_GPU=(
 )
 
 # ─── Firmware blobs not needed in VM ─────────────────────────────────────────
-# live-build's firmware stage installs these. Keep: firmware-linux-free.
-# Drop: hardware-specific blobs that are dead weight in a VM, and the
-# firmware-linux(-nonfree) metapackages that depend on them
+# live-build's firmware stage installs these. Keep: firmware-linux-free, and
+# every Wi-Fi firmware below — the ISO installs to real laptops (Calamares),
+# so the radio has to work out of the box; the panel's scan/connect is dead
+# weight without the blobs the chip needs.
+KEEP_WIFI_FIRMWARE=(
+    firmware-iwlwifi
+    firmware-realtek
+    firmware-atheros
+    firmware-brcm80211
+    firmware-misc-nonfree
+    firmware-libertas
+    firmware-ti-connectivity
+    firmware-b43-installer
+    firmware-b43legacy-installer
+    firmware-ipw2x00
+    firmware-zd1211
+)
+# Drop: GPU blobs (no VM card has one), firmware for NIC/media/audio gear a
+# demo image never sees, and the firmware-linux(-nonfree) metapackages that
+# pull the GPU blobs in.
 PURGE_FIRMWARE=(
     firmware-linux
     firmware-linux-nonfree
     firmware-amd-graphics
     firmware-nvidia-graphics
-    firmware-realtek
-    firmware-atheros
-    firmware-brcm80211
-    firmware-b43-installer
-    firmware-b43legacy-installer
     firmware-intel-sound
-    firmware-ipw2x00
-    firmware-iwlwifi
-    firmware-libertas
-    firmware-misc-nonfree
     firmware-myricom
     firmware-netronome
     firmware-qlogic
     firmware-siano
-    firmware-ti-connectivity
     firmware-tomu
-    firmware-zd1211
 )
 
 # ─── Unused accessibility daemons ────────────────────────────────────────────
@@ -199,6 +205,16 @@ ALL_PURGE=(
 mapfile -t INSTALLED < <(dpkg-query -W -f='${Package} ${db:Status-Status}\n' "${ALL_PURGE[@]}" 2>/dev/null \
     | awk '$2 == "installed" { print $1 }')
 echo "==> [0200-trim] ${#INSTALLED[@]} of ${#ALL_PURGE[@]} targets installed: ${INSTALLED[*]:-none}"
+
+# Wi-Fi firmware: the metapackages above pulled these in as auto-installed
+# dependencies, so purge + autoremove would take the radios with them — mark
+# the ones present in the image manual first.
+for fw in "${KEEP_WIFI_FIRMWARE[@]}"; do
+    if dpkg-query -W -f='${db:Status-Status}' "$fw" 2>/dev/null | grep -qx installed; then
+        apt-mark manual "$fw" >/dev/null
+        echo "==> [0200-trim] keeping $fw (marked manual)"
+    fi
+done
 
 # Packages from turingos.list.chroot are marked manual: a purge must never
 # take one of them down as a reverse dependency
