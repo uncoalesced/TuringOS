@@ -119,9 +119,18 @@ show.
 | `voice_start` | `{}` | `{ "ok": boolean, "error"?: string }` |
 | `voice_stop` | `{}` | `{ "ok": true, "text": string }` or `{ "ok": false, "error": string }` |
 | `gfx_report` | `{ "tier": string, "p90_ms": number, "samples": number, "reason"?: string }` | `{ "ok": true }` |
+| `wifi_scan` | `{}` | `{ "ok": true, "networks": [{ "ssid": string, "signal": number, "secure": boolean, "active": boolean }] }` or `{ "ok": false, "error": string }` |
+| `wifi_connect` | `{ "ssid": string, "password"?: string }` | `{ "ok": boolean, "error"?: string }` |
 
 `agent_start` only accepts a `project` path that `projects_list` returned.
 `open_external` only accepts `http:` and `https:` URLs.
+
+The Wi-Fi pair goes through NetworkManager's `nmcli`. `wifi_scan` returns one
+entry per SSID (APs merged, active first, then by signal), as fresh as NM's
+own list — a panel open may be up to 30 s stale until NM rescans.
+`wifi_connect` activates a profile: unknown networks get one created and
+saved like any other system connection; `password` is only for secured
+networks. Without `nmcli` both say so in `result`.
 
 ## Graphics level
 

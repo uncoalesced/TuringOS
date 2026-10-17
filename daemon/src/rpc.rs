@@ -2,7 +2,7 @@
 // unknown method, a missing argument); a method that ran and failed says so
 // in its own result, as it did when these were Tauri commands.
 
-use crate::{agent, anthropic, google, launch, projects, state, voice, AppRef};
+use crate::{agent, anthropic, google, launch, projects, state, system, voice, AppRef};
 use serde_json::{json, Value};
 
 /// A required string argument
@@ -48,6 +48,29 @@ pub async fn call(app: &AppRef, method: &str, params: &Value) -> Result<Value, S
         }
         "voice_start" => voice::voice_start(app).await,
         "voice_stop" => voice::voice_stop(app).await,
+        // nmcli blocks (a scan takes seconds, an activation up to 30): keep
+        // it off the runtime's own threads
+        "wifi_scan" => tokio::task::spawn_blocking(system::wifi_scan)
+            .await
+            .unwrap_or_else(|_| json!({ "ok": false, "error": "Scan failed." })),
+        "wifi_connect" => {
+            let ssid = text(params, "ssid")?.to_string();
+            let password = maybe(params, "password").map(str::to_string);
+            let joined = tokio::task::spawn_blocking(move || {
+                system::wifi_connect(&ssid, password.as_deref())
+            })
+            .await
+            .unwrap_or_else(|_| json!({ "ok": false, "error": "Connect failed." }));
+            if joined["ok"].as_bool() == Some(true) {
+                // The state push would otherwise wait out the 10s wifi poll
+                let wifi = tokio::task::spawn_blocking(system::wifi)
+                    .await
+                    .unwrap_or(Value::Null);
+                *app.shared.wifi.lock().unwrap() = wifi;
+                state::push(app);
+            }
+            joined
+        }
         "gfx_report" => {
             // Lands in the journal: the VM matrix reads it from there
             eprintln!("turingosd: gfx report {params}");

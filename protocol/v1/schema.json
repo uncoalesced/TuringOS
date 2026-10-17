@@ -48,7 +48,7 @@
               "enum": [
                 "state_get", "projects_list", "agent_start", "dock_launch", "open_external",
                 "google_connect", "clawd_ask", "chat_ask", "voice_start", "voice_stop",
-                "gfx_report"
+                "gfx_report", "wifi_scan", "wifi_connect"
               ]
             },
             "params": { "type": "object" }

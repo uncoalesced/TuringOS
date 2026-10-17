@@ -95,10 +95,48 @@ pub fn battery() -> Value {
     }
 }
 
-/// Wi-Fi SSID via NetworkManager; Null when nmcli is missing
+// ─── Wi-Fi ───────────────────────────────────────────────────────────────────
+// All through nmcli (NetworkManager), args never through a shell: an SSID or
+// a password is data, not code. Terse mode escapes ':' and '\' in values, so
+// lines are split on unescaped separators only.
+
+/// One `nmcli -t` line split on unescaped ':' (`--escape yes`, the default)
+fn split_terse(line: &str) -> Vec<String> {
+    let mut fields = vec![String::new()];
+    let mut chars = line.chars().peekable();
+    while let Some(c) = chars.next() {
+        match c {
+            '\\' => match chars.next() {
+                Some(escaped) => fields.last_mut().unwrap().push(escaped),
+                None => fields.last_mut().unwrap().push('\\'),
+            },
+            ':' => fields.push(String::new()),
+            other => fields.last_mut().unwrap().push(other),
+        }
+    }
+    fields
+}
+
+/// IN-USE: '*' in nmcli's own output; "yes" accepted for good measure
+fn is_active(field: &str) -> bool {
+    matches!(field, "*" | "yes")
+}
+
+/// Wi-Fi SSID via NetworkManager; Null when nmcli is missing or nothing
+/// is in use. `--rescan no`: this runs on the 10s state poll, a scan of
+/// its own would wake the radio for nothing.
 pub fn wifi() -> Value {
     let Ok(out) = Command::new("nmcli")
-        .args(["-t", "-f", "ACTIVE,SSID", "dev", "wifi"])
+        .args([
+            "-t",
+            "-f",
+            "IN-USE,SSID",
+            "dev",
+            "wifi",
+            "list",
+            "--rescan",
+            "no",
+        ])
         .output()
     else {
         return Value::Null;
@@ -107,11 +145,119 @@ pub fn wifi() -> Value {
         return Value::Null;
     }
     let text = String::from_utf8_lossy(&out.stdout);
-    let ssid = text
-        .lines()
-        .find_map(|l| l.strip_prefix("yes:"))
-        .map(str::to_string);
+    let ssid = text.lines().find_map(|l| {
+        let fields = split_terse(l);
+        if fields.len() >= 2 && is_active(&fields[0]) {
+            Some(fields[1].clone())
+        } else {
+            None
+        }
+    });
     json!({ "ssid": ssid })
+}
+
+/// Terse `nmcli dev wifi list` output → the network list for a scan.
+/// Same SSID twice (dual-band, several APs): one entry, active if any of
+/// them is, with the strongest signal seen.
+fn parse_scan(text: &str) -> Vec<Value> {
+    let mut nets: Vec<Value> = Vec::new();
+    for line in text.lines() {
+        let f = split_terse(line);
+        if f.len() < 4 || f[1].is_empty() {
+            continue; // hidden SSID or a line that isn't a network
+        }
+        let entry = json!({
+            "ssid": f[1],
+            "signal": f[2].parse::<u64>().unwrap_or(0).min(100),
+            "secure": !(f[3].is_empty() || f[3] == "--"),
+            "active": is_active(&f[0]),
+        });
+        match nets
+            .iter_mut()
+            .find(|n| n["ssid"].as_str() == Some(f[1].as_str()))
+        {
+            Some(existing) => {
+                let signal = existing["signal"]
+                    .as_u64()
+                    .unwrap_or(0)
+                    .max(entry["signal"].as_u64().unwrap_or(0));
+                let active =
+                    existing["active"] == Value::Bool(true) || entry["active"] == Value::Bool(true);
+                let secure =
+                    existing["secure"] == Value::Bool(true) || entry["secure"] == Value::Bool(true);
+                *existing =
+                    json!({ "ssid": f[1], "signal": signal, "secure": secure, "active": active });
+            }
+            None => nets.push(entry),
+        }
+    }
+    nets.sort_by(|a, b| {
+        let act = b["active"]
+            .as_bool()
+            .unwrap_or(false)
+            .cmp(&a["active"].as_bool().unwrap_or(false));
+        act.then_with(|| b["signal"].as_u64().cmp(&a["signal"].as_u64()))
+            .then_with(|| {
+                a["ssid"]
+                    .as_str()
+                    .unwrap_or("")
+                    .cmp(b["ssid"].as_str().unwrap_or(""))
+            })
+    });
+    nets
+}
+
+fn nmcli_error(out: &std::process::Output, fallback: &str) -> Value {
+    let text = String::from_utf8_lossy(&out.stderr);
+    let text = text.trim();
+    let text = if text.is_empty() {
+        String::from_utf8_lossy(&out.stdout).trim().to_string()
+    } else {
+        text.to_string()
+    };
+    json!({ "ok": false, "error": if text.is_empty() { fallback.to_string() } else { text } })
+}
+
+/// Nearby networks for the panel: { ok, networks: [{ssid, signal, secure, active}] }
+pub fn wifi_scan() -> Value {
+    let Ok(out) = Command::new("nmcli")
+        .args([
+            "-t",
+            "-f",
+            "IN-USE,SSID,SIGNAL,SECURITY",
+            "dev",
+            "wifi",
+            "list",
+            "--rescan",
+            "auto",
+        ])
+        .output()
+    else {
+        return json!({ "ok": false, "error": "NetworkManager (nmcli) is not installed." });
+    };
+    if !out.status.success() {
+        return nmcli_error(&out, "Could not scan for networks.");
+    }
+    json!({ "ok": true, "networks": parse_scan(&String::from_utf8_lossy(&out.stdout)) })
+}
+
+/// Join (or create and join) a network. The profile NM saves lives with the
+/// system like any other NM connection. `--wait 30` caps a slow activation —
+/// nmcli's own default is 90 seconds.
+pub fn wifi_connect(ssid: &str, password: Option<&str>) -> Value {
+    let mut cmd = Command::new("nmcli");
+    cmd.args(["--wait", "30", "device", "wifi", "connect", ssid]);
+    if let Some(password) = password.filter(|p| !p.is_empty()) {
+        cmd.args(["password", password]);
+    }
+    let Ok(out) = cmd.output() else {
+        return json!({ "ok": false, "error": "NetworkManager (nmcli) is not installed." });
+    };
+    if out.status.success() {
+        json!({ "ok": true })
+    } else {
+        nmcli_error(&out, "Could not connect to the network.")
+    }
 }
 
 pub fn pid_alive(pid: &str) -> bool {
@@ -213,5 +359,46 @@ mod tests {
         assert!(!pid_alive(""));
         assert!(!pid_alive("12; rm"));
         assert!(!pid_alive("../1"));
+    }
+
+    #[test]
+    fn terse_lines_split_on_unescaped_separators_only() {
+        assert_eq!(
+            split_terse("*:Studio:87:WPA2"),
+            ["*", "Studio", "87", "WPA2"]
+        );
+        assert_eq!(split_terse(r"\:back\:.hidden"), [":back:.hidden"]);
+        assert_eq!(split_terse(r"Cafe\: Two:54:"), ["Cafe: Two", "54", ""]);
+        assert!(is_active("*"));
+        assert!(is_active("yes"));
+        assert!(!is_active(""));
+    }
+
+    #[test]
+    fn scan_output_parses_sorts_and_dedupes() {
+        let out = "\
+*:Studio:87:WPA2
+:Cafe\\: Two:54:WPA1 WPA2
+:Other:61:--
+*:Studio:40:WPA2
+::70:WPA2
+";
+        let nets = parse_scan(out);
+        // Active first, then by signal; hidden SSIDs dropped; Studio's two
+        // APs merge into one active row at the stronger signal
+        let ssids: Vec<&str> = nets.iter().map(|n| n["ssid"].as_str().unwrap()).collect();
+        assert_eq!(ssids, ["Studio", "Other", "Cafe: Two"]);
+        assert_eq!(nets[0]["active"], json!(true));
+        assert_eq!(nets[0]["signal"], json!(87));
+        assert_eq!(nets[1]["secure"], json!(false));
+        assert_eq!(nets[2]["secure"], json!(true));
+    }
+
+    #[test]
+    fn aps_of_one_ssid_merge_into_one_row() {
+        let nets = parse_scan("*:Home:30:WPA2\n:Home:90:WPA2\n");
+        assert_eq!(nets.len(), 1);
+        assert_eq!(nets[0]["signal"], json!(90));
+        assert_eq!(nets[0]["active"], json!(true));
     }
 }

@@ -227,6 +227,17 @@ async fn a_page_conversation() {
     let got = page.call("p-15", "projects_list", json!({})).await;
     assert_eq!(got, json!({ "ok": true, "result": [] }));
 
+    // Wi-Fi: the call reaches nmcli's wrapper either way (no NetworkManager
+    // on this machine, so scan reports its own failure inside the result)
+    let got = page.call("p-17", "wifi_connect", json!({})).await;
+    assert_eq!(
+        got,
+        json!({ "ok": false, "error": "Missing argument: ssid" })
+    );
+    let got = page.call("p-18", "wifi_scan", json!({})).await;
+    assert_eq!(got["ok"], true);
+    assert!(got["result"].get("ok").is_some(), "wifi_scan shaped: {got}");
+
     // Rubbish on the wire costs nothing: the next message is still answered
     for junk in ["not json", "{}", r#"{"type":"from-the-future","data":{}}"#] {
         page.send(junk).await;

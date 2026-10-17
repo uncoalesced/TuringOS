@@ -113,6 +113,8 @@
     voiceStart: () => call('voice_start'),
     voiceStop: () => call('voice_stop'),
     onVoice: (cb) => listeners.voice.add(cb),
+    wifiScan: () => call('wifi_scan'),
+    wifiConnect: (ssid, password) => call('wifi_connect', { ssid, password: password ?? null }),
     openExternal: (url) => call('open_external', { url }),
     runShell,
     reportGfx: (report) => call('gfx_report', report),

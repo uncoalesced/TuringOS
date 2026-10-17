@@ -187,3 +187,35 @@
 .widget-row:hover { background: var(--surface-strong); }
 .widget-row-title { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .widget-row-sub { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; }
+
+/* Wi-Fi group: status line, network rows, password row */
+.wifi-status { padding: 4px 10px 6px; color: var(--muted); font-size: 13px; }
+.wifi-error { color: var(--danger); }
+
+.wifi-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  text-align: left;
+}
+.wifi-row .widget-row-title { flex: 1; min-width: 0; }
+.wifi-row .icon { flex: none; width: 15px; height: 15px; color: var(--accent); }
+.wifi-row:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+
+.wifi-form { display: flex; align-items: center; gap: 8px; padding: 4px 10px 8px; }
+.wifi-pw {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-strong);
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+}
+.wifi-pw:focus-visible { border-color: var(--accent); }

@@ -92,9 +92,9 @@
     </div>
 
     <div class="menubar-side">
-      <span class="tray" id="wifi" title="Wi-Fi">
+      <button class="tray tray-button" id="wifi" type="button" title="Wi-Fi" aria-label="Wi-Fi settings">
         <svg class="icon" aria-hidden="true"><use href="#ic-wifi" /></svg>
-      </span>
+      </button>
       <span class="tray" id="battery" title="Battery">
         <svg class="icon battery-icon" viewBox="0 0 24 24" aria-hidden="true">
           <use href="#ic-battery" />
@@ -245,6 +245,14 @@
         </button>
       </header>
       <div class="panel-stack" id="notif-list"></div>
+    </section>
+
+    <section class="panel-group" aria-labelledby="wifi-title">
+      <header class="panel-group-head">
+        <h2 id="wifi-title">Wi-Fi</h2>
+        <svg class="icon" aria-hidden="true"><use href="#ic-wifi" /></svg>
+      </header>
+      <div class="panel-card" id="wifi-body"></div>
     </section>
 
     <section class="panel-group" aria-labelledby="calendar-title">

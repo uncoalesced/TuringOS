@@ -57,6 +57,7 @@ function render(snap) {
   renderWeather(s.weather);
   renderGithub(s.github);
   renderCalendar(s.calendar);
+  setWifiState(s.system.wifi);
 }
 
 function pickDefined(obj) {

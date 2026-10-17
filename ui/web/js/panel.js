@@ -11,12 +11,17 @@ function setPanelOpen(open) {
   panelOpen = open;
   $('#side-panel').classList.toggle('is-visible', open);
   document.documentElement.classList.toggle('panel-open', open);
-  if (open) renderNotifications();
+  if (open) {
+    renderNotifications();
+    scanWifi(); // fresh list on every open; paints the card either way
+  }
 }
 
 $('#menubar-clock').addEventListener('click', () => setPanelOpen(!panelOpen));
+// The tray icon is the Wi-Fi section's other door
+$('#wifi').addEventListener('click', () => setPanelOpen(!panelOpen));
 document.addEventListener('click', (e) => {
-  if (panelOpen && !e.target.closest('#side-panel, #menubar-clock')) setPanelOpen(false);
+  if (panelOpen && !e.target.closest('#side-panel, #menubar-clock, #wifi')) setPanelOpen(false);
 });
 document.addEventListener('keydown', (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'j') {
