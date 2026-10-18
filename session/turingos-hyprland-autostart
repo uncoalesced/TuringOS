@@ -29,4 +29,4 @@ fi
     systemctl --user restart turingosd.service
 ) &
 
-/usr/lib/turingos/session/turingos-respawn /usr/lib/turingos/session/turingos-kiosk &
+turingos-respawn /usr/lib/turingos/session/turingos-kiosk &
