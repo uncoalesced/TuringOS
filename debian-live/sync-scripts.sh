@@ -53,7 +53,7 @@ install -m644 "${REPO_ROOT}/pkg/turingos-first-run.sh" "${INC}/etc/profile.d/tur
 install -m644 "${REPO_ROOT}/LICENSE" "${DOC}/copyright"
 install -m644 "${REPO_ROOT}/WORKFLOW.md" "${DOC}/"
 # Installer branding (hook 0495)
-install -Dm644 "${REPO_ROOT}/ui/web/assets/brand/app-icon.png" "${INC}/usr/share/pixmaps/turingos.png"
+install -Dm644 "${REPO_ROOT}/assets/logo/turing-os-logo.png" "${INC}/usr/share/pixmaps/turingos.png"
 
 install -m644 "${REPO_ROOT}/protocol/v1/README.md" "${DOC}/protocol-v1.md"
 
