@@ -54,6 +54,10 @@ install -m644 "${REPO_ROOT}/LICENSE" "${DOC}/copyright"
 install -m644 "${REPO_ROOT}/WORKFLOW.md" "${DOC}/"
 # Installer branding (hook 0495)
 install -Dm644 "${REPO_ROOT}/assets/logo/turing-os-logo.png" "${INC}/usr/share/pixmaps/turingos.png"
+# Bazaar trust anchor (Ed25519 public key)
+if [[ -f "${REPO_ROOT}/trust/keys/bazaar.pub" ]]; then
+    install -Dm644 "${REPO_ROOT}/trust/keys/bazaar.pub" "${INC}/etc/turingos/trust/bazaar.pub"
+fi
 
 install -m644 "${REPO_ROOT}/protocol/v1/README.md" "${DOC}/protocol-v1.md"
 

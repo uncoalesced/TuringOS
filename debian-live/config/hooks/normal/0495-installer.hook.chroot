@@ -123,7 +123,7 @@ DEBS=/var/cache/turingos/grub
 if [ "$(mount | grep "$CHROOT " | cut -c -16)" = "/dev/mapper/luks" ]; then
     echo "UMASK=0077" > "$CHROOT/etc/initramfs-tools/conf.d/initramfs-permissions"
 fi
-if [ -d /sys/firmware/efi/efivars ]; then
+if [ -d /sys/firmware/efi ] || [ -d /sys/firmware/efi/efivars ] || [ "$(uname -m)" = "aarch64" ]; then
     echo " * Installing grub-efi (uefi)..."
     set -- "$DEBS"/grub-efi-*_*.deb "$DEBS"/grub-efi_*.deb   # grub-efi-amd64 or -arm64
 else
