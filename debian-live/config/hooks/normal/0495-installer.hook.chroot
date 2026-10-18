@@ -140,6 +140,9 @@ cat > /usr/bin/turingos-install <<'EOF'
 # Runs Calamares as root on the live user's X display (TuringOS hook 0495).
 # Debian's calamares-install-debian does the same through pkexec.
 [ -d /run/live/medium ] || { echo "turingos-install: run it from the live ISO" >&2; exit 1; }
+# Calamares runs as root on the user's XWayland display; the compositor
+# only authorizes SI:localuser:<user>, so grant root explicitly.
+xhost +SI:localuser:root >/dev/null 2>&1
 sudo -n mv /etc/fstab /etc/fstab.orig.calamares 2>/dev/null
 sudo -n --preserve-env=DISPLAY,XAUTHORITY,LANG QT_AUTO_SCREEN_SCALE_FACTOR=1 calamares "$@"
 rc=$?
