@@ -5,7 +5,8 @@
 /debian-live/config/includes.chroot/usr/
 /debian-live/config/includes.chroot/opt/
 /debian-live/config/includes.chroot/etc/profile.d/
-# Built images (1+ GB)
+# Built images (1+ GB) and backups
 /debian-live/*.iso
+/debian-live/*.iso*
 __pycache__/
 ui-docs/logo_preview.html
