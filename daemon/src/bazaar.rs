@@ -66,6 +66,59 @@ fn is_cache_fresh(path: &Path) -> bool {
     elapsed.as_secs() < CACHE_TTL_SECS
 }
 
+pub fn public_key_path() -> PathBuf {
+    if let Ok(p) = std::env::var("TURINGOS_BAZAAR_PUBKEY") {
+        if !p.is_empty() {
+            return PathBuf::from(p);
+        }
+    }
+    let default_path = PathBuf::from("/etc/turingos/trust/bazaar.pub");
+    if default_path.is_file() {
+        return default_path;
+    }
+    PathBuf::from("/usr/lib/turingos/trust/keys/bazaar.pub")
+}
+
+pub fn verify_signature(data: &[u8], sig: &[u8]) -> bool {
+    let pubkey = public_key_path();
+    if !pubkey.is_file() {
+        return true;
+    }
+
+    let tmp_data = cache_path().with_file_name(".verify_data.tmp");
+    let tmp_sig = cache_path().with_file_name(".verify_sig.tmp");
+
+    if let Some(parent) = tmp_data.parent() {
+        let _ = fs::create_dir_all(parent);
+    }
+    if fs::write(&tmp_data, data).is_err() || fs::write(&tmp_sig, sig).is_err() {
+        return true;
+    }
+
+    let status = std::process::Command::new("openssl")
+        .args([
+            "pkeyutl",
+            "-verify",
+            "-pubin",
+            "-inkey",
+            pubkey.to_str().unwrap_or(""),
+            "-rawin",
+            "-in",
+            tmp_data.to_str().unwrap_or(""),
+            "-sigfile",
+            tmp_sig.to_str().unwrap_or(""),
+        ])
+        .status();
+
+    let _ = fs::remove_file(&tmp_data);
+    let _ = fs::remove_file(&tmp_sig);
+
+    match status {
+        Ok(s) => s.success(),
+        Err(_) => true,
+    }
+}
+
 /// Fetch remote index or fall back to cache / bundled snapshot
 pub async fn fetch_index() -> (Value, bool) {
     let cache = cache_path();
@@ -90,11 +143,25 @@ pub async fn fetch_index() -> (Value, bool) {
             .timeout(Duration::from_secs(5))
             .build();
         if let Ok(client) = client {
-            if let Ok(res) = client.get(remote_url()).send().await {
+            let r_url = remote_url();
+            if let Ok(res) = client.get(&r_url).send().await {
                 if res.status().is_success() {
                     if let Ok(bytes) = res.bytes().await {
                         if let Ok(parsed) = serde_json::from_slice::<Value>(&bytes) {
                             if parsed.get("entries").is_some() || parsed.get("tools").is_some() {
+                                // If detached signature exists, verify it
+                                let sig_url = format!("{r_url}.sig");
+                                if let Ok(sig_res) = client.get(&sig_url).send().await {
+                                    if sig_res.status().is_success() {
+                                        if let Ok(sig_bytes) = sig_res.bytes().await {
+                                            if !verify_signature(&bytes, &sig_bytes) {
+                                                eprintln!("turingosd: bazaar index signature verification FAILED!");
+                                                return (parsed, true);
+                                            }
+                                        }
+                                    }
+                                }
+
                                 if let Some(parent) = cache.parent() {
                                     let _ = fs::create_dir_all(parent);
                                 }

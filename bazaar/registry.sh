@@ -24,7 +24,7 @@ registry::_is_cache_fresh() {
 }
 
 registry::_fetch_remote() {
-    local cache="$1" tmp
+    local cache="$1" tmp tmp_sig pubkey
     if [[ "${TURINGOS_BAZAAR_OFFLINE_MODE:-0}" == "1" ]]; then
         return 1
     fi
@@ -35,6 +35,28 @@ registry::_fetch_remote() {
     tmp=$(mktemp "${cache}.tmp.XXXXXX" 2>/dev/null || mktemp /tmp/turingos_bazaar.XXXXXX 2>/dev/null || echo "${cache}.tmp")
     if curl --silent --fail --max-time 5 --location "$TURINGOS_BAZAAR_REMOTE_URL" -o "$tmp" 2>/dev/null; then
         if jq -e '(.entries // .tools) | type == "object"' "$tmp" &>/dev/null; then
+            # Verify Ed25519 detached signature if public key is present
+            pubkey="${TURINGOS_BAZAAR_PUBKEY:-/etc/turingos/trust/bazaar.pub}"
+            if [[ ! -f "$pubkey" && -f "${ROOT}/trust/keys/bazaar.pub" ]]; then
+                pubkey="${ROOT}/trust/keys/bazaar.pub"
+            fi
+            if [[ -f "$pubkey" ]] && command -v openssl &>/dev/null; then
+                local sig_url="${TURINGOS_BAZAAR_REMOTE_URL}.sig"
+                tmp_sig=$(mktemp "${cache}.sig.XXXXXX" 2>/dev/null || mktemp /tmp/turingos_bazaar_sig.XXXXXX 2>/dev/null || echo "${cache}.sig")
+                if curl --silent --fail --max-time 5 --location "$sig_url" -o "$tmp_sig" 2>/dev/null; then
+                    if ! openssl pkeyutl -verify -pubin -inkey "$pubkey" -rawin -in "$tmp" -sigfile "$tmp_sig" &>/dev/null; then
+                        ui::warn "Bazaar index signature verification failed! Rejecting untrusted catalog."
+                        log::error "bazaar index signature verification failed against $pubkey"
+                        rm -f "$tmp" "$tmp_sig" 2>/dev/null || true
+                        return 1
+                    fi
+                    log::audit BAZAAR_INDEX_VERIFIED "pubkey=${pubkey}"
+                    rm -f "$tmp_sig" 2>/dev/null || true
+                else
+                    rm -f "$tmp_sig" 2>/dev/null || true
+                fi
+            fi
+
             mkdir -p "$(dirname "$cache")" 2>/dev/null || true
             mv -f "$tmp" "$cache"
             return 0

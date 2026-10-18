@@ -14,6 +14,15 @@ trap 'rm -rf "$WORK"' EXIT
 
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
+to_file_url() {
+    local p="$1"
+    if command -v cygpath &>/dev/null; then
+        echo "file:///$(cygpath -m "$p")"
+    else
+        echo "file://${p}"
+    fi
+}
+
 # Source core runtime
 source "${ROOT}/core/config.sh"
 source "${ROOT}/core/ui.sh"
@@ -94,7 +103,7 @@ CORRUPT_TEMP="${WORK}/corrupt.json"
 echo "<html><body>502 Bad Gateway</body></html>" > "$CORRUPT_TEMP"
 
 # If curl fetched this garbage, _fetch_remote must reject it and NOT overwrite the cache
-export TURINGOS_BAZAAR_REMOTE_URL="file://${CORRUPT_TEMP}"
+export TURINGOS_BAZAAR_REMOTE_URL="$(to_file_url "${CORRUPT_TEMP}")"
 rm -f "$TURINGOS_BAZAAR_CACHE"
 # Load must fall back to bundled snapshot without crashing on jq error
 keys=$(registry::keys)
@@ -198,4 +207,60 @@ echo "── Test 9: Non-interactive uninstall with -y"
 bazaar::uninstall -y good-skill >/dev/null
 [[ ! -d "${TURINGOS_BAZAAR_DIR}/good-skill" ]] || fail "good-skill directory was not removed by uninstall -y"
 
-echo "==> All Bazaar Fallback, Integrity, and Per-Project Rule tests passed successfully!"
+# ─── Test 10: Ed25519 cryptographic index signature verification ─────────────
+echo "── Test 10: Ed25519 cryptographic index signature verification"
+SIG_TEST_DIR="${WORK}/sig_test"
+mkdir -p "$SIG_TEST_DIR"
+TEST_KEY="${SIG_TEST_DIR}/test_ed25519.key"
+TEST_PUB="${SIG_TEST_DIR}/test_ed25519.pub"
+TEST_INDEX="${SIG_TEST_DIR}/index.json"
+TEST_SIG="${SIG_TEST_DIR}/index.json.sig"
+
+openssl genpkey -algorithm ed25519 -out "$TEST_KEY" 2>/dev/null
+openssl pkey -in "$TEST_KEY" -pubout -out "$TEST_PUB" 2>/dev/null
+
+cat > "$TEST_INDEX" <<EOF
+{
+  "version": 1,
+  "generated_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "entries": {
+    "signed-tool": {
+      "id": "signed-tool",
+      "name": "Cryptographically Signed Tool",
+      "type": "skill",
+      "version": "1.0.0",
+      "description": "Verified via Ed25519 signature",
+      "tags": ["crypto"],
+      "verified": true,
+      "install": {
+        "runtime": "archive",
+        "package": "signed-tool",
+        "version": "1.0.0",
+        "sha256": "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"
+      }
+    }
+  }
+}
+EOF
+
+openssl pkeyutl -sign -inkey "$TEST_KEY" -rawin -in "$TEST_INDEX" -out "$TEST_SIG"
+
+export TURINGOS_BAZAAR_REMOTE_URL="$(to_file_url "${TEST_INDEX}")"
+export TURINGOS_BAZAAR_PUBKEY="$TEST_PUB"
+rm -f "$TURINGOS_BAZAAR_CACHE"
+
+# 10a. Valid signature must pass and populate cache
+registry::_load
+tool_name=$(registry::get_field "signed-tool" name)
+[[ "$tool_name" == "Cryptographically Signed Tool" ]] || fail "failed to load validly signed index"
+(( TURINGOS_BAZAAR_OFFLINE == 0 )) || fail "validly signed index should be online (offline=0)"
+
+# 10b. Tampered index with mismatched signature must be rejected & trigger fallback
+echo '{"entries": {"bad": {}}}' > "$TEST_INDEX"
+rm -f "$TURINGOS_BAZAAR_CACHE"
+registry::_load
+(( TURINGOS_BAZAAR_OFFLINE == 1 )) || fail "tampered index should have been rejected and triggered offline fallback"
+keys=$(registry::keys)
+grep -q "memory-mcp" <<< "$keys" || fail "tampered index should fall back to bundled snapshot"
+
+echo "==> All Bazaar Fallback, Integrity, Per-Project Rule, and Ed25519 Verification tests passed successfully!"
