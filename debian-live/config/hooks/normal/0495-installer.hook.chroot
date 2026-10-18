@@ -110,11 +110,14 @@ done
 # Replaces Debian's helper (same job, same LUKS handling, no apt)
 cat > /usr/share/calamares/helpers/calamares-bootloader-config <<'EOF'
 #!/bin/sh
-# TuringOS (hook 0495): install GRUB in the target from the .debs in
-# /var/cache/turingos/grub (the target is a copy of the live system).
-export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}"
+# Calamares jobs can lose /sbin from PATH (dpkg then can't find
+# start-stop-daemon), so pin it here before touching the target.
+PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}"
+export PATH
 export DEBIAN_FRONTEND=noninteractive
 
+# TuringOS (hook 0495): install GRUB in the target from the .debs in
+# /var/cache/turingos/grub (the target is a copy of the live system).
 CHROOT=$(mount | grep proc | grep calamares | awk '{print $3}' | sed -e "s#/proc##g")
 DEBS=/var/cache/turingos/grub
 if [ "$(mount | grep "$CHROOT " | cut -c -16)" = "/dev/mapper/luks" ]; then
@@ -143,6 +146,9 @@ cat > /usr/bin/turingos-install <<'EOF'
 # Runs Calamares as root on the live user's X display (TuringOS hook 0495).
 # Debian's calamares-install-debian does the same through pkexec.
 [ -d /run/live/medium ] || { echo "turingos-install: run it from the live ISO" >&2; exit 1; }
+# Calamares runs as root on the user's XWayland display; the compositor
+# only authorizes SI:localuser:<user>, so grant root explicitly.
+xhost +SI:localuser:root >/dev/null 2>&1
 export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}"
 sudo -n mv /etc/fstab /etc/fstab.orig.calamares 2>/dev/null
 sudo -n --preserve-env=DISPLAY,XAUTHORITY,LANG,PATH QT_AUTO_SCREEN_SCALE_FACTOR=1 calamares "$@"
