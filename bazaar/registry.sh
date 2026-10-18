@@ -1,42 +1,105 @@
 #!/usr/bin/env bash
+# Engineered by uncoalesced
 # bazaar/registry.sh — TuringOS Clawd Bazaar registry reader
 #
-# Loads and queries registry.json. Provides the browsing/search UI.
+# Loads and queries remote index or bundled fallback. Provides browsing/search UI.
 # Install logic lives in bazaar/install.sh.
 #
 # Depends on: core/config.sh, core/logging.sh, core/ui.sh
 
+export TURINGOS_ACTIVE_REGISTRY=""
+export TURINGOS_BAZAAR_OFFLINE=0
+
 # ─── Registry Access ──────────────────────────────────────────────────────────
 
-registry::_load() {
-    if [[ ! -f "$TURINGOS_REGISTRY" ]]; then
-        ui::fail "Registry not found: $TURINGOS_REGISTRY"
-        log::error "registry file missing: $TURINGOS_REGISTRY"
+registry::_is_cache_fresh() {
+    local cache="$1"
+    [[ -f "$cache" ]] || return 1
+    
+    local now mtime age
+    now=$(date +%s)
+    mtime=$(date -r "$cache" +%s 2>/dev/null || stat -c %Y "$cache" 2>/dev/null || echo 0)
+    age=$(( now - mtime ))
+    (( age >= 0 && age < 86400 ))
+}
+
+registry::_fetch_remote() {
+    local cache="$1" tmp
+    if [[ "${TURINGOS_BAZAAR_OFFLINE_MODE:-0}" == "1" ]]; then
         return 1
     fi
+    if ! command -v curl &>/dev/null; then
+        return 1
+    fi
+
+    tmp=$(mktemp "${cache}.tmp.XXXXXX" 2>/dev/null || mktemp /tmp/turingos_bazaar.XXXXXX 2>/dev/null || echo "${cache}.tmp")
+    if curl --silent --fail --max-time 5 --location "$TURINGOS_BAZAAR_REMOTE_URL" -o "$tmp" 2>/dev/null; then
+        if jq -e '(.entries // .tools) | type == "object"' "$tmp" &>/dev/null; then
+            mkdir -p "$(dirname "$cache")" 2>/dev/null || true
+            mv -f "$tmp" "$cache"
+            return 0
+        fi
+    fi
+    rm -f "$tmp" 2>/dev/null || true
+    return 1
+}
+
+registry::_load() {
     if ! command -v jq &>/dev/null; then
         ui::fail "jq is required for the Bazaar. Install: sudo apt install jq"
         return 1
     fi
+
+    local cache="${TURINGOS_BAZAAR_CACHE:-${HOME}/.cache/turingos/bazaar/index.json}"
+    
+    if registry::_is_cache_fresh "$cache"; then
+        TURINGOS_ACTIVE_REGISTRY="$cache"
+        TURINGOS_BAZAAR_OFFLINE=0
+        return 0
+    fi
+
+    # Cache missing or expired; try remote fetch
+    if registry::_fetch_remote "$cache"; then
+        TURINGOS_ACTIVE_REGISTRY="$cache"
+        TURINGOS_BAZAAR_OFFLINE=0
+        return 0
+    fi
+
+    # Remote fetch failed. Try stale cache first, then bundled snapshot.
+    if [[ -f "$cache" ]] && jq -e '(.entries // .tools) | type == "object"' "$cache" &>/dev/null; then
+        TURINGOS_ACTIVE_REGISTRY="$cache"
+        TURINGOS_BAZAAR_OFFLINE=1
+        return 0
+    fi
+
+    if [[ -f "$TURINGOS_REGISTRY" ]] && jq -e '(.entries // .tools) | type == "object"' "$TURINGOS_REGISTRY" &>/dev/null; then
+        TURINGOS_ACTIVE_REGISTRY="$TURINGOS_REGISTRY"
+        TURINGOS_BAZAAR_OFFLINE=1
+        return 0
+    fi
+
+    ui::fail "Registry not found (tried remote, cache, and bundled: $TURINGOS_REGISTRY)"
+    log::error "registry file missing: $TURINGOS_REGISTRY"
+    return 1
 }
 
 registry::get_field() {
     # Usage: registry::get_field KEY FIELD — scalar field, or ", "-joined array
     registry::_load || return 1
     jq -r --arg k "$1" --arg f "$2" \
-        '.tools[$k][$f] // empty | if type == "array" then join(", ") else . end' \
-        "$TURINGOS_REGISTRY" 2>/dev/null
+        '((.entries // .tools)[$k][$f] // (.entries // .tools)[$k].install[$f] // empty) | if type == "array" then join(", ") else . end' \
+        "$TURINGOS_ACTIVE_REGISTRY" 2>/dev/null | tr -d '\r'
 }
 
 registry::get_array() {
     # Usage: registry::get_array KEY FIELD — newline-separated values
     registry::_load || return 1
-    jq -r --arg k "$1" --arg f "$2" '.tools[$k][$f][]? // empty' "$TURINGOS_REGISTRY" 2>/dev/null
+    jq -r --arg k "$1" --arg f "$2" '((.entries // .tools)[$k][$f] // (.entries // .tools)[$k].install[$f])[]? // empty' "$TURINGOS_ACTIVE_REGISTRY" 2>/dev/null | tr -d '\r'
 }
 
 registry::keys() {
     registry::_load || return 1
-    jq -r '.tools | keys[]' "$TURINGOS_REGISTRY"
+    jq -r '(.entries // .tools) | keys[]' "$TURINGOS_ACTIVE_REGISTRY" | tr -d '\r'
 }
 
 registry::_installed() {
@@ -47,7 +110,11 @@ registry::_installed() {
 
 registry::list() {
     registry::_load || return 1
-    ui::header "Clawd Bazaar"
+    if (( TURINGOS_BAZAAR_OFFLINE )); then
+        ui::header "Clawd Bazaar [offline catalogue]"
+    else
+        ui::header "Clawd Bazaar"
+    fi
 
     local key name type description tags dot
     while IFS=$'\t' read -r key name type description tags; do
@@ -56,8 +123,8 @@ registry::list() {
         printf '  %b  %b%-22s%b  %b[%s]%b\n' "$dot" "$BOLD_WHITE" "$name" "$RESET" "$DIM" "$type" "$RESET"
         printf '       %s\n' "$description"
         printf '       %b%s  tags: %s%b\n\n' "$DIM" "$key" "$tags" "$RESET"
-    done < <(jq -r '.tools | to_entries[] | [.key, .value.name, .value.type, .value.description,
-        (.value.tags | join(", "))] | @tsv' "$TURINGOS_REGISTRY")
+    done < <(jq -r '(.entries // .tools) | to_entries[] | [.key, .value.name, .value.type, .value.description,
+        ((.value.tags // []) | join(", "))] | @tsv' "$TURINGOS_ACTIVE_REGISTRY")
 
     printf '  %b● installed   ○ available%b\n\n' "$DIM" "$RESET"
 }
@@ -75,11 +142,16 @@ registry::info() {
         return 1
     fi
 
-    ui::header "$name"
+    if (( TURINGOS_BAZAAR_OFFLINE )); then
+        ui::header "$name [offline catalogue]"
+    else
+        ui::header "$name"
+    fi
     ui::label "Key" "$key"
     local field
-    for field in type runtime package repo description tags; do
-        ui::label "${field^}" "$(registry::get_field "$key" "$field")"
+    for field in type runtime package version repo description tags; do
+        val="$(registry::get_field "$key" "$field")"
+        [[ -n "$val" ]] && ui::label "${field^}" "$val"
     done
 
     local env_var env_vars=()
@@ -118,16 +190,20 @@ registry::search() {
         return 1
     fi
 
-    ui::header "Search: ${query}"
+    if (( TURINGOS_BAZAAR_OFFLINE )); then
+        ui::header "Search: ${query} [offline catalogue]"
+    else
+        ui::header "Search: ${query}"
+    fi
     local found=0 key name description
     while IFS=$'\t' read -r key name description; do
         found=$(( found + 1 ))
         printf '  %b%-22s%b  %b%s%b\n' "$BOLD_WHITE" "$name" "$RESET" "$DIM" "$key" "$RESET"
         printf '  %s\n\n' "$description"
-    done < <(jq -r --arg q "$query" '.tools | to_entries[]
-        | select([.key, .value.name, .value.description, (.value.tags | join(" "))]
+    done < <(jq -r --arg q "$query" '(.entries // .tools) | to_entries[]
+        | select([.key, .value.name, .value.description, ((.value.tags // []) | join(" "))]
                  | join(" ") | ascii_downcase | contains($q | ascii_downcase))
-        | [.key, .value.name, .value.description] | @tsv' "$TURINGOS_REGISTRY")
+        | [.key, .value.name, .value.description] | @tsv' "$TURINGOS_ACTIVE_REGISTRY")
 
     if (( found == 0 )); then
         ui::info "No tools matched: ${query}"
@@ -146,10 +222,13 @@ registry::browse() {
         return 0
     fi
 
+    local prompt_text="  Clawd Bazaar › "
+    (( TURINGOS_BAZAAR_OFFLINE )) && prompt_text="  Clawd Bazaar [offline] › "
+
     local selection
-    selection=$(jq -r '.tools | to_entries[] | "\(.key)  \(.value.name)  —  \(.value.description)"' \
-        "$TURINGOS_REGISTRY" | fzf \
-            --prompt="  Clawd Bazaar › " \
+    selection=$(jq -r '(.entries // .tools) | to_entries[] | "\(.key)  \(.value.name)  —  \(.value.description)"' \
+        "$TURINGOS_ACTIVE_REGISTRY" | fzf \
+            --prompt="$prompt_text" \
             --header="  Select a tool to install (Enter=select, Esc=cancel)" \
             --height=60% --reverse --border --ansi) || true
 

@@ -1,6 +1,9 @@
 {
+  "version": 1,
+  "generated_at": "2026-10-18T22:30:00Z",
   "tools": {
     "github-mcp": {
+      "id": "github-mcp",
       "name": "GitHub MCP Server",
       "description": "Manage PRs, issues, and repos via Claude",
       "repo": "modelcontextprotocol/servers",
@@ -8,12 +11,24 @@
       "type": "mcp",
       "runtime": "npx",
       "package": "@modelcontextprotocol/server-github",
+      "version": "2025.4.8",
+      "sha256": "1d5b1bca9305adf0c8055131f2286514c9bea6eb31100460899a1ed9ffece5c1",
+      "verified": true,
       "env_required": ["GITHUB_PERSONAL_ACCESS_TOKEN"],
       "mcp_command": "npx",
       "mcp_args": ["-y", "@modelcontextprotocol/server-github"],
-      "tags": ["git", "github", "pr", "issues"]
+      "tags": ["git", "github", "pr", "issues"],
+      "install": {
+        "runtime": "npx",
+        "package": "@modelcontextprotocol/server-github",
+        "version": "2025.4.8",
+        "sha256": "1d5b1bca9305adf0c8055131f2286514c9bea6eb31100460899a1ed9ffece5c1",
+        "mcp_command": "npx",
+        "mcp_args": ["-y", "@modelcontextprotocol/server-github"]
+      }
     },
     "filesystem-mcp": {
+      "id": "filesystem-mcp",
       "name": "Filesystem MCP Server",
       "description": "Give Claude structured read/write access to local directories",
       "repo": "modelcontextprotocol/servers",
@@ -21,12 +36,24 @@
       "type": "mcp",
       "runtime": "npx",
       "package": "@modelcontextprotocol/server-filesystem",
+      "version": "1.0.0",
+      "sha256": "ca60ed89a0acdf91a77a54ba21b1c41ea62e801c360320877035fa20ec4909ae",
+      "verified": true,
       "env_required": [],
       "mcp_command": "npx",
       "mcp_args": ["-y", "@modelcontextprotocol/server-filesystem", "${HOME}"],
-      "tags": ["filesystem", "files", "local"]
+      "tags": ["filesystem", "files", "local"],
+      "install": {
+        "runtime": "npx",
+        "package": "@modelcontextprotocol/server-filesystem",
+        "version": "1.0.0",
+        "sha256": "ca60ed89a0acdf91a77a54ba21b1c41ea62e801c360320877035fa20ec4909ae",
+        "mcp_command": "npx",
+        "mcp_args": ["-y", "@modelcontextprotocol/server-filesystem", "${HOME}"]
+      }
     },
     "postgres-mcp": {
+      "id": "postgres-mcp",
       "name": "Postgres Inspector",
       "description": "Let Claude query and inspect a Postgres database",
       "repo": "modelcontextprotocol/servers",
@@ -34,12 +61,24 @@
       "type": "mcp",
       "runtime": "npx",
       "package": "@modelcontextprotocol/server-postgres",
+      "version": "0.6.2",
+      "sha256": "af55200a01b13ae31949fb4a8864ee6043b891d00ff83330d1779b18aa5ba26f",
+      "verified": true,
       "env_required": ["POSTGRES_CONNECTION_STRING"],
       "mcp_command": "npx",
       "mcp_args": ["-y", "@modelcontextprotocol/server-postgres", "${POSTGRES_CONNECTION_STRING}"],
-      "tags": ["database", "postgres", "sql"]
+      "tags": ["database", "postgres", "sql"],
+      "install": {
+        "runtime": "npx",
+        "package": "@modelcontextprotocol/server-postgres",
+        "version": "0.6.2",
+        "sha256": "af55200a01b13ae31949fb4a8864ee6043b891d00ff83330d1779b18aa5ba26f",
+        "mcp_command": "npx",
+        "mcp_args": ["-y", "@modelcontextprotocol/server-postgres", "${POSTGRES_CONNECTION_STRING}"]
+      }
     },
     "brave-search-mcp": {
+      "id": "brave-search-mcp",
       "name": "Brave Search MCP",
       "description": "Web and local search via Brave Search API",
       "repo": "modelcontextprotocol/servers",
@@ -47,12 +86,24 @@
       "type": "mcp",
       "runtime": "npx",
       "package": "@modelcontextprotocol/server-brave-search",
+      "version": "0.6.2",
+      "sha256": "91733a4e1e0c0de6738d3542135c40bd4356aa48a336191c855e4f9feac40f85",
+      "verified": true,
       "env_required": ["BRAVE_API_KEY"],
       "mcp_command": "npx",
       "mcp_args": ["-y", "@modelcontextprotocol/server-brave-search"],
-      "tags": ["search", "web", "brave"]
+      "tags": ["search", "web", "brave"],
+      "install": {
+        "runtime": "npx",
+        "package": "@modelcontextprotocol/server-brave-search",
+        "version": "0.6.2",
+        "sha256": "91733a4e1e0c0de6738d3542135c40bd4356aa48a336191c855e4f9feac40f85",
+        "mcp_command": "npx",
+        "mcp_args": ["-y", "@modelcontextprotocol/server-brave-search"]
+      }
     },
     "memory-mcp": {
+      "id": "memory-mcp",
       "name": "Memory MCP Server",
       "description": "Persistent knowledge graph memory for Claude across sessions",
       "repo": "modelcontextprotocol/servers",
@@ -60,10 +111,21 @@
       "type": "mcp",
       "runtime": "npx",
       "package": "@modelcontextprotocol/server-memory",
+      "version": "1.0.0",
+      "sha256": "22547eddb9544b54c3db39e4c0ff87232d4fd18b09410c118616531c4c08a370",
+      "verified": true,
       "env_required": [],
       "mcp_command": "npx",
       "mcp_args": ["-y", "@modelcontextprotocol/server-memory"],
-      "tags": ["memory", "persistence", "knowledge"]
+      "tags": ["memory", "persistence", "knowledge"],
+      "install": {
+        "runtime": "npx",
+        "package": "@modelcontextprotocol/server-memory",
+        "version": "1.0.0",
+        "sha256": "22547eddb9544b54c3db39e4c0ff87232d4fd18b09410c118616531c4c08a370",
+        "mcp_command": "npx",
+        "mcp_args": ["-y", "@modelcontextprotocol/server-memory"]
+      }
     }
   }
 }

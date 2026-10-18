@@ -43,10 +43,11 @@ bazaar::install() {
 
     local ok=true
     case "$runtime" in
-        npx)   bazaar::_install_npx   "$key" "$install_dir" || ok=false ;;
-        pip)   bazaar::_install_pipx  "$key" "$install_dir" || ok=false ;;
-        cargo) bazaar::_install_cargo "$key" "$install_dir" || ok=false ;;
-        *)     bazaar::_install_git   "$key" "$install_dir" || ok=false ;;
+        npx)     bazaar::_install_npx     "$key" "$install_dir" || ok=false ;;
+        pip)     bazaar::_install_pipx    "$key" "$install_dir" || ok=false ;;
+        cargo)   bazaar::_install_cargo   "$key" "$install_dir" || ok=false ;;
+        archive) bazaar::_install_archive "$key" "$install_dir" || ok=false ;;
+        *)       bazaar::_install_git     "$key" "$install_dir" || ok=false ;;
     esac
     if ! $ok; then
         ui::fail "Installation failed for: ${key}"
@@ -59,11 +60,17 @@ bazaar::install() {
 
     echo ""
     ui::ok "${name} installed"
-    if bazaar::_register_mcp "$key"; then
-        ui::ok "MCP server registered in ${CLAUDE_CODE_CONFIG}"
-        ui::info "New Claude Code sessions pick it up automatically"
+    local entry_type
+    entry_type=$(registry::get_field "$key" type)
+    if [[ "$entry_type" == "mcp" || -z "$entry_type" ]]; then
+        if bazaar::_register_mcp "$key"; then
+            ui::ok "MCP server registered in ${CLAUDE_CODE_CONFIG}"
+            ui::info "New Claude Code sessions pick it up automatically"
+        else
+            ui::warn "MCP registration failed — add it with: claude mcp add --scope user ${key} ..."
+        fi
     else
-        ui::warn "MCP registration failed — add it with: claude mcp add --scope user ${key} ..."
+        ui::ok "${entry_type^} ready in ${install_dir}"
     fi
     echo ""
 }
@@ -71,27 +78,119 @@ bazaar::install() {
 # ─── Runtimes ────────────────────────────────────────────────────────────────
 
 bazaar::_install_npx() {
-    local key="$1" install_dir="$2" package
+    local key="$1" install_dir="$2" package version sha256 tarball_url tmp_tarball
     package=$(registry::get_field "$key" package)
+    version=$(registry::get_field "$key" version)
+    sha256=$(registry::get_field "$key" sha256)
     if ! command -v npm &>/dev/null; then
         ui::fail "npm not found — install Node.js: sudo apt install nodejs npm"
         return 1
     fi
 
+    local pkg_spec="$package"
+    [[ -n "$version" ]] && pkg_spec="${package}@${version}"
+
+    # Verify sha256 of upstream tarball if pinned
+    if [[ -n "$sha256" && -n "$version" ]]; then
+        tarball_url=$(npm view "$pkg_spec" dist.tarball 2>/dev/null || echo "")
+        if [[ -n "$tarball_url" ]] && command -v curl &>/dev/null && (command -v sha256sum &>/dev/null || command -v shasum &>/dev/null); then
+            ui::info "Verifying SHA-256 for ${pkg_spec}..."
+            tmp_tarball=$(mktemp "${install_dir}/pkg.XXXXXX.tgz" 2>/dev/null || mktemp /tmp/turingos_pkg.XXXXXX.tgz 2>/dev/null || echo "${install_dir}/pkg.tgz")
+            if curl --silent --fail --max-time 15 --location "$tarball_url" -o "$tmp_tarball" 2>/dev/null; then
+                local actual_hash
+                if command -v sha256sum &>/dev/null; then
+                    actual_hash=$(sha256sum "$tmp_tarball" | awk '{print $1}')
+                else
+                    actual_hash=$(shasum -a 256 "$tmp_tarball" | awk '{print $1}')
+                fi
+                rm -f "$tmp_tarball" 2>/dev/null || true
+                if [[ "$actual_hash" != "$sha256" ]]; then
+                    ui::fail "SHA-256 mismatch for ${pkg_spec}: expected ${sha256}, got ${actual_hash}"
+                    log::error "sha256 mismatch: key=${key} expected=${sha256} actual=${actual_hash}"
+                    return 1
+                fi
+                ui::ok "SHA-256 verified (${actual_hash:0:12}...)"
+            else
+                rm -f "$tmp_tarball" 2>/dev/null || true
+            fi
+        fi
+    fi
+
     # Look the package up without running it (a stdio MCP server never exits)
-    ui::info "Checking npm package: ${package}"
-    if ! npm view "$package" version &>/dev/null; then
-        ui::fail "npm package not found: ${package}"
+    ui::info "Checking npm package: ${pkg_spec}"
+    if ! npm view "$pkg_spec" version &>/dev/null; then
+        ui::fail "npm package not found: ${pkg_spec}"
         return 1
     fi
 
     cat > "${install_dir}/run.sh" <<EOF
 #!/usr/bin/env bash
-# Auto-generated launcher for: ${package}
-exec npx -y "${package}" "\$@"
+# Auto-generated launcher for: ${pkg_spec}
+exec npx -y "${pkg_spec}" "\$@"
 EOF
     chmod +x "${install_dir}/run.sh"
-    ui::ok "npm package found: ${package}"
+    ui::ok "npm package found: ${pkg_spec}"
+}
+
+bazaar::_install_archive() {
+    local key="$1" install_dir="$2" package version sha256 url tmp_archive
+    package=$(registry::get_field "$key" package)
+    version=$(registry::get_field "$key" version)
+    sha256=$(registry::get_field "$key" sha256)
+    url=$(registry::get_field "$key" url)
+    [[ -z "$url" ]] && url="$package"
+
+    if [[ -z "$url" ]]; then
+        ui::fail "No package archive URL specified for: ${key}"
+        return 1
+    fi
+
+    ui::info "Downloading archive: ${url}"
+    tmp_archive=$(mktemp "${install_dir}/archive.XXXXXX.tar.gz" 2>/dev/null || mktemp /tmp/turingos_arch.XXXXXX.tar.gz 2>/dev/null || echo "${install_dir}/archive.tar.gz")
+    
+    if [[ "$url" =~ ^file:// ]]; then
+        local file_path="${url#file://}"
+        if [[ -f "$file_path" ]]; then
+            cp "$file_path" "$tmp_archive"
+        else
+            ui::fail "File not found: ${file_path}"
+            rm -f "$tmp_archive" 2>/dev/null || true
+            return 1
+        fi
+    elif [[ -f "$url" ]]; then
+        cp "$url" "$tmp_archive"
+    else
+        if ! curl --silent --fail --max-time 30 --location "$url" -o "$tmp_archive" 2>/dev/null; then
+            ui::fail "Failed to download archive: ${url}"
+            rm -f "$tmp_archive" 2>/dev/null || true
+            return 1
+        fi
+    fi
+
+    if [[ -n "$sha256" ]]; then
+        local actual_hash
+        if command -v sha256sum &>/dev/null; then
+            actual_hash=$(sha256sum "$tmp_archive" | awk '{print $1}')
+        else
+            actual_hash=$(shasum -a 256 "$tmp_archive" | awk '{print $1}')
+        fi
+        if [[ "$actual_hash" != "$sha256" ]]; then
+            ui::fail "SHA-256 mismatch for ${key}: expected ${sha256}, got ${actual_hash}"
+            log::error "sha256 mismatch: key=${key} expected=${sha256} actual=${actual_hash}"
+            rm -f "$tmp_archive" 2>/dev/null || true
+            return 1
+        fi
+        ui::ok "SHA-256 verified (${actual_hash:0:12}...)"
+    fi
+
+    mkdir -p "${install_dir}/unpacked"
+    tar -xzf "$tmp_archive" -C "${install_dir}/unpacked" || {
+        ui::fail "Failed to unpack archive"
+        rm -f "$tmp_archive" 2>/dev/null || true
+        return 1
+    }
+    rm -f "$tmp_archive" 2>/dev/null || true
+    ui::ok "Archive unpacked to ${install_dir}/unpacked"
 }
 
 bazaar::_install_pipx() {

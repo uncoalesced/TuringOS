@@ -112,6 +112,9 @@ cat > /usr/share/calamares/helpers/calamares-bootloader-config <<'EOF'
 #!/bin/sh
 # TuringOS (hook 0495): install GRUB in the target from the .debs in
 # /var/cache/turingos/grub (the target is a copy of the live system).
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}"
+export DEBIAN_FRONTEND=noninteractive
+
 CHROOT=$(mount | grep proc | grep calamares | awk '{print $3}' | sed -e "s#/proc##g")
 DEBS=/var/cache/turingos/grub
 if [ "$(mount | grep "$CHROOT " | cut -c -16)" = "/dev/mapper/luks" ]; then
@@ -124,10 +127,10 @@ else
     echo " * Installing grub-pc (bios)..."
     set -- "$DEBS"/grub-pc_*.deb
 fi
-DEBIAN_FRONTEND=noninteractive chroot "$CHROOT" dpkg -i "$@" || exit 1
+chroot "$CHROOT" env PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" DEBIAN_FRONTEND=noninteractive dpkg -i "$@" || exit 1
 rm -rf "${CHROOT:?}$DEBS"
 sed -i "s/#GRUB_DISABLE_OS_PROBER=false/GRUB_DISABLE_OS_PROBER=false/" "$CHROOT/etc/default/grub"
-chroot "$CHROOT" /usr/sbin/update-grub
+chroot "$CHROOT" env PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" /usr/sbin/update-grub
 EOF
 chmod 755 /usr/share/calamares/helpers/calamares-bootloader-config
 
@@ -140,8 +143,9 @@ cat > /usr/bin/turingos-install <<'EOF'
 # Runs Calamares as root on the live user's X display (TuringOS hook 0495).
 # Debian's calamares-install-debian does the same through pkexec.
 [ -d /run/live/medium ] || { echo "turingos-install: run it from the live ISO" >&2; exit 1; }
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}"
 sudo -n mv /etc/fstab /etc/fstab.orig.calamares 2>/dev/null
-sudo -n --preserve-env=DISPLAY,XAUTHORITY,LANG QT_AUTO_SCREEN_SCALE_FACTOR=1 calamares "$@"
+sudo -n --preserve-env=DISPLAY,XAUTHORITY,LANG,PATH QT_AUTO_SCREEN_SCALE_FACTOR=1 calamares "$@"
 rc=$?
 sudo -n mv /etc/fstab.orig.calamares /etc/fstab 2>/dev/null
 exit "$rc"

@@ -24,8 +24,10 @@ export TURINGOS_CONFIG_FILE="${TURINGOS_DATA_DIR}/config.env"
 export TURINGOS_STATE_FILE="${TURINGOS_DATA_DIR}/state.json"
 export TURINGOS_PID_DIR="${TURINGOS_DATA_DIR}/pids"
 
-# Bazaar registry (ships with TuringOS)
+# Bazaar registry (ships with TuringOS) and remote catalog config
 export TURINGOS_REGISTRY="${TURINGOS_ROOT}/bazaar/registry.json"
+export TURINGOS_BAZAAR_REMOTE_URL="${TURINGOS_BAZAAR_REMOTE_URL:-https://uncoalesced.github.io/turingos-bazaar/v1/index.json}"
+export TURINGOS_BAZAAR_CACHE="${TURINGOS_BAZAAR_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/turingos/bazaar/index.json}"
 
 # Claude Code user config; user-scope MCP servers live under .mcpServers
 export CLAUDE_CODE_CONFIG="${HOME}/.claude.json"
