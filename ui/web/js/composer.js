@@ -293,3 +293,5 @@ $('#composer').addEventListener('submit', (e) => {
   e.preventDefault();
   submit();
 });
+
+window.getActiveProject = () => project;

@@ -2,7 +2,7 @@
 // unknown method, a missing argument); a method that ran and failed says so
 // in its own result, as it did when these were Tauri commands.
 
-use crate::{agent, anthropic, google, launch, projects, state, system, voice, AppRef};
+use crate::{agent, anthropic, bazaar, google, launch, projects, state, system, voice, AppRef};
 use serde_json::{json, Value};
 
 /// A required string argument
@@ -25,6 +25,22 @@ pub async fn call(app: &AppRef, method: &str, params: &Value) -> Result<Value, S
     Ok(match method {
         "state_get" => state::snapshot(&app.shared),
         "projects_list" => projects::list(&app.shared).await,
+        "bazaar_list" => bazaar::list(maybe(params, "project")).await,
+        "bazaar_info" => bazaar::info(text(params, "key")?).await,
+        "bazaar_install" => bazaar::install(text(params, "key")?).await,
+        "bazaar_uninstall" => bazaar::uninstall(text(params, "key")?).await,
+        "bazaar_project_rules" => bazaar::get_rules(text(params, "path")?).await,
+        "bazaar_set_rule" => {
+            bazaar::set_rule(
+                text(params, "path")?,
+                text(params, "id")?,
+                params
+                    .get("enabled")
+                    .and_then(Value::as_bool)
+                    .unwrap_or(true),
+            )
+            .await
+        }
         "agent_start" => {
             agent::start(
                 &app.shared,

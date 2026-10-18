@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Engineered by uncoalesced -->
+<actions>
+  <action>
+    <icon>system-software-install</icon>
+    <name>Configure Skills &amp; Bazaar...</name>
+    <submenu></submenu>
+    <unique-id>turingos-bazaar-toggle</unique-id>
+    <command>sh -c 'x-terminal-emulator -T "TuringOS Bazaar" -e turingos bazaar toggle "$1" || xterm -geometry 80x20 -T "TuringOS Bazaar" -e turingos bazaar toggle "$1"' _ %f</command>
+    <description>Enable or disable skills, plugins, and MCP servers for this directory</description>
+    <range></range>
+    <patterns>*</patterns>
+    <directories/>
+  </action>
+</actions>

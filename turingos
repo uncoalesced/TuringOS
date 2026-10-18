@@ -103,6 +103,10 @@ cmd::help() {
     bazaar install <tool>          Install + register with Claude Code
     bazaar uninstall <tool>        Remove tool + MCP config entry
     bazaar installed               List installed tools
+    bazaar disable <tool> [dir]    Disable tool for directory
+    bazaar enable <tool> [dir]     Re-enable tool for directory
+    bazaar rules [dir]             Show disabled tools for directory
+    bazaar toggle [dir]            Interactive toggle for directory
 
   GAME MODE
     game on                        Deprioritize agents, boost interactive
@@ -188,6 +192,10 @@ main() {
                 install)   bazaar::install "$@" ;;
                 uninstall) bazaar::uninstall "$@" ;;
                 installed) registry::installed ;;
+                disable)   bazaar::disable "$@" ;;
+                enable)    bazaar::enable "$@" ;;
+                rules)     bazaar::rules "$@" ;;
+                toggle)    bazaar::toggle "$@" ;;
                 "")        registry::browse ;;
                 *)
                     ui::warn "Unknown bazaar subcommand '${sub}'"

@@ -31,6 +31,22 @@ pub fn spawn(app: AppRef) {
         }))
     }
 
+    async fn bazaar_list() -> Json<Value> {
+        Json(crate::bazaar::list(None).await)
+    }
+
+    async fn bazaar_install(axum::extract::Json(params): axum::extract::Json<Value>) -> Json<Value> {
+        let key = params.get("key").and_then(Value::as_str).unwrap_or("");
+        Json(crate::bazaar::install(key).await)
+    }
+
+    async fn bazaar_rules(
+        axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
+    ) -> Json<Value> {
+        let path = params.get("path").map(String::as_str).unwrap_or(".");
+        Json(crate::bazaar::get_rules(path).await)
+    }
+
     tokio::spawn(async move {
         let path = crate::runtime_dir().join("control.sock");
         // Left behind by a service that was killed
@@ -49,6 +65,9 @@ pub fn spawn(app: AppRef) {
         let router = Router::new()
             .route("/omni", post(omni))
             .route("/status", get(status))
+            .route("/bazaar/list", get(bazaar_list))
+            .route("/bazaar/install", post(bazaar_install))
+            .route("/bazaar/rules", get(bazaar_rules))
             .with_state(app);
         if let Err(e) = axum::serve(listener, router).await {
             eprintln!("turingosd: control socket stopped: {e}");

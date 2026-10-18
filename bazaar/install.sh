@@ -11,10 +11,17 @@
 # ─── Main Install Entry Point ─────────────────────────────────────────────────
 
 bazaar::install() {
-    # Usage: bazaar::install TOOL_KEY
-    local key="${1:-}" name runtime install_dir marker
+    # Usage: bazaar::install [-y] TOOL_KEY
+    local key="${1:-}" name runtime install_dir marker force=0
+    if [[ "$key" == "-y" || "$key" == "--yes" ]]; then
+        force=1
+        key="${2:-}"
+    elif [[ "${2:-}" == "-y" || "${2:-}" == "--yes" ]]; then
+        force=1
+    fi
+
     if [[ -z "$key" ]]; then
-        ui::fail "Usage: turingos bazaar install <tool>"
+        ui::fail "Usage: turingos bazaar install [-y] <tool>"
         ui::info "Browse available tools: turingos bazaar"
         return 1
     fi
@@ -31,7 +38,9 @@ bazaar::install() {
     marker="${install_dir}/.installed"
     if [[ -f "$marker" ]]; then
         ui::warn "Already installed ($(cat "$marker"))"
-        ui::confirm "Reinstall?" || return 0
+        if (( ! force )); then
+            ui::confirm "Reinstall?" || return 0
+        fi
     fi
 
     runtime=$(registry::get_field "$key" runtime)
@@ -323,9 +332,17 @@ bazaar::_register_mcp() {
 # ─── Uninstall ────────────────────────────────────────────────────────────────
 
 bazaar::uninstall() {
-    local key="${1:-}" name install_dir
+    # Usage: bazaar::uninstall [-y] TOOL_KEY
+    local key="${1:-}" name install_dir force=0
+    if [[ "$key" == "-y" || "$key" == "--yes" ]]; then
+        force=1
+        key="${2:-}"
+    elif [[ "${2:-}" == "-y" || "${2:-}" == "--yes" ]]; then
+        force=1
+    fi
+
     if [[ -z "$key" ]]; then
-        ui::fail "Usage: turingos bazaar uninstall <tool>"
+        ui::fail "Usage: turingos bazaar uninstall [-y] <tool>"
         return 1
     fi
 
@@ -346,7 +363,9 @@ bazaar::uninstall() {
         log::error "bazaar uninstall refused: ${key}"
         return 1
     fi
-    ui::confirm "Uninstall ${name:-$key}?" || return 0
+    if (( ! force )); then
+        ui::confirm "Uninstall ${name:-$key}?" || return 0
+    fi
 
     if [[ -f "$CLAUDE_CODE_CONFIG" ]] && bazaar::_edit_claude_config 'del(.mcpServers[$k])' --arg k "$key"; then
         ui::ok "Removed from ${CLAUDE_CODE_CONFIG}"

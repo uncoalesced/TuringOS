@@ -116,6 +116,12 @@
     wifiScan: () => call('wifi_scan'),
     wifiConnect: (ssid, password) => call('wifi_connect', { ssid, password: password ?? null }),
     openExternal: (url) => call('open_external', { url }),
+    bazaarList: (project) => call('bazaar_list', { project: project ?? null }),
+    bazaarInfo: (key) => call('bazaar_info', { key }),
+    bazaarInstall: (key) => call('bazaar_install', { key }),
+    bazaarUninstall: (key) => call('bazaar_uninstall', { key }),
+    bazaarProjectRules: (path) => call('bazaar_project_rules', { path }),
+    bazaarSetRule: (path, id, enabled) => call('bazaar_set_rule', { path, id, enabled }),
     runShell,
     reportGfx: (report) => call('gfx_report', report),
   };

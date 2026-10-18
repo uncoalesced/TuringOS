@@ -1,6 +1,7 @@
-// Bazaar — the built-in store for skills and plugins. Opens as a window inside
+// Engineered by uncoalesced
+// Bazaar — the built-in store for skills, plugins, and MCP servers. Opens as a window inside
 // the shell (the shell is fullscreen, so there's no OS window to host it).
-// Mock catalogue for now (js/catalog.js); Get/Remove only flips in-memory state.
+// Connected to turingosd daemon RPC bridge with offline fallback.
 (() => {
   const { PLUGINS, installed, el, icon } = window.TuringCatalog;
 
@@ -17,12 +18,17 @@
 
   const SECTIONS = [
     { id: 'discover', name: 'Discover', icon: 'ic-grid' },
+    { id: 'mcp', name: 'MCP Servers', icon: 'ic-terminal' },
     { id: 'skills', name: 'Skills', icon: 'ic-zap' },
     { id: 'plugins', name: 'Plugins', icon: 'ic-package' },
     { id: 'installed', name: 'Installed', icon: 'ic-download' },
   ];
   let section = 'discover';
   let query = '';
+  let isOffline = false;
+  let dynamicItems = [];
+  const disabledItems = new Set();
+  const loadingMap = new Map(); // id -> 'installing' | 'uninstalling'
 
   // ─── Window chrome ────────────────────────────────────────────────────────
   const win = el('section', 'app-window bazaar');
@@ -46,7 +52,10 @@
     mkLight('zoom', 'Zoom', () => toggleZoom()),
   );
   const title = el('p', 'app-title', 'Bazaar');
-  titlebar.append(lights, title);
+  const offlineBadge = el('span', 'bz-offline-badge', '[offline catalogue]');
+  offlineBadge.title = 'Serving from local 24h cache or bundled snapshot';
+  offlineBadge.hidden = true;
+  titlebar.append(lights, title, offlineBadge);
 
   const sidebar = el('nav', 'bz-sidebar');
   const brand = el('div', 'bz-brand');
@@ -68,6 +77,61 @@
   win.append(titlebar, body);
   document.body.append(win);
 
+  // ─── Daemon Synchronization ───────────────────────────────────────────────
+  async function refreshBazaar() {
+    if (!window.shell?.bazaarList) return;
+    try {
+      const activeProj = window.getActiveProject ? window.getActiveProject() : null;
+      const res = await window.shell.bazaarList(activeProj?.path);
+      if (res && res.ok) {
+        isOffline = !!res.offline;
+        offlineBadge.hidden = !isOffline;
+        if (Array.isArray(res.entries)) {
+          dynamicItems = res.entries.map((entry) => {
+            const kind = entry.type || entry.kind || 'mcp';
+            let hue = entry.hue;
+            if (hue == null) {
+              if (kind === 'mcp') hue = 180;
+              else if (kind === 'skill') hue = 45;
+              else hue = 210;
+            }
+            return {
+              id: entry.id,
+              name: entry.name || entry.id,
+              desc: entry.description || entry.desc || '',
+              by: entry.author || (entry.repo ? entry.repo.split('/')[0] : 'Community'),
+              kind,
+              hue,
+              brand: entry.brand || null,
+              featured: !!entry.featured,
+              isNew: !!entry.isNew,
+              installed: !!entry.installed,
+              enabled: entry.enabled !== false,
+            };
+          });
+
+          for (const item of dynamicItems) {
+            if (item.installed) installed.add(item.id);
+            else installed.delete(item.id);
+            if (!item.enabled) disabledItems.add(item.id);
+            else disabledItems.delete(item.id);
+          }
+          render();
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to refresh bazaar from daemon:', e);
+    }
+  }
+
+  function getAllItems() {
+    const map = new Map();
+    for (const s of SKILLS) map.set(s.id, { ...s, kind: 'skill' });
+    for (const p of PLUGINS) map.set(p.id, { ...p, kind: 'plugin' });
+    for (const d of dynamicItems) map.set(d.id, d);
+    return Array.from(map.values());
+  }
+
   // ─── Rendering ────────────────────────────────────────────────────────────
   function renderNav() {
     navList.replaceChildren(...SECTIONS.map((s) => {
@@ -87,8 +151,7 @@
     const t = el('span', `bz-tile ${size}`);
     t.style.setProperty('--hue', item.hue);
     if (item.mono) t.classList.add('is-mono');
-    // Plugins: the real brand mark (Simple Icons, bundled), white on the
-    // brand colour. Skills: a 3D icon (Fluent Emoji, bundled).
+
     if (item.brand) {
       t.classList.add('has-logo');
       t.style.setProperty('--brand', item.brand);
@@ -96,11 +159,11 @@
       logo.style.setProperty('--logo', `url("assets/icons/brands/${item.id}.svg")`);
       t.append(logo);
       const badge = el('span', 'bz-tile-kind');
-      badge.append(icon(kind === 'skill' ? 'ic-zap' : 'ic-package'));
+      badge.append(icon(kind === 'skill' ? 'ic-zap' : kind === 'mcp' ? 'ic-terminal' : 'ic-package'));
       t.append(badge);
       return t;
     }
-    // The first letter shows if the 3D icon is missing.
+
     const img = el('img', 'bz-tile-img');
     img.src = `assets/icons/fluent-3d/${item.id}.png`;
     img.alt = '';
@@ -110,7 +173,7 @@
     img.addEventListener('error', () => t.classList.remove('has-img'), { once: true });
     t.append(img);
     const badge = el('span', 'bz-tile-kind');
-    badge.append(icon(kind === 'skill' ? 'ic-zap' : 'ic-package'));
+    badge.append(icon(kind === 'skill' ? 'ic-zap' : kind === 'mcp' ? 'ic-terminal' : 'ic-package'));
     t.append(badge);
     return t;
   }
@@ -119,19 +182,48 @@
     const b = el('button', 'bz-get');
     b.type = 'button';
     const paint = () => {
+      const loading = loadingMap.get(item.id);
       const on = installed.has(item.id);
       b.classList.toggle('is-installed', on);
-      b.replaceChildren(...(on ? [icon('ic-check'), el('span', null, 'Installed')] : [el('span', null, 'Get')]));
-      b.setAttribute('aria-label', `${on ? 'Remove' : 'Get'} ${item.name}`);
+      b.classList.toggle('is-loading', !!loading);
+      if (loading) {
+        b.replaceChildren(el('span', null, loading === 'installing' ? 'Installing…' : 'Removing…'));
+        b.disabled = true;
+      } else {
+        b.disabled = false;
+        b.replaceChildren(...(on ? [icon('ic-check'), el('span', null, 'Installed')] : [el('span', null, 'Get')]));
+        b.setAttribute('aria-label', `${on ? 'Remove' : 'Get'} ${item.name}`);
+      }
     };
     paint();
-    b.addEventListener('click', (e) => {
+    b.addEventListener('click', async (e) => {
       e.stopPropagation();
-      if (installed.has(item.id)) installed.delete(item.id);
-      else installed.add(item.id);
-      paint();
-      renderNav();
-      if (section === 'installed') renderMain();
+      const on = installed.has(item.id);
+      if (window.shell?.bazaarInstall && window.shell?.bazaarUninstall) {
+        loadingMap.set(item.id, on ? 'uninstalling' : 'installing');
+        paint();
+        try {
+          if (on) {
+            await window.shell.bazaarUninstall(item.id);
+            installed.delete(item.id);
+            disabledItems.delete(item.id);
+          } else {
+            await window.shell.bazaarInstall(item.id);
+            installed.add(item.id);
+          }
+        } catch (err) {
+          console.error('Bazaar install error:', err);
+        } finally {
+          loadingMap.delete(item.id);
+          await refreshBazaar();
+        }
+      } else {
+        if (installed.has(item.id)) installed.delete(item.id);
+        else installed.add(item.id);
+        paint();
+        renderNav();
+        if (section === 'installed') renderMain();
+      }
     });
     return b;
   }
@@ -142,8 +234,41 @@
     const text = el('div', 'bz-card-text');
     const name = el('p', 'bz-card-name', item.name);
     if (item.isNew && !installed.has(item.id)) name.append(el('span', 'bz-new', 'New'));
-    text.append(name, el('p', 'bz-card-desc', item.desc), el('p', 'bz-card-by', `${kind === 'skill' ? 'Skill' : 'Plugin'} · ${item.by}`));
-    c.append(tile(item, kind), text, getButton(item));
+    const isMcp = (item.kind || kind) === 'mcp';
+    const kindLabel = isMcp ? 'MCP Server' : (kind === 'skill' ? 'Skill' : 'Plugin');
+    text.append(name, el('p', 'bz-card-desc', item.desc), el('p', 'bz-card-by', `${kindLabel} · ${item.by}`));
+
+    const actions = el('div', 'bz-card-actions');
+    const activeProj = window.getActiveProject ? window.getActiveProject() : null;
+    if (installed.has(item.id) && activeProj && window.shell?.bazaarSetRule) {
+      const isDisabled = disabledItems.has(item.id);
+      const toggle = el('button', `bz-rule-toggle ${isDisabled ? 'is-disabled' : 'is-enabled'}`);
+      toggle.type = 'button';
+      toggle.title = `${isDisabled ? 'Enable' : 'Disable'} in ${activeProj.name}`;
+      toggle.append(
+        icon(isDisabled ? 'ic-x' : 'ic-check'),
+        el('span', null, isDisabled ? 'Disabled' : 'Active')
+      );
+      toggle.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        toggle.disabled = true;
+        const willEnable = isDisabled;
+        try {
+          await window.shell.bazaarSetRule(activeProj.path, item.id, willEnable);
+          if (willEnable) disabledItems.delete(item.id);
+          else disabledItems.add(item.id);
+          render();
+        } catch (err) {
+          console.error('Failed to set project rule:', err);
+        } finally {
+          toggle.disabled = false;
+        }
+      });
+      actions.append(toggle);
+    }
+    actions.append(getButton(item));
+
+    c.append(tile(item, item.kind || kind), text, actions);
     return c;
   }
 
@@ -164,8 +289,9 @@
     const h = el('div', 'bz-hero');
     h.style.setProperty('--hue', item.hue);
     const text = el('div', 'bz-hero-text');
+    const label = kind === 'skill' ? 'Featured skill' : kind === 'mcp' ? 'Featured MCP Server' : 'Featured plugin';
     text.append(
-      el('p', 'bz-hero-eyebrow', kind === 'skill' ? 'Featured skill' : 'Featured plugin'),
+      el('p', 'bz-hero-eyebrow', label),
       el('h3', null, item.name),
       el('p', 'bz-hero-desc', item.desc),
     );
@@ -176,31 +302,52 @@
     return h;
   }
 
-  const withKind = (list, kind) => list.map((x) => ({ ...x, kind }));
-
   function renderMain() {
+    const all = getAllItems();
     const q = query.trim().toLowerCase();
     const nodes = [];
+
     if (q) {
-      const hits = [...withKind(SKILLS, 'skill'), ...withKind(PLUGINS, 'plugin')]
-        .filter((x) => `${x.name} ${x.desc} ${x.by}`.toLowerCase().includes(q));
+      const hits = all.filter((x) => `${x.name} ${x.desc} ${x.by}`.toLowerCase().includes(q));
       nodes.push(header(`Results for “${query.trim()}”`, `${hits.length} found`));
       nodes.push(hits.length ? grid(hits) : el('p', 'bz-empty', 'Nothing matches that yet.'));
     } else if (section === 'discover') {
-      nodes.push(header('Discover', 'Teach Claude new tricks and connect it to your tools.'));
+      nodes.push(header('Discover', 'Teach Claude new tricks, install MCP servers, and connect tools.'));
+      const skillsList = all.filter((x) => x.kind === 'skill');
+      const pluginsList = all.filter((x) => x.kind === 'plugin');
+      const mcpList = all.filter((x) => x.kind === 'mcp');
+
+      const featSkill = skillsList.find((s) => s.featured) || skillsList[0];
+      const featMcp = mcpList.find((m) => m.featured) || mcpList[0];
+      const featPlugin = pluginsList.find((p) => p.featured) || pluginsList[0];
+
       const heroes = el('div', 'bz-heroes');
-      heroes.append(hero(SKILLS.find((s) => s.featured), 'skill'), hero(PLUGINS.find((p) => p.featured), 'plugin'));
+      if (featSkill) heroes.append(hero(featSkill, 'skill'));
+      if (featMcp) heroes.append(hero(featMcp, 'mcp'));
+      else if (featPlugin) heroes.append(hero(featPlugin, 'plugin'));
       nodes.push(heroes);
-      nodes.push(header('New plugins'), grid(PLUGINS.filter((p) => p.isNew), 'plugin'));
-      nodes.push(header('Popular skills'), grid(SKILLS.slice(0, 4), 'skill'));
+
+      if (mcpList.length) {
+        nodes.push(header('Model Context Protocol (MCP)'), grid(mcpList.slice(0, 4), 'mcp'));
+      }
+      nodes.push(header('New plugins'), grid(pluginsList.filter((p) => p.isNew).slice(0, 4), 'plugin'));
+      nodes.push(header('Popular skills'), grid(skillsList.slice(0, 4), 'skill'));
+    } else if (section === 'mcp') {
+      const mcps = all.filter((x) => x.kind === 'mcp');
+      nodes.push(header('MCP Servers', 'Model Context Protocol servers that give Claude external tools.'), grid(mcps, 'mcp'));
     } else if (section === 'skills') {
-      nodes.push(header('Skills', 'Know-how Claude loads when a task calls for it.'), grid(SKILLS, 'skill'));
+      const skills = all.filter((x) => x.kind === 'skill');
+      nodes.push(header('Skills', 'Know-how Claude loads when a task calls for it.'), grid(skills, 'skill'));
     } else if (section === 'plugins') {
-      nodes.push(header('Plugins', 'Connect Claude to the apps you already use.'), grid(PLUGINS, 'plugin'));
+      const plugins = all.filter((x) => x.kind === 'plugin');
+      nodes.push(header('Plugins', 'Connect Claude to the apps you already use.'), grid(plugins, 'plugin'));
     } else {
-      const mine = [...withKind(SKILLS, 'skill'), ...withKind(PLUGINS, 'plugin')].filter((x) => installed.has(x.id));
-      nodes.push(header('Installed', `${mine.length} on this machine`));
-      nodes.push(mine.length ? grid(mine) : el('p', 'bz-empty', 'Nothing installed yet — grab something from Discover.'));
+      const mine = all.filter((x) => installed.has(x.id));
+      const activeProj = window.getActiveProject ? window.getActiveProject() : null;
+      let sub = `${mine.length} installed on this machine`;
+      if (activeProj) sub += ` · Active repo: ${activeProj.name}`;
+      nodes.push(header('Installed', sub));
+      nodes.push(mine.length ? grid(mine) : el('p', 'bz-empty', 'Nothing installed yet — grab something from Discover or MCP.'));
     }
     main.replaceChildren(...nodes);
     main.scrollTop = 0;
@@ -223,17 +370,15 @@
     if (isOpen) { input.focus(); return; }
     isOpen = true;
     render();
+    refreshBazaar();
     win.hidden = false;
     win.classList.remove('is-closing');
     win.classList.add('is-opening');
-    // Commit the start pose with a forced layout, then let it transition.
-    // (rAF can stall while the window is in the background.)
     void win.offsetWidth;
     win.classList.remove('is-opening');
     setTimeout(() => input.focus(), 60);
   }
 
-  // Minimise keeps the window where it was; close starts fresh next time.
   function close({ reset = false } = {}) {
     if (!isOpen) return;
     isOpen = false;
@@ -272,7 +417,6 @@
     win.classList.add('is-dragging');
     const move = (ev) => {
       dx = ev.clientX - sx;
-      // Keep the title bar reachable: not under the menu bar, not off the bottom.
       const r = win.getBoundingClientRect();
       const baseTop = r.top - dy;
       dy = Math.min(Math.max(ev.clientY - sy, 44 - baseTop), innerHeight - 60 - baseTop);
@@ -300,4 +444,9 @@
     if (where) { section = where; query = ''; input.value = ''; }
     open();
   };
+
+  // Initial silent background refresh if shell is available
+  if (window.shell?.bazaarList) {
+    refreshBazaar();
+  }
 })();

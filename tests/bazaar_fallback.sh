@@ -158,4 +158,44 @@ if echo y | bazaar::install bad-skill >/dev/null 2>&1; then
 fi
 [[ ! -f "${TURINGOS_BAZAAR_DIR}/bad-skill/.installed" ]] || fail "bad-skill should NOT have .installed marker"
 
-echo "==> All Bazaar Fallback and Cryptographic Verification tests passed successfully!"
+# ─── Test 6: Per-project disable rule & .claude/settings.json sync ───────────
+echo "── Test 6: Per-project disable rule & .claude/settings.json sync"
+PROJECT_DIR="${WORK}/mock_project"
+mkdir -p "$PROJECT_DIR"
+
+bazaar::disable "good-skill" "$PROJECT_DIR" >/dev/null
+RULES_FILE="${TURINGOS_DATA_DIR}/bazaar_rules.json"
+[[ -f "$RULES_FILE" ]] || fail "bazaar_rules.json was not created"
+grep -q "good-skill" "$RULES_FILE" || fail "good-skill not found in bazaar_rules.json"
+
+CLAUDE_SETTINGS="${PROJECT_DIR}/.claude/settings.json"
+[[ -f "$CLAUDE_SETTINGS" ]] || fail ".claude/settings.json was not created"
+grep -q "good-skill" "$CLAUDE_SETTINGS" || fail "good-skill not synced to disabledMcpServers in .claude/settings.json"
+
+# ─── Test 7: Per-project rules query & committed .turingos/bazaar.toml precedence
+echo "── Test 7: Per-project rules query and committed config precedence"
+rules_out=$(bazaar::rules "$PROJECT_DIR" 2>&1)
+grep -q "good-skill" <<< "$rules_out" || fail "bazaar::rules did not list good-skill as disabled"
+
+# Committed .turingos/bazaar.toml override
+mkdir -p "${PROJECT_DIR}/.turingos"
+cat > "${PROJECT_DIR}/.turingos/bazaar.toml" <<EOF
+[bazaar]
+disabled = ["custom-tool-override"]
+EOF
+
+rules_out=$(bazaar::rules "$PROJECT_DIR" 2>&1)
+grep -q "custom-tool-override" <<< "$rules_out" || fail "committed .turingos/bazaar.toml override was not respected"
+
+# ─── Test 8: Per-project enable & cleanup ───────────────────────────────────
+echo "── Test 8: Per-project enable & sync"
+bazaar::enable "good-skill" "$PROJECT_DIR" >/dev/null
+grep -q "good-skill" "$RULES_FILE" && fail "good-skill should have been removed from bazaar_rules.json"
+grep -q "good-skill" "$CLAUDE_SETTINGS" && fail "good-skill should have been removed from .claude/settings.json"
+
+# ─── Test 9: Non-interactive uninstall with -y ──────────────────────────────
+echo "── Test 9: Non-interactive uninstall with -y"
+bazaar::uninstall -y good-skill >/dev/null
+[[ ! -d "${TURINGOS_BAZAAR_DIR}/good-skill" ]] || fail "good-skill directory was not removed by uninstall -y"
+
+echo "==> All Bazaar Fallback, Integrity, and Per-Project Rule tests passed successfully!"

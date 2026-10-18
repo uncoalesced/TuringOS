@@ -7,6 +7,7 @@
 
 mod agent;
 mod anthropic;
+mod bazaar;
 mod config_env;
 mod control;
 mod gfx;

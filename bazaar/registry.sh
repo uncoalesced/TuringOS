@@ -277,3 +277,152 @@ registry::installed() {
     fi
     echo ""
 }
+
+# ─── Per-Project Rules ────────────────────────────────────────────────────────
+
+bazaar::rules() {
+    local target_dir="${1:-$PWD}"
+    target_dir="$(realpath "$target_dir" 2>/dev/null || echo "$target_dir")"
+    ui::header "Bazaar Rules: $(basename "$target_dir")"
+    ui::label "Directory" "$target_dir"
+
+    local rules_file="${TURINGOS_DATA_DIR}/bazaar_rules.json"
+    local disabled=()
+    if [[ -f "$rules_file" ]]; then
+        mapfile -t disabled < <(jq -r --arg dir "$target_dir" '.[$dir][]? // empty' "$rules_file" 2>/dev/null)
+    fi
+
+    local toml_file="${target_dir}/.turingos/bazaar.toml"
+    if [[ -f "$toml_file" ]]; then
+        ui::info "Found committed config: ${toml_file}"
+        local toml_disabled
+        toml_disabled=$(grep "^disabled" "$toml_file" 2>/dev/null | cut -d'=' -f2 | tr -d '[]" ' | tr ',' '\n') || true
+        if [[ -n "$toml_disabled" ]]; then
+            mapfile -t disabled <<< "$toml_disabled"
+        fi
+    fi
+
+    if (( ${#disabled[@]} == 0 )); then
+        ui::ok "All installed skills, plugins, and MCP servers are ENABLED for this folder."
+    else
+        ui::warn "Disabled in this directory:"
+        for item in "${disabled[@]}"; do
+            [[ -n "$item" ]] && printf '  %b✗%b %s\n' "$RED" "$RESET" "$item"
+        done
+    fi
+    echo ""
+}
+
+bazaar::disable() {
+    local tool="${1:-}" target_dir="${2:-$PWD}"
+    if [[ -z "$tool" ]]; then
+        ui::fail "Usage: turingos bazaar disable <tool> [directory]"
+        return 1
+    fi
+    target_dir="$(realpath "$target_dir" 2>/dev/null || echo "$target_dir")"
+    local rules_file="${TURINGOS_DATA_DIR}/bazaar_rules.json"
+    mkdir -p "$(dirname "$rules_file")"
+
+    local current="{}"
+    [[ -s "$rules_file" ]] && current=$(cat "$rules_file")
+    local updated
+    updated=$(jq --arg dir "$target_dir" --arg item "$tool" \
+        '.[$dir] = (((.[$dir] // []) + [$item]) | unique)' <<< "$current")
+    echo "$updated" > "$rules_file"
+
+    local claude_settings="${target_dir}/.claude/settings.json"
+    mkdir -p "${target_dir}/.claude" 2>/dev/null || true
+    local cur_claude="{}"
+    [[ -s "$claude_settings" ]] && cur_claude=$(cat "$claude_settings")
+    jq --arg item "$tool" '.disabledMcpServers = (((.disabledMcpServers // []) + [$item]) | unique)' \
+        <<< "$cur_claude" > "$claude_settings" 2>/dev/null || true
+
+    ui::ok "Disabled '${tool}' for ${target_dir}"
+}
+
+bazaar::enable() {
+    local tool="${1:-}" target_dir="${2:-$PWD}"
+    if [[ -z "$tool" ]]; then
+        ui::fail "Usage: turingos bazaar enable <tool> [directory]"
+        return 1
+    fi
+    target_dir="$(realpath "$target_dir" 2>/dev/null || echo "$target_dir")"
+    local rules_file="${TURINGOS_DATA_DIR}/bazaar_rules.json"
+    mkdir -p "$(dirname "$rules_file")"
+
+    if [[ -s "$rules_file" ]]; then
+        local updated
+        updated=$(jq --arg dir "$target_dir" --arg item "$tool" \
+            '.[$dir] = ((.[$dir] // []) - [$item])' "$rules_file")
+        echo "$updated" > "$rules_file"
+    fi
+
+    local claude_settings="${target_dir}/.claude/settings.json"
+    if [[ -s "$claude_settings" ]]; then
+        local cur_claude
+        cur_claude=$(cat "$claude_settings")
+        jq --arg item "$tool" '.disabledMcpServers = ((.disabledMcpServers // []) - [$item])' \
+            <<< "$cur_claude" > "$claude_settings" 2>/dev/null || true
+    fi
+
+    ui::ok "Enabled '${tool}' for ${target_dir}"
+}
+
+bazaar::toggle() {
+    local target_dir="${1:-$PWD}"
+    target_dir="$(realpath "$target_dir" 2>/dev/null || echo "$target_dir")"
+    registry::_load || return 1
+
+    local installed=() marker
+    for marker in "${TURINGOS_BAZAAR_DIR}"/*/.installed; do
+        [[ -f "$marker" ]] || continue
+        installed+=("$(basename "$(dirname "$marker")")")
+    done
+
+    if (( ${#installed[@]} == 0 )); then
+        ui::info "No Bazaar tools installed yet. Install tools with: turingos bazaar"
+        return 0
+    fi
+
+    if ! command -v fzf &>/dev/null; then
+        bazaar::rules "$target_dir"
+        return 0
+    fi
+
+    local rules_file="${TURINGOS_DATA_DIR}/bazaar_rules.json"
+    local disabled=()
+    if [[ -f "$rules_file" ]]; then
+        mapfile -t disabled < <(jq -r --arg dir "$target_dir" '.[$dir][]? // empty' "$rules_file" 2>/dev/null)
+    fi
+
+    local items_with_status=()
+    for item in "${installed[@]}"; do
+        local state="[x] ENABLED "
+        for d in "${disabled[@]}"; do
+            if [[ "$d" == "$item" ]]; then
+                state="[ ] DISABLED"
+                break
+            fi
+        done
+        items_with_status+=("${state}  ${item}")
+    done
+
+    local selected
+    selected=$(printf '%s\n' "${items_with_status[@]}" | fzf \
+        --prompt="  Toggle Bazaar items for $(basename "$target_dir") › " \
+        --header="  Select an item to toggle its state (Enter=toggle, Esc=done)" \
+        --height=60% --reverse --border --ansi) || true
+
+    if [[ -n "$selected" ]]; then
+        local item_name
+        item_name=$(awk '{print $3}' <<< "$selected")
+        if [[ "$selected" =~ \[x\] ]]; then
+            bazaar::disable "$item_name" "$target_dir"
+        else
+            bazaar::enable "$item_name" "$target_dir"
+        fi
+        if command -v notify-send &>/dev/null; then
+            notify-send "TuringOS Bazaar" "Updated rules for $(basename "$target_dir")" 2>/dev/null || true
+        fi
+    fi
+}

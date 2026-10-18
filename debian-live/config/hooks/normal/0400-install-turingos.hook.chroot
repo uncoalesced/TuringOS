@@ -46,6 +46,12 @@ Categories=Development;
 Keywords=claude;agent;ai;sandbox;
 EOF
 
+# ─── Thunar custom actions ────────────────────────────────────────────────────
+if [[ -f /etc/xdg/Thunar/uca.xml ]]; then
+    install -d -m755 /etc/skel/.config/Thunar
+    install -m644 /etc/xdg/Thunar/uca.xml /etc/skel/.config/Thunar/uca.xml
+fi
+
 # ─── Verify ───────────────────────────────────────────────────────────────────
 # Proves every module sources cleanly from the installed layout
 HOME=/tmp/turingos-verify turingos version
