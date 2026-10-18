@@ -115,8 +115,13 @@ jobs:
       matrix:
         os: [ubuntu-latest, ubuntu-24.04-arm]
     runs-on: ${{ matrix.os }}
-    container: debian:trixie
+    container:
+      image: debian:trixie
+      options: --privileged --ipc=host
     steps:
+      - name: Disable AppArmor unprivileged user namespace restriction
+        run: sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+
       - name: Display, window manager, Brave
         run: |
           apt-get update -qq

@@ -13,6 +13,7 @@
 # installs in their real browser can reach the page that drives the machine.
 #
 #   TURINGOS_BROWSER=chromium   use another Chromium-family browser
+#   TURINGOS_BROWSER_FLAGS=...  extra flags for the browser (e.g. in CI or containers)
 #   TURINGOS_UI_PORT=8080       where the bridge listens
 
 set -euo pipefail
@@ -135,9 +136,18 @@ kiosk::main() {
         "http://127.0.0.1:${port}/?gfx=${GFX_PATH}.${GFX_TIER}" "$width" "$height" "$profile")
     echo "turingos-kiosk: ${browser} on the ${GFX_PATH} path, level ${GFX_TIER}, ${width}x${height}" >&2
 
+    local -a extra_flags=()
+    if [[ -n "${TURINGOS_BROWSER_FLAGS:-}" ]]; then
+        read -r -a extra_flags <<< "$TURINGOS_BROWSER_FLAGS"
+    fi
+
     trap 'stopping=1' TERM INT HUP
     started="$(date +%s)"
-    "$browser" "${args[@]}" || status=$?
+    if (( ${#extra_flags[@]} > 0 )); then
+        "$browser" "${args[@]}" "${extra_flags[@]}" || status=$?
+    else
+        "$browser" "${args[@]}" || status=$?
+    fi
 
     if (( stopping )); then
         exit 0
