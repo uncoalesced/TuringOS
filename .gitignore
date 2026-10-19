@@ -30,6 +30,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Nested standalone repo: MCP Bazaar (separate repo, see turingos-bazaar/)
+/turingos-bazaar/
+
 # Python caches and environments
 *.py[cod]
 *$py.class
