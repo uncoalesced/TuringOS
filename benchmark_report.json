@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-10-19T11:15:46Z",
+  "total_passed": 6,
+  "total_failed": 0,
+  "results": [
+    {"name": "Window Manager Fallback & Respawn Watchdog", "status": "PASS", "duration_ms": 10586, "details": "Clean execution"},{"name": "Bootloader Timeout & Persistence Deduplication", "status": "PASS", "duration_ms": 7792, "details": "Clean execution"},{"name": "Bazaar 10-Step Cryptographic & Cache Suite", "status": "PASS", "duration_ms": 38063, "details": "Clean execution"},{"name": "Renewed Palette Window Border & Token Compliance", "status": "PASS", "duration_ms": 1154, "details": "Clean execution"},{"name": "Live-Build Persistence & Dual-Naming Verification", "status": "PASS", "duration_ms": 1251, "details": "Clean execution"},{"name": "Calamares Installed System Persistent Autologin Hardening", "status": "PASS", "duration_ms": 668, "details": "Clean execution"}
+  ]
+}
