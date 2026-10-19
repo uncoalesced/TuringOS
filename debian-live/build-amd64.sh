@@ -20,7 +20,7 @@ fi
 "${ROOT}/debian-live/sync-scripts.sh"
 
 cd "${ROOT}/debian-live"
-sudo lb config --distribution trixie --architectures amd64 \
+sudo lb config --distribution trixie --architectures amd64 --linux-flavours amd64 \
     --image-name turingos \
     --bootappend-live "boot=live components quiet splash persistence" \
     --archive-areas "main contrib non-free-firmware"
