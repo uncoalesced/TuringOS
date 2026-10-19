@@ -27,6 +27,14 @@
 }
 .app-window[hidden] { display: none; }
 .app-window.is-dragging { transition: none; user-select: none; }
+.app-window:focus-within,
+.app-window.is-focused {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent),
+    0 30px 80px -20px rgb(0 0 0 / 0.45),
+    0 12px 24px -12px rgb(0 0 0 / 0.25);
+}
 
 /* Grows up out of the dock, and sinks back into it. Opacity is the one
    exception to the transform-only rule here: a closing window has to end

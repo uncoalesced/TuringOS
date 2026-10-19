@@ -18,21 +18,48 @@
 }
 
 :root {
-  /* Brand */
-  --japonica: #d97757;
+  /* TuringOS Renewed Palette (2026-10-18 - assets/pallete/renewed_palette.jpg) */
+  --tos-brand-orange: #e85002;
+  --tos-primary-bg: #000000;
+  --tos-dark-gray: #333333;
+  --tos-gray: #646464;
+  --tos-light-gray: #a7a7a7;
+  --tos-white: #f9f9f9;
+
+  /* Gradient Stops */
+  --tos-gradient-stop-1: #000000;
+  --tos-gradient-stop-2: #c10801;
+  --tos-gradient-stop-3: #f16001;
+  --tos-gradient-stop-4: #d9c3ab;
+
+  --tos-brand-gradient: linear-gradient(
+    135deg,
+    var(--tos-gradient-stop-1) 0%,
+    var(--tos-gradient-stop-2) 35%,
+    var(--tos-gradient-stop-3) 70%,
+    var(--tos-gradient-stop-4) 100%
+  );
+  --tos-active-border-gradient: linear-gradient(
+    45deg,
+    var(--tos-brand-orange) 0%,
+    var(--tos-gradient-stop-3) 100%
+  );
+
+  /* Legacy Brand aliases for backward compatibility */
+  --japonica: var(--tos-brand-orange);
   --pampas: #f4f3ee;
-  --cloudy: #b1ada1;
-  --tuatara: #373734;
+  --cloudy: var(--tos-light-gray);
+  --tuatara: var(--tos-dark-gray);
   --white: #ffffff;
 
   /* Derived (not brand colors, only for contrast and states) */
-  --tuatara-deep: #262624;
-  --ink: #1d1c1a;
-  --japonica-light: #e58a6c;
-  --japonica-dark: #b4532f;
+  --tuatara-deep: #141413;
+  --ink: #000000;
+  --japonica-light: #f16001;
+  --japonica-dark: #c10801;
   --tuatara-raised: #42423f;
-  --stone: #6f6c64;
-  --focus: #61aaf2;
+  --stone: var(--tos-gray);
+  --focus: var(--tos-brand-orange);
   --error: #bf4d43;
 
   /* Type */
@@ -65,30 +92,30 @@
 
 :root[data-theme="light"] {
   color-scheme: light;
-  --bg: var(--pampas);
-  --surface: var(--white);
+  --bg: #f4f3ee;
+  --surface: #ffffff;
   --surface-strong: #e9e7df;
-  --line: rgb(55 55 52 / 0.09);
-  --text: var(--tuatara);
-  --muted: var(--stone);
-  --faint: var(--cloudy);
-  --accent: var(--japonica);
-  --glow: rgb(217 119 87 / 0.16);
+  --line: rgb(51 51 51 / 0.14);
+  --text: #141413;
+  --muted: var(--tos-gray);
+  --faint: var(--tos-light-gray);
+  --accent: var(--tos-brand-orange);
+  --glow: rgb(232 80 2 / 0.18);
   --danger: var(--error);
   --bar: rgb(244 243 238 / 0.72);
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: var(--tuatara-deep);
-  --surface: var(--tuatara);
-  --surface-strong: var(--tuatara-raised);
-  --line: rgb(244 243 238 / 0.08);
-  --text: var(--pampas);
-  --muted: var(--cloudy);
-  --faint: #8a877e;
-  --accent: var(--japonica);
-  --glow: rgb(217 119 87 / 0.22);
+  --bg: var(--tos-primary-bg);
+  --surface: #141413;
+  --surface-strong: var(--tos-dark-gray);
+  --line: rgb(100 100 100 / 0.28);
+  --text: var(--tos-white);
+  --muted: var(--tos-light-gray);
+  --faint: var(--tos-gray);
+  --accent: var(--tos-brand-orange);
+  --glow: rgb(232 80 2 / 0.25);
   --danger: #e07a70;
-  --bar: rgb(38 38 36 / 0.66);
+  --bar: rgb(20 20 19 / 0.75);
 }
