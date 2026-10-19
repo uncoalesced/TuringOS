@@ -41,12 +41,21 @@ cd "${ROOT}/debian-live"
 # --linux-flavours: lb config keeps the kernel flavour already in
 # config/chroot, so after an amd64 build it would ask for linux-image-amd64
 sudo lb config --distribution trixie --architectures arm64 --linux-flavours arm64 \
+    --image-name turingos \
+    --bootappend-live "boot=live components quiet splash persistence" \
     --archive-areas "main contrib non-free-firmware"
 
 # lb config just created .build as root
 echo arm64 | sudo tee "$STAMP" >/dev/null
 
 sudo lb build
+
+if [[ -f "${ROOT}/debian-live/turingos-arm64.hybrid.iso" ]]; then
+    ln -sf turingos-arm64.hybrid.iso "${ROOT}/debian-live/turningos-arm64.hybrid.iso"
+    ln -sf turingos-arm64.hybrid.iso "${ROOT}/debian-live/live-image-arm64.hybrid.iso"
+fi
+
 echo ""
-echo "ISO: ${ROOT}/debian-live/live-image-arm64.hybrid.iso"
+echo "ISO: ${ROOT}/debian-live/turingos-arm64.hybrid.iso"
+echo "Alias: ${ROOT}/debian-live/turningos-arm64.hybrid.iso"
 echo "Test: ${ROOT}/arm/test-qemu.sh"

@@ -73,8 +73,7 @@ cat > "${CAL}/modules/shellprocess-turingos.conf" <<'EOF'
 dontChroot: false
 timeout: 120
 script:
-    - "sed -i 's/^autologin-user=.*/autologin-user=${USER}/' /etc/lightdm/lightdm.conf.d/50-autologin.conf"
-    - "chown -R ${USER}: /home/linuxbrew"
+    - "PUSER=\"${USER:-}\"; [ -z \"$PUSER\" ] && PUSER=$(awk -F: '$3 == 1000 {print $1}' /etc/passwd); [ -n \"$PUSER\" ] && sed -i \"s/^autologin-user=.*/autologin-user=${PUSER}/\" /etc/lightdm/lightdm.conf.d/50-autologin.conf && chown -R \"${PUSER}:\" /home/linuxbrew"
     - "rm -f /usr/bin/turingos-install"
 EOF
 

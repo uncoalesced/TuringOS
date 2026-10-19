@@ -45,7 +45,11 @@ clone_isolinux() {
                         } else if (line ~ /^[ \t]*menu label[ \t]/) {
                             print line " (" label ")"
                         } else if (line ~ /boot=live/) {
-                            print line " " arg
+                            if (line !~ ("(^|[ \t])" arg "([ \t]|$)")) {
+                                print line " " arg
+                            } else {
+                                print line
+                            }
                         } else {
                             print line
                         }
@@ -140,7 +144,7 @@ clone_grub() {
                             line = retitle(line)
                             line = reid(line)
                         }
-                        if (line ~ /boot=live/) line = line " " arg
+                        if (line ~ /boot=live/ && line !~ ("(^|[ \t])" arg "([ \t]|$)")) line = line " " arg
                         print line
                     }
                 }
