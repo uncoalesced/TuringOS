@@ -263,4 +263,20 @@ registry::_load
 keys=$(registry::keys)
 grep -q "memory-mcp" <<< "$keys" || fail "tampered index should fall back to bundled snapshot"
 
+# 10c. Missing signature must be rejected (no downgrade by stripping the .sig)
+echo '{"entries": {"unsigned": {"id": "unsigned", "name": "Unsigned"}}}' > "$TEST_INDEX"
+rm -f "$TEST_SIG" "$TURINGOS_BAZAAR_CACHE"
+registry::_load
+(( TURINGOS_BAZAAR_OFFLINE == 1 )) || fail "index with missing .sig should be rejected"
+keys=$(registry::keys)
+! grep -q "unsigned" <<< "$keys" || fail "unsigned index entries must not be loaded"
+
+# 10d. Missing public key must be rejected (fail closed)
+openssl pkeyutl -sign -inkey "$TEST_KEY" -rawin -in "$TEST_INDEX" -out "$TEST_SIG"
+export TURINGOS_BAZAAR_PUBKEY="${SIG_TEST_DIR}/does-not-exist.pub"
+export TURINGOS_ROOT="${SIG_TEST_DIR}/no-root"
+rm -f "$TURINGOS_BAZAAR_CACHE"
+registry::_load
+(( TURINGOS_BAZAAR_OFFLINE == 1 )) || fail "missing pubkey should reject remote index"
+
 echo "==> All Bazaar Fallback, Integrity, Per-Project Rule, and Ed25519 Verification tests passed successfully!"

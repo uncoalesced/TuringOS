@@ -79,19 +79,23 @@ pub fn public_key_path() -> PathBuf {
 }
 
 pub fn verify_signature(data: &[u8], sig: &[u8]) -> bool {
+    // Fail closed: any problem verifying means the index is not trusted.
     let pubkey = public_key_path();
     if !pubkey.is_file() {
-        return true;
+        return false;
     }
 
-    let tmp_data = cache_path().with_file_name(".verify_data.tmp");
-    let tmp_sig = cache_path().with_file_name(".verify_sig.tmp");
+    let pid = std::process::id();
+    let tmp_data = cache_path().with_file_name(format!(".verify_data.{pid}.tmp"));
+    let tmp_sig = cache_path().with_file_name(format!(".verify_sig.{pid}.tmp"));
 
     if let Some(parent) = tmp_data.parent() {
         let _ = fs::create_dir_all(parent);
     }
     if fs::write(&tmp_data, data).is_err() || fs::write(&tmp_sig, sig).is_err() {
-        return true;
+        let _ = fs::remove_file(&tmp_data);
+        let _ = fs::remove_file(&tmp_sig);
+        return false;
     }
 
     let status = std::process::Command::new("openssl")
@@ -114,7 +118,7 @@ pub fn verify_signature(data: &[u8], sig: &[u8]) -> bool {
 
     match status {
         Ok(s) => s.success(),
-        Err(_) => true,
+        Err(_) => false,
     }
 }
 
@@ -148,24 +152,28 @@ pub async fn fetch_index() -> (Value, bool) {
                     if let Ok(bytes) = res.bytes().await {
                         if let Ok(parsed) = serde_json::from_slice::<Value>(&bytes) {
                             if parsed.get("entries").is_some() || parsed.get("tools").is_some() {
-                                // If detached signature exists, verify it
+                                // A valid detached signature is mandatory. Missing,
+                                // unfetchable or invalid => discard the remote index
+                                // and fall through to stale cache / bundled snapshot.
                                 let sig_url = format!("{r_url}.sig");
+                                let mut verified = false;
                                 if let Ok(sig_res) = client.get(&sig_url).send().await {
                                     if sig_res.status().is_success() {
                                         if let Ok(sig_bytes) = sig_res.bytes().await {
-                                            if !verify_signature(&bytes, &sig_bytes) {
-                                                eprintln!("turingosd: bazaar index signature verification FAILED!");
-                                                return (parsed, true);
-                                            }
+                                            verified = verify_signature(&bytes, &sig_bytes);
                                         }
                                     }
                                 }
-
-                                if let Some(parent) = cache.parent() {
-                                    let _ = fs::create_dir_all(parent);
+                                if verified {
+                                    if let Some(parent) = cache.parent() {
+                                        let _ = fs::create_dir_all(parent);
+                                    }
+                                    let _ = fs::write(&cache, &bytes);
+                                    return (parsed, false);
                                 }
-                                let _ = fs::write(&cache, &bytes);
-                                return (parsed, false);
+                                eprintln!(
+                                    "turingosd: bazaar index signature missing or invalid; ignoring remote index"
+                                );
                             }
                         }
                     }
