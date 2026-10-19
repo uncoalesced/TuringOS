@@ -11,11 +11,11 @@ publish = false
 
 [dependencies]
 # The control socket only (HTTP over a Unix socket, for the hotkey and status)
-axum = { version = "0.8", default-features = false, features = ["http1", "json", "tokio"] }
+axum = { version = "0.8", default-features = false, features = ["http1", "json", "tokio", "query"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
-tokio = { version = "1", features = ["net", "time", "io-util", "sync", "rt-multi-thread", "macros", "signal"] }
+tokio = { version = "1", features = ["net", "time", "io-util", "sync", "rt-multi-thread", "macros", "signal", "process"] }
 sha2 = "0.10"
 base64 = "0.22"
 getrandom = "0.2"

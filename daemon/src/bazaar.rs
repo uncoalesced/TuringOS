@@ -5,7 +5,6 @@
 
 use crate::{config_env, system};
 use serde_json::{json, Value};
-use sha2::{Digest, Sha256};
 use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
