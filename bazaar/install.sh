@@ -33,6 +33,12 @@ bazaar::install() {
         return 1
     fi
 
+    if ! [[ "$key" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
+        ui::fail "Invalid tool key: ${key}"
+        log::error "rejected install: invalid key shape"
+        return 1
+    fi
+
     ui::header "Installing: ${name}"
     install_dir="${TURINGOS_BAZAAR_DIR}/${key}"
     marker="${install_dir}/.installed"
@@ -99,31 +105,42 @@ bazaar::_install_npx() {
     local pkg_spec="$package"
     [[ -n "$version" ]] && pkg_spec="${package}@${version}"
 
-    # Verify sha256 of upstream tarball if pinned
-    if [[ -n "$sha256" && -n "$version" ]]; then
-        tarball_url=$(npm view "$pkg_spec" dist.tarball 2>/dev/null || echo "")
-        if [[ -n "$tarball_url" ]] && command -v curl &>/dev/null && (command -v sha256sum &>/dev/null || command -v shasum &>/dev/null); then
-            ui::info "Verifying SHA-256 for ${pkg_spec}..."
-            tmp_tarball=$(mktemp "${install_dir}/pkg.XXXXXX.tgz" 2>/dev/null || mktemp /tmp/turingos_pkg.XXXXXX.tgz 2>/dev/null || echo "${install_dir}/pkg.tgz")
-            if curl --silent --fail --max-time 15 --location "$tarball_url" -o "$tmp_tarball" 2>/dev/null; then
-                local actual_hash
-                if command -v sha256sum &>/dev/null; then
-                    actual_hash=$(sha256sum "$tmp_tarball" | awk '{print $1}')
-                else
-                    actual_hash=$(shasum -a 256 "$tmp_tarball" | awk '{print $1}')
-                fi
-                rm -f "$tmp_tarball" 2>/dev/null || true
-                if [[ "$actual_hash" != "$sha256" ]]; then
-                    ui::fail "SHA-256 mismatch for ${pkg_spec}: expected ${sha256}, got ${actual_hash}"
-                    log::error "sha256 mismatch: key=${key} expected=${sha256} actual=${actual_hash}"
-                    return 1
-                fi
-                ui::ok "SHA-256 verified (${actual_hash:0:12}...)"
-            else
-                rm -f "$tmp_tarball" 2>/dev/null || true
-            fi
-        fi
+    # Fail closed: an npm package must be pinned to a version and a sha256,
+    # and the upstream tarball must hash to exactly that value.
+    if [[ -z "$sha256" || -z "$version" ]]; then
+        ui::fail "Refusing to install ${key}: registry entry has no pinned version/sha256"
+        log::error "unpinned npm entry rejected: key=${key}"
+        return 1
     fi
+    if ! command -v curl &>/dev/null || ! (command -v sha256sum &>/dev/null || command -v shasum &>/dev/null); then
+        ui::fail "Cannot verify ${pkg_spec}: curl and sha256sum/shasum are required"
+        return 1
+    fi
+    tarball_url=$(npm view "$pkg_spec" dist.tarball 2>/dev/null || echo "")
+    if [[ -z "$tarball_url" ]]; then
+        ui::fail "Cannot resolve tarball for ${pkg_spec}; refusing unverified install"
+        return 1
+    fi
+    ui::info "Verifying SHA-256 for ${pkg_spec}..."
+    tmp_tarball=$(mktemp "${install_dir}/pkg.XXXXXX.tgz" 2>/dev/null || mktemp /tmp/turingos_pkg.XXXXXX.tgz 2>/dev/null) || return 1
+    if ! curl --silent --fail --max-time 15 --location "$tarball_url" -o "$tmp_tarball" 2>/dev/null; then
+        rm -f "$tmp_tarball" 2>/dev/null || true
+        ui::fail "Failed to download ${pkg_spec} for verification"
+        return 1
+    fi
+    local actual_hash
+    if command -v sha256sum &>/dev/null; then
+        actual_hash=$(sha256sum "$tmp_tarball" | awk '{print $1}')
+    else
+        actual_hash=$(shasum -a 256 "$tmp_tarball" | awk '{print $1}')
+    fi
+    rm -f "$tmp_tarball" 2>/dev/null || true
+    if [[ "$actual_hash" != "$sha256" ]]; then
+        ui::fail "SHA-256 mismatch for ${pkg_spec}: expected ${sha256}, got ${actual_hash}"
+        log::error "sha256 mismatch: key=${key} expected=${sha256} actual=${actual_hash}"
+        return 1
+    fi
+    ui::ok "SHA-256 verified (${actual_hash:0:12}...)"
 
     # Look the package up without running it (a stdio MCP server never exits)
     ui::info "Checking npm package: ${pkg_spec}"
@@ -176,20 +193,32 @@ bazaar::_install_archive() {
         fi
     fi
 
-    if [[ -n "$sha256" ]]; then
-        local actual_hash
-        if command -v sha256sum &>/dev/null; then
-            actual_hash=$(sha256sum "$tmp_archive" | awk '{print $1}')
-        else
-            actual_hash=$(shasum -a 256 "$tmp_archive" | awk '{print $1}')
-        fi
-        if [[ "$actual_hash" != "$sha256" ]]; then
-            ui::fail "SHA-256 mismatch for ${key}: expected ${sha256}, got ${actual_hash}"
-            log::error "sha256 mismatch: key=${key} expected=${sha256} actual=${actual_hash}"
-            rm -f "$tmp_archive" 2>/dev/null || true
-            return 1
-        fi
-        ui::ok "SHA-256 verified (${actual_hash:0:12}...)"
+    # Fail closed: archives must carry a pinned sha256.
+    if [[ -z "$sha256" ]]; then
+        ui::fail "Refusing to install ${key}: archive entry has no sha256"
+        log::error "unpinned archive entry rejected: key=${key}"
+        rm -f "$tmp_archive" 2>/dev/null || true
+        return 1
+    fi
+    local actual_hash
+    if command -v sha256sum &>/dev/null; then
+        actual_hash=$(sha256sum "$tmp_archive" | awk '{print $1}')
+    else
+        actual_hash=$(shasum -a 256 "$tmp_archive" | awk '{print $1}')
+    fi
+    if [[ "$actual_hash" != "$sha256" ]]; then
+        ui::fail "SHA-256 mismatch for ${key}: expected ${sha256}, got ${actual_hash}"
+        log::error "sha256 mismatch: key=${key} expected=${sha256} actual=${actual_hash}"
+        rm -f "$tmp_archive" 2>/dev/null || true
+        return 1
+    fi
+    ui::ok "SHA-256 verified (${actual_hash:0:12}...)"
+
+    # Refuse archives with absolute or parent-escaping member paths
+    if tar -tzf "$tmp_archive" 2>/dev/null | grep -Eq '(^/|(^|/)\.\.(/|$))'; then
+        ui::fail "Archive contains unsafe paths; refusing to unpack"
+        rm -f "$tmp_archive" 2>/dev/null || true
+        return 1
     fi
 
     mkdir -p "${install_dir}/unpacked"
@@ -265,10 +294,22 @@ bazaar::_auto_build() {
 
 # ─── Env Var Check ────────────────────────────────────────────────────────────
 
+# Registry-supplied names are used in ${!name}; anything but a plain identifier
+# (e.g. "a[$(cmd)]") would be evaluated by bash, so reject it.
+bazaar::_valid_env_name() {
+    [[ "$1" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]
+}
+
 bazaar::_check_env_vars() {
     local key="$1" env_var missing=()
     while IFS= read -r env_var; do
-        [[ -n "$env_var" && -z "${!env_var:-}" ]] && missing+=("$env_var")
+        [[ -z "$env_var" ]] && continue
+        if ! bazaar::_valid_env_name "$env_var"; then
+            ui::fail "Registry entry ${key} has an invalid env var name; refusing"
+            log::error "invalid env_required name rejected: key=${key}"
+            return 1
+        fi
+        [[ -z "${!env_var:-}" ]] && missing+=("$env_var")
     done < <(registry::get_array "$key" env_required)
     (( ${#missing[@]} )) || return 0
 
@@ -301,9 +342,20 @@ bazaar::_edit_claude_config() {
 bazaar::_register_mcp() {
     local key="$1" arg var pattern env_vars=() args=() env_args=()
     mapfile -t env_vars < <(registry::get_array "$key" env_required)
+    for var in "${env_vars[@]}"; do
+        bazaar::_valid_env_name "$var" || { log::error "invalid env_required name: key=${key}"; return 1; }
+    done
+
+    # Pin the registered package to the verified version, not the latest tag
+    local pkg ver
+    pkg=$(registry::get_field "$key" package)
+    ver=$(registry::get_field "$key" version)
 
     # Args may reference ${HOME} or a required env var; expand them now
     while IFS= read -r arg; do
+        if [[ -n "$pkg" && -n "$ver" && "$arg" == "$pkg" ]]; then
+            arg="${pkg}@${ver}"
+        fi
         for var in HOME "${env_vars[@]}"; do
             pattern='${'"$var"'}'
             arg="${arg//"$pattern"/${!var:-}}"
