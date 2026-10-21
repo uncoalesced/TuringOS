@@ -110,6 +110,8 @@ run_suite "Bazaar 10-Step Cryptographic & Cache Suite" "bash '${ROOT}/tests/baza
 if command -v cargo &>/dev/null; then
     if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]] && [[ -z "${LIBCLANG_PATH:-}" ]]; then
         echo -e "  ${YELLOW}⚠ Skipping daemon cargo check on Windows host without LIBCLANG_PATH (run inside Linux VM for full clang bindgen check)${NC}"
+    elif ! pkg-config --exists alsa 2>/dev/null && [[ "$OSTYPE" != "msys" && "$OSTYPE" != "win32" ]]; then
+        echo -e "  ${YELLOW}⚠ Skipping daemon cargo check (ALSA dev libraries missing; the CI daemon job builds it in the ISO's Debian container)${NC}"
     else
         run_suite "Daemon Compilation & Feature Verification (turingosd)" "cd '${ROOT}/daemon' && cargo check"
     fi
