@@ -103,7 +103,8 @@ CORRUPT_TEMP="${WORK}/corrupt.json"
 echo "<html><body>502 Bad Gateway</body></html>" > "$CORRUPT_TEMP"
 
 # If curl fetched this garbage, _fetch_remote must reject it and NOT overwrite the cache
-export TURINGOS_BAZAAR_REMOTE_URL="$(to_file_url "${CORRUPT_TEMP}")"
+TURINGOS_BAZAAR_REMOTE_URL="$(to_file_url "${CORRUPT_TEMP}")"
+export TURINGOS_BAZAAR_REMOTE_URL
 rm -f "$TURINGOS_BAZAAR_CACHE"
 # Load must fall back to bundled snapshot without crashing on jq error
 keys=$(registry::keys)
@@ -245,7 +246,8 @@ EOF
 
 openssl pkeyutl -sign -inkey "$TEST_KEY" -rawin -in "$TEST_INDEX" -out "$TEST_SIG"
 
-export TURINGOS_BAZAAR_REMOTE_URL="$(to_file_url "${TEST_INDEX}")"
+TURINGOS_BAZAAR_REMOTE_URL="$(to_file_url "${TEST_INDEX}")"
+export TURINGOS_BAZAAR_REMOTE_URL
 export TURINGOS_BAZAAR_PUBKEY="$TEST_PUB"
 rm -f "$TURINGOS_BAZAAR_CACHE"
 

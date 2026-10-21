@@ -111,7 +111,7 @@
 
   function rejectPlan() {
     if (!currentPlan) return;
-    sendPlanAction("approve_plan", { plan_id: currentPlan.plan_id, session_id: currentPlan.session_id, rejected: true });
+    sendPlanAction("reject_plan", { plan_id: currentPlan.plan_id, session_id: currentPlan.session_id });
     resolvePlan(false);
   }
 

@@ -10,8 +10,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 
-pub const DEFAULT_REMOTE_URL: &str =
-    "https://uncoalesced.github.io/turingos-bazaar/v1/index.json";
+pub const DEFAULT_REMOTE_URL: &str = "https://uncoalesced.github.io/turingos-bazaar/v1/index.json";
 pub const CACHE_TTL_SECS: u64 = 86400; // 24 hours
 
 pub fn bazaar_dir() -> PathBuf {
@@ -388,9 +387,7 @@ pub async fn list(project_path: Option<&str>) -> Value {
     let (index, offline) = fetch_index().await;
     let installed = installed_tools();
     let project_dir = project_path.map(Path::new);
-    let disabled = project_dir
-        .map(get_disabled_items)
-        .unwrap_or_default();
+    let disabled = project_dir.map(get_disabled_items).unwrap_or_default();
 
     let empty_map = serde_json::Map::new();
     let entries_map = index
