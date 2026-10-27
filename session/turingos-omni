@@ -20,14 +20,17 @@
 sock="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/turingos/control.sock"
 
 if [ -n "${WAYLAND_DISPLAY:-}" ] && command -v hyprctl >/dev/null 2>&1; then
+    # On Wayland Brave ignores --class: the shell's app id comes from its URL
+    # (brave-127.0.0.1__-Default). Same pattern as the rule in hyprland.conf.
+    is_shell='test("^(turingos-shell|(brave|chrome|chromium)-127\\.0\\.0\\.1__.*)$")'
     clients="$(hyprctl clients -j 2>/dev/null)"
     shell="$(printf '%s' "$clients" \
-        | jq -r '.[] | select(.class == "turingos-shell") | .address' \
+        | jq -r ".[] | select(.class | ${is_shell}) | .address" \
         | head -n 1)"
     printf '%s' "$clients" \
-        | jq -r '.[] | select(.class != "turingos-shell"
-                              and .workspace.name != "special:turingos-omni")
-                  | .address' \
+        | jq -r ".[] | select((.class | ${is_shell} | not)
+                              and .workspace.name != \"special:turingos-omni\")
+                  | .address" \
         | while IFS= read -r addr; do
             [ -n "$addr" ] || continue
             hyprctl dispatch focuswindow "address:$addr" >/dev/null 2>&1
