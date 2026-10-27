@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 import argparse
 import asyncio
+import ipaddress
 import json
 import os
+import stat
 from pathlib import Path
 
 import uvicorn
@@ -37,6 +39,7 @@ MEMORY_SOCKET = "/run/turingos/memory.sock"
 # so run_shell() forwards to shell-helper.py (a per-session user unit) — the
 # 60s/64KB budget lives there; this is just how long we wait for it.
 SHELL_TIMEOUT = 60
+REPLY_MAX_LINE = 4 * 1024 * 1024
 LOCAL_HOSTS = {"localhost", "127.0.0.1"}
 
 app = FastAPI(title="TuringOS Bridge")
@@ -64,12 +67,15 @@ class UnixSocketClient:
         self.socket_path = socket_path
 
     async def send(self, msg: dict) -> dict:
-        loop = asyncio.get_event_loop()
         try:
-            reader, writer = await asyncio.open_unix_connection(self.socket_path)
+            # Replies are one JSON line, but can exceed 4 KB (model output,
+            # fetched pages, grant lists): read the line, not one chunk
+            reader, writer = await asyncio.open_unix_connection(
+                self.socket_path, limit=REPLY_MAX_LINE
+            )
             writer.write((json.dumps(msg) + "\n").encode())
             await writer.drain()
-            data = await reader.read(4096)
+            data = await asyncio.wait_for(reader.readline(), 120)
             writer.close()
             await writer.wait_closed()
             return json.loads(data.decode().strip())
@@ -100,6 +106,8 @@ async def plan_ws(ws: WebSocket):
                 result = await plan_client.send({"action": "create_plan", **msg})
             elif action == "approve_plan":
                 result = await plan_client.send({"action": "approve_plan", **msg})
+            elif action == "reject_plan":
+                result = await plan_client.send({"action": "reject_plan", **msg})
             elif action == "execute_plan":
                 result = await plan_client.send({"action": "execute_plan", **msg})
             else:
@@ -148,7 +156,11 @@ async def bridge_ws(ws: WebSocket):
             action = msg.get("action")
 
             if action == "fetch":
-                result = await bridge_client.send({"action": "fetch", **msg})
+                # Only the URL goes through: the egress allowlist is bridged's
+                # own, a page must not be able to widen it
+                result = await bridge_client.send(
+                    {"action": "fetch", "url": str(msg.get("url", ""))}
+                )
                 await ws.send_text(json.dumps(result))
             else:
                 await ws.send_text(json.dumps({"status": "error", "errors": [f"unknown bridge action: {action}"]}))
@@ -220,12 +232,76 @@ def origin_allowed(ws: WebSocket) -> bool:
     """Only the UI page this bridge serves may open a WebSocket. Browsers
     don't apply CORS to WebSockets, so without this any site open in Brave
     could run commands or drive the agent; a DNS-rebound name fails the
-    localhost check."""
+    localhost check. Headers are forgeable by any local process though, so the
+    connecting process must also belong to the logged-in user (peer_allowed)."""
     host = ws.headers.get("host", "")
     return (
         host.rsplit(":", 1)[0] in LOCAL_HOSTS
         and ws.headers.get("origin", "") == f"http://{host}"
+        and peer_allowed(ws)
     )
+
+
+def _tcp_hex_addr(addr: "ipaddress.IPv4Address | ipaddress.IPv6Address") -> str:
+    """An address as /proc/net/tcp{,6} prints it: each 32-bit word of the
+    packed address byte-reversed, upper-case hex."""
+    packed = addr.packed
+    return "".join(packed[i : i + 4][::-1].hex() for i in range(0, len(packed), 4)).upper()
+
+
+def tcp_peer_uid(host: str, port: int) -> "int | None":
+    """uid of the local process that owns the client end (host, port) of a
+    loopback TCP connection, from the kernel's socket table. None if it can't
+    be determined (not Linux, not loopback, no such socket)."""
+    try:
+        addr = ipaddress.ip_address(host)
+    except ValueError:
+        return None
+    if not addr.is_loopback and not getattr(addr, "ipv4_mapped", None):
+        return None
+    want = f"{_tcp_hex_addr(addr)}:{port:04X}"
+    for table in ("/proc/net/tcp", "/proc/net/tcp6"):
+        try:
+            with open(table) as f:
+                rows = f.read().splitlines()[1:]
+        except OSError:
+            continue
+        for row in rows:
+            fields = row.split()
+            if len(fields) > 7 and fields[1].upper() == want:
+                try:
+                    return int(fields[7])
+                except ValueError:
+                    return None
+    return None
+
+
+def session_uids() -> "set[int]":
+    """uids of the logged-in sessions: owners of the helper sockets in the
+    drop-box (see session_socks), plus TURINGOS_BRIDGE_ALLOW_UIDS."""
+    uids = {uid for uid, _ in session_socks("shell")} | {
+        uid for uid, _ in session_socks("desktop")
+    }
+    extra = os.environ.get("TURINGOS_BRIDGE_ALLOW_UIDS", "")
+    uids |= {int(u) for u in extra.split(",") if u.strip().isdigit()}
+    return uids
+
+
+def peer_allowed(ws: WebSocket) -> bool:
+    """The process behind this WebSocket must run as a logged-in user.
+    Fails closed when the peer can't be identified. With no session yet there
+    is nothing to match against, and /shell and /desktop have nothing to talk
+    to anyway. TURINGOS_BRIDGE_PEER_CHECK=0 turns the check off (tests, dev)."""
+    if os.environ.get("TURINGOS_BRIDGE_PEER_CHECK", "1") == "0":
+        return True
+    uids = session_uids()
+    if not uids:
+        return True
+    client = ws.client
+    if client is None:
+        return False
+    uid = tcp_peer_uid(client.host, client.port)
+    return uid is not None and uid in uids
 
 
 def session_dir() -> Path:
@@ -234,14 +310,33 @@ def session_dir() -> Path:
     return Path(os.environ.get("TURINGOS_SESSION_DIR", "/run/turingos/session"))
 
 
+def session_socks(kind: str) -> "list[tuple[int, Path]]":
+    """(uid, path) of live helper sockets, newest first. kind is "shell"
+    (<uid>.sock) or "desktop" (<uid>.desktop.sock). The directory is world
+    writable, so a socket only counts if its owner is the uid in its name:
+    another user can't plant one to capture what the page sends."""
+    found = []
+    for p in session_dir().glob("[0-9]*.sock"):
+        is_desktop = p.name.endswith(".desktop.sock")
+        if (kind == "desktop") != is_desktop:
+            continue
+        prefix = p.name.split(".", 1)[0]
+        if not prefix.isdigit():
+            continue
+        try:
+            st = p.stat()
+        except OSError:
+            continue
+        if stat.S_ISSOCK(st.st_mode) and st.st_uid == int(prefix):
+            found.append((st.st_mtime, int(prefix), p))
+    found.sort(key=lambda t: t[0], reverse=True)
+    return [(uid, p) for _, uid, p in found]
+
+
 async def run_shell(command: str, timeout: float = SHELL_TIMEOUT + 15) -> dict:
     """Forward to the login session's shell-helper so commands run as the
     person at the keyboard, not as the system user `turingos`."""
-    socks = sorted(
-        (p for p in session_dir().glob("*.sock") if p.is_socket()),
-        key=lambda p: p.stat().st_mtime,
-        reverse=True,
-    )
+    socks = [p for _, p in session_socks("shell")]
     if not socks:
         return {
             "status": "error",
@@ -307,12 +402,8 @@ DESKTOP_MAX_LINE = 1024 * 1024
 
 
 def desktop_socket():
-    socks = sorted(
-        (p for p in session_dir().glob("*.desktop.sock") if p.is_socket()),
-        key=lambda p: p.stat().st_mtime,
-        reverse=True,
-    )
-    return socks[0] if socks else None
+    socks = session_socks("desktop")
+    return socks[0][1] if socks else None
 
 
 @app.websocket("/desktop")

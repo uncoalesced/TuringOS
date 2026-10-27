@@ -18,6 +18,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPORT_FILE="${ROOT}/benchmark_report.json"
+# shellcheck disable=SC2034  # --fast is accepted and reserved for quicker runs
 FAST_MODE=0
 
 while [[ $# -gt 0 ]]; do
@@ -28,6 +29,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+export FAST_MODE  # reserved flag; exported so it is visibly used
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -37,6 +39,7 @@ NC='\033[0m'
 
 PASSED_COUNT=0
 FAILED_COUNT=0
+# shellcheck disable=SC2034
 TOTAL_START=$(date +%s%N 2>/dev/null || date +%s)
 
 declare -a BENCHMARK_RESULTS=()
@@ -74,6 +77,7 @@ run_suite() {
         record_benchmark "$suite_name" "PASS" "$duration_ms" "Clean execution"
     else
         echo -e "  ${RED}✗ FAILED${NC} (${duration_ms}ms) with exit code $rc"
+        # shellcheck disable=SC2001  # prefix every line, not a substitution
         echo "$output" | sed 's/^/    /'
         FAILED_COUNT=$((FAILED_COUNT + 1))
         record_benchmark "$suite_name" "FAIL" "$duration_ms" "Exited with code $rc"
@@ -106,6 +110,8 @@ run_suite "Bazaar 10-Step Cryptographic & Cache Suite" "bash '${ROOT}/tests/baza
 if command -v cargo &>/dev/null; then
     if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]] && [[ -z "${LIBCLANG_PATH:-}" ]]; then
         echo -e "  ${YELLOW}⚠ Skipping daemon cargo check on Windows host without LIBCLANG_PATH (run inside Linux VM for full clang bindgen check)${NC}"
+    elif ! pkg-config --exists alsa 2>/dev/null && [[ "$OSTYPE" != "msys" && "$OSTYPE" != "win32" ]]; then
+        echo -e "  ${YELLOW}⚠ Skipping daemon cargo check (ALSA dev libraries missing; the CI daemon job builds it in the ISO's Debian container)${NC}"
     else
         run_suite "Daemon Compilation & Feature Verification (turingosd)" "cd '${ROOT}/daemon' && cargo check"
     fi
@@ -114,6 +120,7 @@ else
 fi
 
 # ── 6. Visual Theme & Window Border Compliance Benchmark ──────────────────────
+# shellcheck disable=SC2317,SC2329  # run via run_suite
 test_border_compliance() {
     local hypr="${ROOT}/debian-live/config/includes.chroot/etc/turingos/hyprland.conf"
     local tokens="${ROOT}/ui/web/css/tokens.css"
@@ -134,6 +141,7 @@ test_border_compliance() {
 run_suite "Renewed Palette Window Border & Token Compliance" "test_border_compliance"
 
 # ── 7. Kernel Persistence Cmdline Benchmark ───────────────────────────────────
+# shellcheck disable=SC2317,SC2329  # run via run_suite
 test_live_build_persistence() {
     local build_amd="${ROOT}/debian-live/build-amd64.sh"
     local build_arm="${ROOT}/arm/build.sh"
@@ -146,6 +154,7 @@ test_live_build_persistence() {
 run_suite "Live-Build Persistence & Dual-Naming Verification" "test_live_build_persistence"
 
 # ── 8. Calamares Installer Persistent User Autologin Benchmark ────────────────
+# shellcheck disable=SC2317,SC2329  # run via run_suite
 test_installer_autologin_hardening() {
     local hook="${ROOT}/debian-live/config/hooks/normal/0495-installer.hook.chroot"
     grep -q "PUSER=" "$hook" || return 1
