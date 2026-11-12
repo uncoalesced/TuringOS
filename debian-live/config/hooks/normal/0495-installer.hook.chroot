@@ -4,7 +4,8 @@
 # Sets up Calamares (calamares + calamares-settings-debian, from the package
 # list) to install the live system to disk, so logins, keys and installs
 # persist. On top of Debian's config:
-#   - TuringOS branding (logo staged by sync-scripts.sh)
+#   - TuringOS branding (logo and slides staged by sync-scripts.sh, rendered
+#     by debian-live/branding/make-boot-art.py; colours from the design language)
 #   - /usr/bin/turingos-install: Debian's launcher uses pkexec, which needs a
 #     polkit agent openbox doesn't run; the live user has passwordless sudo
 #   - a shellprocess job pointing the kiosk autologin (0470, hardcoded to the
@@ -22,15 +23,18 @@ set -euo pipefail
 CAL=/etc/calamares
 BRAND="${CAL}/branding/turingos"
 LOGO=/usr/share/pixmaps/turingos.png
+SLIDES=/usr/share/turingos/installer
 VERSION=1.3
 
 [[ -f "${CAL}/settings.conf" ]] || { echo "ERROR: calamares-settings-debian missing"; exit 1; }
 [[ -f "$LOGO" ]] || { echo "ERROR: ${LOGO} not staged (run sync-scripts.sh)"; exit 1; }
+[[ -f "${SLIDES}/slide-1.png" ]] || { echo "ERROR: ${SLIDES}/ not staged (run sync-scripts.sh)"; exit 1; }
 
 echo "==> [0495-installer] Branding Calamares..."
 rm -rf "$BRAND"
 mkdir -p "$BRAND"
 install -m644 "$LOGO" "${BRAND}/turingos.png"
+install -m644 "${SLIDES}"/slide-*.png "${BRAND}/"
 cat > "${BRAND}/branding.desc" <<EOF
 ---
 componentName:  turingos
@@ -58,12 +62,16 @@ images:
     productIcon:         "turingos.png"
     productWelcome:      "turingos.png"
 slideshow:
-    - "turingos.png"
+    - "slide-1.png"
+    - "slide-2.png"
+    - "slide-3.png"
+# Design language: Black room, White text, the current step is the one Orange
+# moment with a Black label (5.58:1)
 style:
-   SidebarBackground:        "#141413"
-   SidebarText:              "#faf9f5"
-   SidebarTextCurrent:       "#141413"
-   SidebarBackgroundCurrent: "#d97757"
+   SidebarBackground:        "#000000"
+   SidebarText:              "#f9f9f9"
+   SidebarTextCurrent:       "#000000"
+   SidebarBackgroundCurrent: "#e85002"
 EOF
 
 # ─── Point the installed system at the new account ────────────────────────────

@@ -101,7 +101,7 @@
 
 .tray-button:hover { background: var(--surface-strong); }
 .tray-button:active { transform: scale(0.96); }
-.tray-button:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.tray-button:focus-visible { outline: 2px solid var(--focus-outline); outline-offset: 1px; }
 .tray-button .fill { fill: currentColor; stroke: none; }
 
 .clock {

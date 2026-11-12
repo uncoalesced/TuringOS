@@ -22,7 +22,7 @@
 
 .composer-answer:empty { display: none; }
 .composer-answer.is-pending { color: var(--muted); font-style: italic; }
-.composer-answer.is-error { color: var(--danger); }
+.composer-answer.is-error { color: var(--danger-text); }
 .composer-answer.is-shell { font: 13px/1.5 var(--mono); font-style: normal; }
 
 /* Shell mode badge (AI unreachable): click to go back to the AI */
@@ -32,11 +32,11 @@
   border: 1px solid var(--danger);
   border-radius: 999px;
   background: transparent;
-  color: var(--danger);
+  color: var(--danger-text);
   font: 12px/18px var(--mono);
   cursor: pointer;
 }
-.composer-shell:hover { background: var(--danger); color: var(--bg); }
+.composer-shell:hover { background: var(--danger); color: var(--tos-white); }
 .composer-answer:not(:empty) { animation: enter 400ms var(--ease-out) both; }
 
 .composer-box {
@@ -113,7 +113,7 @@
   text-overflow: ellipsis;
 }
 
-.composer-hint[data-tone="error"] { color: var(--danger); }
+.composer-hint[data-tone="error"] { color: var(--danger-text); }
 
 kbd {
   display: inline-block;
@@ -148,7 +148,7 @@ kbd {
 .icon-button { color: var(--text); }
 .icon-button:hover { background: var(--surface-strong); }
 
-.send-button { background: var(--accent); color: var(--white); }
+.send-button { background: var(--accent); color: var(--tos-white); }
 .send-button:disabled { background: var(--surface-strong); color: var(--faint); }
 
 .icon-button:active,
@@ -156,14 +156,14 @@ kbd {
 
 .icon-button:focus-visible,
 .send-button:focus-visible,
-.mention-item:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.mention-item:focus-visible { outline: 2px solid var(--focus-outline); outline-offset: 2px; }
 
 .icon-button .icon,
 .send-button .icon { width: 18px; height: 18px; }
 
 #composer-mic[aria-pressed="true"] {
   background: var(--danger);
-  color: var(--white);
+  color: var(--tos-white);
 }
 
 /* Pulses gently while listening — same ping technique as the agent status

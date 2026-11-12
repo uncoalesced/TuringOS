@@ -20,8 +20,8 @@
   height: 30px;
   border-radius: 26%;
   corner-shape: squircle;
-  background: linear-gradient(160deg, var(--japonica-light), var(--accent) 55%, var(--japonica-dark));
-  color: var(--white);
+  background: var(--tos-tile-gradient);
+  color: var(--tos-white);
 }
 .bz-brand-tile .icon { width: 16px; height: 16px; }
 .bz-brand-name { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
@@ -49,7 +49,7 @@
   font-size: 13px;
 }
 .bz-search input::-webkit-search-cancel-button { display: none; }
-.bz-search:focus-within { box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus) 60%, transparent); }
+.bz-search:focus-within { box-shadow: var(--focus-ring); }
 
 .bz-nav { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
 .bz-nav-item {
@@ -105,7 +105,7 @@
   border-radius: 20px;
   corner-shape: squircle;
   overflow: hidden;
-  color: var(--white);
+  color: var(--tos-white);
   background:
     radial-gradient(120% 90% at 100% 0%, hsl(calc(var(--hue) + 25) 80% 70% / 0.55), transparent 60%),
     linear-gradient(135deg, hsl(var(--hue) 55% 42%), hsl(calc(var(--hue) + 30) 60% 26%));
@@ -148,7 +148,7 @@
   padding: 1px 6px;
   border-radius: 999px;
   background: var(--accent);
-  color: var(--white);
+  color: var(--tos-white);
   font-size: 10px;
   font-weight: 600;
 }
@@ -161,11 +161,11 @@
   height: 52px;
   border-radius: 26%;
   corner-shape: squircle;
-  color: var(--white);
+  color: var(--tos-white);
   background: linear-gradient(150deg, hsl(var(--hue) 72% 62%), hsl(calc(var(--hue) + 18) 66% 44%));
   box-shadow: inset 0 0 0 0.5px rgb(255 255 255 / 0.2), 0 2px 6px -2px rgb(0 0 0 / 0.3);
 }
-.bz-tile.is-mono { background: linear-gradient(150deg, #3a3936, #141413); }
+.bz-tile.is-mono { background: linear-gradient(150deg, var(--tos-dark-gray), var(--tos-primary-bg)); }
 
 /* With a 3D icon: a soft tinted tile so the object carries the colour. */
 .bz-tile.has-img,
@@ -184,7 +184,7 @@
 .bz-tile-logo {
   width: 50%;
   height: 50%;
-  background: var(--white);
+  background: var(--tos-white);
   -webkit-mask: var(--logo) center / contain no-repeat;
   mask: var(--logo) center / contain no-repeat;
 }
@@ -234,8 +234,8 @@
 .bz-get:active { scale: 0.96; }
 .bz-get .icon { width: 13px; height: 13px; }
 .bz-get.is-installed { background: color-mix(in srgb, var(--text) 7%, transparent); color: var(--muted); }
-.bz-get--hero { margin-top: 14px; background: rgb(255 255 255 / 0.92); color: var(--ink); }
-.bz-get--hero.is-installed { background: rgb(255 255 255 / 0.2); color: var(--white); }
+.bz-get--hero { margin-top: 14px; background: rgb(255 255 255 / 0.92); color: var(--tos-primary-bg); }
+.bz-get--hero.is-installed { background: rgb(255 255 255 / 0.2); color: var(--tos-white); }
 
 .bz-offline-badge {
   display: inline-flex;

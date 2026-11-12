@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+<title>Colour roles and contrast</title>
+<!-- Engineered by uncoalesced -->
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+@font-face{font-family:"Timeless Sans";src:url("../../../ui/web/fonts/TimelessSansVF.ttf") format("truetype");font-weight:300 800;font-display:block}
+@font-face{font-family:"Timeless Serif";src:url("../../../ui/web/fonts/TimelessSerifVF.ttf") format("truetype");font-weight:200 700;font-display:block}
+body{margin:0;background:#000000}
+</style>
+
+</head>
+<body>
+
+
+<div style="width: 1440px; height: 1180px; position: relative; overflow: hidden; box-sizing: border-box; padding: 48px 64px; display: flex; flex-direction: column; background: #000000; color: #F9F9F9; font-family: 'Timeless Sans', system-ui, sans-serif">
+
+<div style="display: flex; justify-content: space-between; align-items: center; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; letter-spacing: 0.08em; text-transform: uppercase; color: #A7A7A7">
+<span>TuringOS · Colour · Roles and contrast</span>
+<span>03 / 10</span>
+</div>
+
+<div style="margin-top: 24px; display: flex; justify-content: space-between; align-items: flex-end; gap: 48px">
+<h2 style="margin: 0; font-family: 'Timeless Serif', Georgia, serif; font-weight: 400; font-size: 56px; line-height: 1.05; letter-spacing: -0.02em">Roles, tints and contrast.</h2>
+<p style="margin: 0; max-width: 470px; font-size: 14px; line-height: 21px; color: #A7A7A7">A tint is a palette colour at an alpha, or mixed with Black or White. No new hues anywhere, so there is no green, no blue, no yellow. State is carried by shape and label.</p>
+</div>
+
+<div style="margin-top: 28px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px">
+
+<div style="background: #000000; border: 1px solid rgba(100,100,100,0.6); border-radius: 22px; padding: 18px 22px 10px; box-sizing: border-box">
+<div style="display: flex; justify-content: space-between; align-items: baseline; padding-bottom: 12px">
+<div style="font-size: 17px; line-height: 22px; font-weight: 500">Dark ground <span style="color: #A7A7A7; font-weight: 400">· default</span></div>
+<div style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #A7A7A7">data-theme="dark"</div>
+</div>
+
+<div style="display: flex; align-items: center; gap: 14px; height: 34px; border-top: 1px solid rgba(100,100,100,0.28)">
+<span style="width: 22px; height: 22px; border-radius: 7px; flex: none; box-sizing: border-box; border: 1px solid rgba(249,249,249,0.28); background: #000000"></span>
+<span style="width: 118px; flex: none; font-size: 14px; line-height: 20px; font-weight: 500; color: #F9F9F9">Background</span>
+<span style="flex-grow: 1; font-size: 13px; line-height: 18px; color: #A7A7A7">Primary #000000</span>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; color: #A7A7A7">--bg</span>
+</div>
+
+<div style="display: flex; align-items: center; gap: 14px; height: 34px; border-top: 1px solid rgba(100,100,100,0.28)">
+<span style="width: 22px; height: 22px; border-radius: 7px; flex: none; box-sizing: border-box; border: 1px solid rgba(249,249,249,0.28); background: #141414"></span>
+<span style="width: 118px; flex: none; font-size: 14px; line-height: 20px; font-weight: 500; color: #F9F9F9">Surface</span>
+<span style="flex-grow: 1; font-size: 13px; line-height: 18px; color: #A7A7A7">Dark Gray at 40%, #141414</span>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; color: #A7A7A7">--surface</span>
+</div>
+
+<div style="display: flex; align-items: center; gap: 14px; height: 34px; border-top: 1px solid rgba(100,100,100,0.28)">
+<span style="width: 22px; height: 22px; border-radius: 7px; flex: none; box-sizing: border-box; border: 1px solid rgba(249,249,249,0.28); background: #242424"></span>
+<span style="width: 118px; flex: none; font-size: 14px; line-height: 20px; font-weight: 500; color: #F9F9F9">Surface raised</span>
+<span style="flex-grow: 1; font-size: 13px; line-height: 18px; color: #A7A7A7">Dark Gray at 70%, #242424</span>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; color: #A7A7A7">--surface-2</span>
+</div>
+
+<div style="display: flex; align-items: center; gap: 14px; height: 34px; border-top: 1px solid rgba(100,100,100,0.28)">
+<span style="width: 22px; height: 22px; border-radius: 7px; flex: none; box-sizing: border-box; border: 1px solid rgba(249,249,249,0.28); background: #333333"></span>
+<span style="width: 118px; flex: none; font-size: 14px; line-height: 20px; font-weight: 500; color: #F9F9F9">Surface strong</span>
+<span style="flex-grow: 1; font-size: 13px; line-height: 18px; color: #A7A7A7">Dark Gray #333333</span>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; color: #A7A7A7">--surface-strong</span>
+</div>
+
+<div style="display: flex; align-items: center; gap: 14px; height: 34px; border-top: 1px solid rgba(100,100,100,0.28)">
+<span style="width: 22px; height: 22px; border-radius: 7px; flex: none; box-sizing: border-box; border: 1px solid rgba(249,249,249,0.28); background: #1C1C1C"></span>
+<span style="width: 118px; flex: none; font-size: 14px; line-height: 20px; font-weight: 500; color: #F9F9F9">Line</span>
+<span style="flex-grow: 1; font-size: 13px; line-height: 18px; color: #A7A7A7">Gray at 28%</span>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; color: #A7A7A7">--line</span>
+</div>
+
+<div style="display: flex; align-items: center; gap: 14px; height: 34px; border-top: 1px solid rgba(100,100,100,0.28)">
+<span style="width: 22px; height: 22px; border-radius: 7px; flex: none; box-sizing: border-box; border: 1px solid rgba(249,249,249,0.28); background: #F9F9F9"></span>
+<span style="width: 118px; flex: none; font-size: 14px; line-height: 20px; font-weight: 500; color: #F9F9F9">Text</span>
+<span style="flex-grow: 1; font-size: 13px; line-height: 18px; color: #A7A7A7">White #F9F9F9</span>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; color: #A7A7A7">--text</span>
+</div>
+
+<div style="display: flex; align-items: center; gap: 14px; height: 34px; border-top: 1px solid rgba(100,100,100,0.28)">
+<span style="width: 22px; height: 22px; border-radius: 7px; flex: none; box-sizing: border-box; border: 1px solid rgba(249,249,249,0.28); background: #A7A7A7"></span>
+<span style="width: 118px; flex: none; font-size: 14px; line-height: 20px; font-weight: 500; color: #F9F9F9">Text muted</span>
+<span style="flex-grow: 1; font-size: 13px; line-height: 18px; color: #A7A7A7">Light Gray #A7A7A7</span>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; color: #A7A7A7">--muted</span>
+</div>
+
+<div style="display: flex; align-items: center; gap: 14px; height: 34px; border-top: 1px solid rgba(100,100,100,0.28)">
+<span style="width: 22px; height: 22px; border-radius: 7px; flex: none; box-sizing: border-box; border: 1px solid rgba(249,249,249,0.28); background: #646464"></span>
+<span style="width: 118px; flex: none; font-size: 14px; line-height: 20px; font-weight: 500; color: #F9F9F9">Text faint</span>
+<span style="flex-grow: 1; font-size: 13px; line-height: 18px; color: #A7A7A7">Gray #646464, graphics and 24px+ only</span>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; color: #A7A7A7">--faint</span>
+</div>
+
+<div style="display: flex; align-items: center; gap: 14px; height: 34px; border-top: 1px solid rgba(100,100,100,0.28)">
+<span style="width: 22px; height: 22px; border-radius: 7px; flex: none; box-sizing: border-box; border: 1px solid rgba(249,249,249,0.28); background: #E85002"></span>
+<span style="width: 118px; flex: none; font-size: 14px; line-height: 20px; font-weight: 500; color: #F9F9F9">Accent</span>
+<span style="flex-grow: 1; font-size: 13px; line-height: 18px; color: #A7A7A7">Branding Orange #E85002, hover #F16001</span>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; color: #A7A7A7">--accent</span>
+</div>
+
+</div>
+
+<div style="background: #F9F9F9; color: #000000; border-radius: 22px; padding: 18px 22px 10px; box-sizing: border-box">
+<div style="display: flex; justify-content: space-between; align-items: baseline; padding-bottom: 12px">
+<div style="font-size: 17px; line-height: 22px; font-weight: 500">Light ground <span style="color: #333333; font-weight: 400">· toggle</span></div>
+<div style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #333333">data-theme="light"</div>
+</div>
+
+<div style="display: flex; align-items: center; gap: 14px; height: 34px; border-top: 1px solid rgba(51,51,51,0.14)">
+<span style="width: 22px; height: 22px; border-radius: 7px; flex: none; box-sizing: border-box; border: 1px solid rgba(51,51,51,0.3); background: #F9F9F9"></span>
+<span style="width: 118px; flex: none; font-size: 14px; line-height: 20px; font-weight: 500; color: #000000">Background</span>
+<span style="flex-grow: 1; font-size: 13px; line-height: 18px; color: #333333">White #F9F9F9</span>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; color: #646464">--bg</span>
+</div>
+
+<div style="display: flex; align-items: center; gap: 14px; height: 34px; border-top: 1px solid rgba(51,51,51,0.14)">
+<span style="width: 22px; height: 22px; border-radius: 7px; flex: none; box-sizing: border-box; border: 1px solid rgba(51,51,51,0.3); background: #EFEFEF"></span>
+<span style="width: 118px; flex: none; font-size: 14px; line-height: 20px; font-weight: 500; color: #000000">Surface</span>
+<span style="flex-grow: 1; font-size: 13px; line-height: 18px; color: #333333">Black at 4%, #EFEFEF</span>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; color: #646464">--surface</span>
+</div>
+
+<div style="display: flex; align-items: center; gap: 14px; height: 34px; border-top: 1px solid rgba(51,51,51,0.14)">
+<span style="width: 22px; height: 22px; border-radius: 7px; flex: none; box-sizing: border-box; border: 1px solid rgba(51,51,51,0.3); background: #E5E5E5"></span>
+<span style="width: 118px; flex: none; font-size: 14px; line-height: 20px; font-weight: 500; color: #000000">Surface raised</span>
+<span style="flex-grow: 1; font-size: 13px; line-height: 18px; color: #333333">Black at 8%, #E5E5E5</span>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; color: #646464">--surface-2</span>
+</div>
+
+<div style="display: flex; align-items: center; gap: 14px; height: 34px; border-top: 1px solid rgba(51,51,51,0.14)">
+<span style="width: 22px; height: 22px; border-radius: 7px; flex: none; box-sizing: border-box; border: 1px solid rgba(51,51,51,0.3); background: #D4D4D4"></span>
+<span style="width: 118px; flex: none; font-size: 14px; line-height: 20px; font-weight: 500; color: #000000">Surface strong</span>
+<span style="flex-grow: 1; font-size: 13px; line-height: 18px; color: #333333">Light Gray at 45%, #D4D4D4</span>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; color: #646464">--surface-strong</span>
+</div>
+
+<div style="display: flex; align-items: center; gap: 14px; height: 34px; border-top: 1px solid rgba(51,51,51,0.14)">
+<span style="width: 22px; height: 22px; border-radius: 7px; flex: none; box-sizing: border-box; border: 1px solid rgba(51,51,51,0.3); background: #DDDDDD"></span>
+<span style="width: 118px; flex: none; font-size: 14px; line-height: 20px; font-weight: 500; color: #000000">Line</span>
+<span style="flex-grow: 1; font-size: 13px; line-height: 18px; color: #333333">Dark Gray at 14%</span>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; color: #646464">--line</span>
+</div>
+
+<div style="display: flex; align-items: center; gap: 14px; height: 34px; border-top: 1px solid rgba(51,51,51,0.14)">
+<span style="width: 22px; height: 22px; border-radius: 7px; flex: none; box-sizing: border-box; border: 1px solid rgba(51,51,51,0.3); background: #000000"></span>
+<span style="width: 118px; flex: none; font-size: 14px; line-height: 20px; font-weight: 500; color: #000000">Text</span>
+<span style="flex-grow: 1; font-size: 13px; line-height: 18px; color: #333333">Primary #000000</span>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; color: #646464">--text</span>
+</div>
+
+<div style="display: flex; align-items: center; gap: 14px; height: 34px; border-top: 1px solid rgba(51,51,51,0.14)">
+<span style="width: 22px; height: 22px; border-radius: 7px; flex: none; box-sizing: border-box; border: 1px solid rgba(51,51,51,0.3); background: #333333"></span>
+<span style="width: 118px; flex: none; font-size: 14px; line-height: 20px; font-weight: 500; color: #000000">Text muted</span>
+<span style="flex-grow: 1; font-size: 13px; line-height: 18px; color: #333333">Dark Gray #333333</span>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; color: #646464">--muted</span>
+</div>
+
+<div style="display: flex; align-items: center; gap: 14px; height: 34px; border-top: 1px solid rgba(51,51,51,0.14)">
+<span style="width: 22px; height: 22px; border-radius: 7px; flex: none; box-sizing: border-box; border: 1px solid rgba(51,51,51,0.3); background: #646464"></span>
+<span style="width: 118px; flex: none; font-size: 14px; line-height: 20px; font-weight: 500; color: #000000">Text faint</span>
+<span style="flex-grow: 1; font-size: 13px; line-height: 18px; color: #333333">Gray #646464, 5.62:1 so safe for text</span>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; color: #646464">--faint</span>
+</div>
+
+<div style="display: flex; align-items: center; gap: 14px; height: 34px; border-top: 1px solid rgba(51,51,51,0.14)">
+<span style="width: 22px; height: 22px; border-radius: 7px; flex: none; box-sizing: border-box; border: 1px solid rgba(51,51,51,0.3); background: #E85002"></span>
+<span style="width: 118px; flex: none; font-size: 14px; line-height: 20px; font-weight: 500; color: #000000">Accent</span>
+<span style="flex-grow: 1; font-size: 13px; line-height: 18px; color: #333333">Orange fill #E85002, text #C10801</span>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; color: #646464">--accent</span>
+</div>
+
+</div>
+</div>
+
+<div style="margin-top: 36px">
+<div style="display: flex; align-items: center; gap: 16px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; letter-spacing: 0.08em; text-transform: uppercase; color: #A7A7A7">
+<span>Agent states</span>
+<span style="flex-grow: 1; height: 1px; background: rgba(100,100,100,0.4)"></span>
+<span>Shape and label first, colour second</span>
+</div>
+<div style="margin-top: 16px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 20px">
+
+<div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start">
+<div style="display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px 0 10px; border-radius: 999px; background: rgba(51,51,51,0.4); border: 1px solid rgba(100,100,100,0.28); font-size: 13px; line-height: 18px">
+<span style="width: 8px; height: 8px; border-radius: 50%; background: #A7A7A7"></span>Idle
+</div>
+<div style="font-size: 13px; line-height: 19px; color: #A7A7A7">Light Gray dot. Nothing running.</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start">
+<div style="display: flex; align-items: center; gap: 9px; height: 30px; padding: 0 12px 0 11px; border-radius: 999px; background: rgba(51,51,51,0.4); border: 1px solid rgba(100,100,100,0.28); font-size: 13px; line-height: 18px">
+<span style="width: 8px; height: 8px; border-radius: 50%; background: #E85002; box-shadow: 0 0 0 4px rgba(232,80,2,0.25)"></span>Working
+</div>
+<div style="font-size: 13px; line-height: 19px; color: #A7A7A7">Orange dot with a soft halo. The one live thing.</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start">
+<div style="display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px 0 10px; border-radius: 999px; background: rgba(51,51,51,0.4); border: 1px solid #E85002; font-size: 13px; line-height: 18px; color: #F9F9F9">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E85002" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>Needs approval
+</div>
+<div style="font-size: 13px; line-height: 19px; color: #A7A7A7">Orange outline and a lock. Shows with the permission sheet.</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start">
+<div style="display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px 0 10px; border-radius: 999px; background: rgba(51,51,51,0.4); border: 1px solid rgba(100,100,100,0.28); font-size: 13px; line-height: 18px">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D9C3AB" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>Merged
+</div>
+<div style="font-size: 13px; line-height: 19px; color: #A7A7A7">Cream check. The palette has no green, so done is cream plus a glyph.</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start">
+<div style="display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px 0 10px; border-radius: 999px; background: #C10801; font-size: 13px; line-height: 18px; color: #F9F9F9">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F9F9F9" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>Failed
+</div>
+<div style="font-size: 13px; line-height: 19px; color: #A7A7A7">Red fill, White label. Red alone is 3.30:1 on Black, so it never carries text.</div>
+</div>
+
+</div>
+</div>
+
+<div style="margin-top: 36px">
+<div style="display: flex; align-items: center; gap: 16px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; letter-spacing: 0.08em; text-transform: uppercase; color: #A7A7A7">
+<span>Contrast pairs</span>
+<span style="flex-grow: 1; height: 1px; background: rgba(100,100,100,0.4)"></span>
+<span>WCAG 2.x, measured from the hex values</span>
+</div>
+<div style="margin-top: 16px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px">
+
+<div style="display: flex; align-items: center; gap: 12px; padding: 8px; border-radius: 14px; border: 1px solid rgba(100,100,100,0.4); box-sizing: border-box">
+<div style="width: 48px; height: 48px; flex: none; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; line-height: 28px; font-weight: 500; box-sizing: border-box; border: 1px solid rgba(100,100,100,0.4); background: #000000; color: #F9F9F9">Aa</div>
+<div style="min-width: 0">
+<div style="font-size: 17px; line-height: 22px; font-weight: 500">19.95:1</div>
+<div style="font-size: 12px; line-height: 16px; color: #A7A7A7">AAA · White on Black</div>
+</div>
+</div>
+
+<div style="display: flex; align-items: center; gap: 12px; padding: 8px; border-radius: 14px; border: 1px solid rgba(100,100,100,0.4); box-sizing: border-box">
+<div style="width: 48px; height: 48px; flex: none; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; line-height: 28px; font-weight: 500; box-sizing: border-box; border: 1px solid rgba(100,100,100,0.4); background: #000000; color: #A7A7A7">Aa</div>
+<div style="min-width: 0">
+<div style="font-size: 17px; line-height: 22px; font-weight: 500">8.73:1</div>
+<div style="font-size: 12px; line-height: 16px; color: #A7A7A7">AAA · Light Gray on Black</div>
+</div>
+</div>
+
+<div style="display: flex; align-items: center; gap: 12px; padding: 8px; border-radius: 14px; border: 1px solid rgba(100,100,100,0.4); box-sizing: border-box">
+<div style="width: 48px; height: 48px; flex: none; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; line-height: 28px; font-weight: 500; box-sizing: border-box; border: 1px solid rgba(100,100,100,0.4); background: #000000; color: #646464">Aa</div>
+<div style="min-width: 0">
+<div style="font-size: 17px; line-height: 22px; font-weight: 500">3.55:1</div>
+<div style="font-size: 12px; line-height: 16px; color: #A7A7A7">Graphics and 24px+ only</div>
+</div>
+</div>
+
+<div style="display: flex; align-items: center; gap: 12px; padding: 8px; border-radius: 14px; border: 1px solid rgba(100,100,100,0.4); box-sizing: border-box">
+<div style="width: 48px; height: 48px; flex: none; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; line-height: 28px; font-weight: 500; box-sizing: border-box; border: 1px solid rgba(100,100,100,0.4); background: #000000; color: #D9C3AB">Aa</div>
+<div style="min-width: 0">
+<div style="font-size: 17px; line-height: 22px; font-weight: 500">12.34:1</div>
+<div style="font-size: 12px; line-height: 16px; color: #A7A7A7">AAA · Cream on Black</div>
+</div>
+</div>
+
+<div style="display: flex; align-items: center; gap: 12px; padding: 8px; border-radius: 14px; border: 1px solid rgba(100,100,100,0.4); box-sizing: border-box">
+<div style="width: 48px; height: 48px; flex: none; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; line-height: 28px; font-weight: 500; box-sizing: border-box; border: 1px solid rgba(100,100,100,0.4); background: #000000; color: #E85002">Aa</div>
+<div style="min-width: 0">
+<div style="font-size: 17px; line-height: 22px; font-weight: 500">5.58:1</div>
+<div style="font-size: 12px; line-height: 16px; color: #A7A7A7">AA · Orange on Black</div>
+</div>
+</div>
+
+<div style="display: flex; align-items: center; gap: 12px; padding: 8px; border-radius: 14px; border: 1px solid rgba(100,100,100,0.4); box-sizing: border-box">
+<div style="width: 48px; height: 48px; flex: none; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; line-height: 28px; font-weight: 500; box-sizing: border-box; border: 1px solid rgba(100,100,100,0.4); background: #E85002; color: #000000">Aa</div>
+<div style="min-width: 0">
+<div style="font-size: 17px; line-height: 22px; font-weight: 500">5.58:1</div>
+<div style="font-size: 12px; line-height: 16px; color: #A7A7A7">AA · button label</div>
+</div>
+</div>
+
+<div style="display: flex; align-items: center; gap: 12px; padding: 8px; border-radius: 14px; border: 1px solid rgba(100,100,100,0.4); box-sizing: border-box">
+<div style="width: 48px; height: 48px; flex: none; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; line-height: 28px; font-weight: 500; box-sizing: border-box; border: 1px solid rgba(100,100,100,0.4); background: #E85002; color: #F9F9F9">Aa</div>
+<div style="min-width: 0">
+<div style="font-size: 17px; line-height: 22px; font-weight: 500">3.57:1</div>
+<div style="font-size: 12px; line-height: 16px; color: #A7A7A7">24px+ only</div>
+</div>
+</div>
+
+<div style="display: flex; align-items: center; gap: 12px; padding: 8px; border-radius: 14px; border: 1px solid rgba(100,100,100,0.4); box-sizing: border-box">
+<div style="width: 48px; height: 48px; flex: none; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; line-height: 28px; font-weight: 500; box-sizing: border-box; border: 1px solid rgba(100,100,100,0.4); background: #C10801; color: #F9F9F9">Aa</div>
+<div style="min-width: 0">
+<div style="font-size: 17px; line-height: 22px; font-weight: 500">6.04:1</div>
+<div style="font-size: 12px; line-height: 16px; color: #A7A7A7">AA · danger fill</div>
+</div>
+</div>
+
+<div style="display: flex; align-items: center; gap: 12px; padding: 8px; border-radius: 14px; border: 1px solid rgba(100,100,100,0.4); box-sizing: border-box">
+<div style="width: 48px; height: 48px; flex: none; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; line-height: 28px; font-weight: 500; box-sizing: border-box; border: 1px solid rgba(100,100,100,0.4); background: #000000; color: #C10801">Aa</div>
+<div style="min-width: 0">
+<div style="font-size: 17px; line-height: 22px; font-weight: 500">3.30:1</div>
+<div style="font-size: 12px; line-height: 16px; color: #A7A7A7">Graphics only, no text</div>
+</div>
+</div>
+
+<div style="display: flex; align-items: center; gap: 12px; padding: 8px; border-radius: 14px; border: 1px solid rgba(100,100,100,0.4); box-sizing: border-box">
+<div style="width: 48px; height: 48px; flex: none; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; line-height: 28px; font-weight: 500; box-sizing: border-box; border: 1px solid rgba(100,100,100,0.4); background: #333333; color: #A7A7A7">Aa</div>
+<div style="min-width: 0">
+<div style="font-size: 17px; line-height: 22px; font-weight: 500">5.25:1</div>
+<div style="font-size: 12px; line-height: 16px; color: #A7A7A7">AA · muted on Dark Gray</div>
+</div>
+</div>
+
+<div style="display: flex; align-items: center; gap: 12px; padding: 8px; border-radius: 14px; border: 1px solid rgba(100,100,100,0.4); box-sizing: border-box">
+<div style="width: 48px; height: 48px; flex: none; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; line-height: 28px; font-weight: 500; box-sizing: border-box; border: 1px solid rgba(100,100,100,0.4); background: #333333; color: #646464">Aa</div>
+<div style="min-width: 0">
+<div style="font-size: 17px; line-height: 22px; font-weight: 500">2.14:1</div>
+<div style="font-size: 12px; line-height: 16px; color: #A7A7A7">Never for text</div>
+</div>
+</div>
+
+<div style="display: flex; align-items: center; gap: 12px; padding: 8px; border-radius: 14px; border: 1px solid rgba(100,100,100,0.4); box-sizing: border-box">
+<div style="width: 48px; height: 48px; flex: none; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; line-height: 28px; font-weight: 500; box-sizing: border-box; border: 1px solid rgba(100,100,100,0.4); background: #333333; color: #F9F9F9">Aa</div>
+<div style="min-width: 0">
+<div style="font-size: 17px; line-height: 22px; font-weight: 500">12.00:1</div>
+<div style="font-size: 12px; line-height: 16px; color: #A7A7A7">AAA · White on Dark Gray</div>
+</div>
+</div>
+
+<div style="display: flex; align-items: center; gap: 12px; padding: 8px; border-radius: 14px; border: 1px solid rgba(100,100,100,0.4); box-sizing: border-box">
+<div style="width: 48px; height: 48px; flex: none; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; line-height: 28px; font-weight: 500; box-sizing: border-box; border: 1px solid rgba(100,100,100,0.4); background: #F9F9F9; color: #333333">Aa</div>
+<div style="min-width: 0">
+<div style="font-size: 17px; line-height: 22px; font-weight: 500">12.00:1</div>
+<div style="font-size: 12px; line-height: 16px; color: #A7A7A7">AAA · light ground</div>
+</div>
+</div>
+
+<div style="display: flex; align-items: center; gap: 12px; padding: 8px; border-radius: 14px; border: 1px solid rgba(100,100,100,0.4); box-sizing: border-box">
+<div style="width: 48px; height: 48px; flex: none; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; line-height: 28px; font-weight: 500; box-sizing: border-box; border: 1px solid rgba(100,100,100,0.4); background: #F9F9F9; color: #646464">Aa</div>
+<div style="min-width: 0">
+<div style="font-size: 17px; line-height: 22px; font-weight: 500">5.62:1</div>
+<div style="font-size: 12px; line-height: 16px; color: #A7A7A7">AA · faint, light ground</div>
+</div>
+</div>
+
+<div style="display: flex; align-items: center; gap: 12px; padding: 8px; border-radius: 14px; border: 1px solid rgba(100,100,100,0.4); box-sizing: border-box">
+<div style="width: 48px; height: 48px; flex: none; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; line-height: 28px; font-weight: 500; box-sizing: border-box; border: 1px solid rgba(100,100,100,0.4); background: #F9F9F9; color: #C10801">Aa</div>
+<div style="min-width: 0">
+<div style="font-size: 17px; line-height: 22px; font-weight: 500">6.04:1</div>
+<div style="font-size: 12px; line-height: 16px; color: #A7A7A7">AA · accent text, light</div>
+</div>
+</div>
+
+<div style="display: flex; align-items: center; gap: 12px; padding: 8px; border-radius: 14px; border: 1px solid rgba(100,100,100,0.4); box-sizing: border-box">
+<div style="width: 48px; height: 48px; flex: none; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; line-height: 28px; font-weight: 500; box-sizing: border-box; border: 1px solid rgba(100,100,100,0.4); background: #F9F9F9; color: #A7A7A7">Aa</div>
+<div style="min-width: 0">
+<div style="font-size: 17px; line-height: 22px; font-weight: 500">2.29:1</div>
+<div style="font-size: 12px; line-height: 16px; color: #A7A7A7">Decoration only</div>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+
+</body>
+</html>
