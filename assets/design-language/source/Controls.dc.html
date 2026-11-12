@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Controls</title>
+<!-- Engineered by uncoalesced -->
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+@font-face{font-family:"Timeless Sans";src:url("/_blob/3849ef377c5cff5166bc0f566e8086e6") format("truetype");font-weight:300 800;font-display:block}
+@font-face{font-family:"Timeless Serif";src:url("/_blob/dd5cc711bfc5dc6b0cfeced0520dfbe4") format("truetype");font-weight:200 700;font-display:block}
+body{margin:0;background:#000000}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1200px; position: relative; overflow: hidden; box-sizing: border-box; padding: 48px 64px; display: flex; flex-direction: column; background: #000000; color: #F9F9F9; font-family: 'Timeless Sans', system-ui, sans-serif">
+
+<div style="display: flex; justify-content: space-between; align-items: center; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; letter-spacing: 0.08em; text-transform: uppercase; color: #A7A7A7">
+<span>TuringOS · Components · Controls</span>
+<span>07 / 10</span>
+</div>
+
+<div style="margin-top: 24px; display: flex; justify-content: space-between; align-items: flex-end; gap: 48px">
+<h2 style="margin: 0; font-family: 'Timeless Serif', Georgia, serif; font-weight: 400; font-size: 56px; line-height: 1.05; letter-spacing: -0.02em">Controls.</h2>
+<p style="margin: 0; max-width: 470px; font-size: 14px; line-height: 21px; color: #A7A7A7">Orange is spent on one thing per view. When the composer has text, Send is the orange thing. When a sheet asks for approval, Allow is.</p>
+</div>
+
+<div style="margin-top: 28px">
+<div style="display: flex; align-items: center; gap: 16px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; letter-spacing: 0.08em; text-transform: uppercase; color: #A7A7A7">
+<span>Buttons</span>
+<span style="flex-grow: 1; height: 1px; background: rgba(100,100,100,0.4)"></span>
+<span>36px tall · 8px radius · 13/500 · focus ring is White with a Black gap</span>
+</div>
+<div style="margin-top: 14px; display: grid; grid-template-columns: 110px repeat(5, minmax(0, 1fr)); row-gap: 12px; column-gap: 16px; align-items: center">
+<div></div>
+<div style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #A7A7A7">Rest</div>
+<div style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #A7A7A7">Hover</div>
+<div style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #A7A7A7">Pressed</div>
+<div style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #A7A7A7">Focus</div>
+<div style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #A7A7A7">Disabled</div>
+<sc-for list="{{buttonRows}}" as="row" hint-placeholder-count="4">
+<div style="font-size: 14px; line-height: 18px; font-weight: 500">{{row.name}}</div>
+<sc-for list="{{row.cells}}" as="b" hint-placeholder-count="5">
+<div>
+<button type="button" disabled="{{b.disabled}}" style="height: 36px; padding: 0 16px; border: 0; border-radius: 8px; font-family: 'Timeless Sans', system-ui, sans-serif; font-size: 13px; line-height: 18px; font-weight: 500; background: {{b.bg}}; color: {{b.fg}}; box-shadow: {{b.sh}}; transform: {{b.tf}}">{{b.label}}</button>
+</div>
+</sc-for>
+</sc-for>
+</div>
+</div>
+
+<div style="margin-top: 32px; display: grid; grid-template-columns: 1.15fr 1fr; gap: 48px">
+
+<div>
+<div style="display: flex; align-items: center; gap: 16px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; letter-spacing: 0.08em; text-transform: uppercase; color: #A7A7A7">
+<span>Composer</span>
+<span style="flex-grow: 1; height: 1px; background: rgba(100,100,100,0.4)"></span>
+<span>Rest, then focused with text</span>
+</div>
+<div style="margin-top: 14px; display: flex; flex-direction: column; gap: 16px">
+
+<div style="box-sizing: border-box; border-radius: 22px; padding: 16px 16px 12px 20px; background: rgba(51,51,51,0.4); border: 1px solid rgba(100,100,100,0.28); display: flex; flex-direction: column; gap: 14px; corner-shape: squircle">
+<div style="font-size: 16px; line-height: 24px; color: #A7A7A7">What do you want to cook?</div>
+<div style="display: flex; align-items: center; gap: 8px">
+<span style="display: flex; align-items: center; height: 28px; padding: 0 10px; border-radius: 999px; border: 1px solid rgba(100,100,100,0.4); box-sizing: border-box; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; color: #A7A7A7">@ project</span>
+<span style="flex-grow: 1"></span>
+<span style="display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 999px; border: 1px solid rgba(100,100,100,0.4); box-sizing: border-box; font-size: 12px; font-weight: 500">Sonnet 5.5 · Medium<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#A7A7A7" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
+<span style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #A7A7A7"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line></svg></span>
+<span style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #333333; color: #646464"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg></span>
+</div>
+</div>
+
+<div style="box-sizing: border-box; border-radius: 22px; padding: 1.5px; background: linear-gradient(45deg, #E85002 0%, #F16001 100%); corner-shape: squircle">
+<div style="box-sizing: border-box; border-radius: 20.5px; padding: 15px 15px 11px 19px; background: #141414; display: flex; flex-direction: column; gap: 14px; corner-shape: squircle">
+<div style="font-size: 16px; line-height: 24px; color: #F9F9F9">Add a spring to the dock magnification</div>
+<div style="display: flex; align-items: center; gap: 8px">
+<span style="display: flex; align-items: center; height: 28px; padding: 0 10px; border-radius: 999px; border: 1px solid rgba(100,100,100,0.4); box-sizing: border-box; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; color: #F9F9F9">@ TuringOS</span>
+<span style="flex-grow: 1"></span>
+<span style="display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 999px; border: 1px solid rgba(100,100,100,0.4); box-sizing: border-box; font-size: 12px; font-weight: 500">Sonnet 5.5 · Medium<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#A7A7A7" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
+<span style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #A7A7A7"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line></svg></span>
+<span style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #E85002; color: #000000"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg></span>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+
+<div>
+<div style="display: flex; align-items: center; gap: 16px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; letter-spacing: 0.08em; text-transform: uppercase; color: #A7A7A7">
+<span>Fields and switches</span>
+<span style="flex-grow: 1; height: 1px; background: rgba(100,100,100,0.4)"></span>
+</div>
+<div style="margin-top: 14px; display: flex; flex-direction: column; gap: 12px">
+
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="f1" style="font-size: 12px; line-height: 16px; font-weight: 500">Project path</label>
+<input id="f1" type="text" value="~/projects/turingos" style="height: 36px; box-sizing: border-box; padding: 0 12px; border-radius: 8px; border: 1px solid rgba(100,100,100,0.6); background: #141414; color: #F9F9F9; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 13px">
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="f2" style="font-size: 12px; line-height: 16px; font-weight: 500">Focused</label>
+<input id="f2" type="text" value="~/projects/tur" style="height: 36px; box-sizing: border-box; padding: 0 12px; border-radius: 8px; border: 1px solid #E85002; box-shadow: 0 0 0 3px rgba(232,80,2,0.25); background: #141414; color: #F9F9F9; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 13px; outline: none">
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="f3" style="font-size: 12px; line-height: 16px; font-weight: 500">Error</label>
+<input id="f3" type="text" value="~/projects/turing" aria-invalid="true" style="height: 36px; box-sizing: border-box; padding: 0 12px; border-radius: 8px; border: 1px solid #C10801; background: #141414; color: #F9F9F9; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 13px">
+<div style="display: flex; align-items: center; gap: 6px; font-size: 12px; line-height: 16px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C10801" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>No git repository at this path</div>
+</div>
+
+<div style="display: flex; align-items: center; gap: 24px; margin-top: 4px">
+<div style="display: flex; align-items: center; gap: 10px; font-size: 13px">
+<span style="width: 40px; height: 22px; border-radius: 999px; background: #E85002; position: relative; flex: none"><span style="position: absolute; top: 3px; right: 3px; width: 16px; height: 16px; border-radius: 50%; background: #F9F9F9"></span></span>Sandbox on
+</div>
+<div style="display: flex; align-items: center; gap: 10px; font-size: 13px">
+<span style="width: 40px; height: 22px; border-radius: 999px; background: #333333; position: relative; flex: none"><span style="position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #A7A7A7"></span></span>Game mode
+</div>
+<div style="display: flex; padding: 3px; border-radius: 999px; background: #141414; border: 1px solid rgba(100,100,100,0.28); font-size: 12px; font-weight: 500">
+<span style="padding: 4px 12px; border-radius: 999px; color: #A7A7A7">Light</span>
+<span style="padding: 4px 12px; border-radius: 999px; background: #333333; color: #F9F9F9">Dark</span>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+
+<div style="margin-top: 32px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px">
+
+<div>
+<div style="display: flex; align-items: center; gap: 16px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; letter-spacing: 0.08em; text-transform: uppercase; color: #A7A7A7">
+<span>Icon buttons</span>
+<span style="flex-grow: 1; height: 1px; background: rgba(100,100,100,0.4)"></span>
+</div>
+<div style="margin-top: 14px; display: flex; align-items: flex-end; gap: 24px">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+<button type="button" aria-label="Microphone" style="width: 28px; height: 28px; border: 0; border-radius: 50%; background: transparent; color: #F9F9F9; display: flex; align-items: center; justify-content: center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line></svg></button>
+<span style="font-size: 12px; color: #A7A7A7">28 · pointer</span>
+</div>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+<button type="button" aria-label="Open files" style="width: 36px; height: 36px; border: 0; border-radius: 50%; background: #333333; color: #F9F9F9; display: flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg></button>
+<span style="font-size: 12px; color: #A7A7A7">36</span>
+</div>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+<button type="button" aria-label="Send" style="width: 44px; height: 44px; border: 0; border-radius: 50%; background: #E85002; color: #000000; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg></button>
+<span style="font-size: 12px; color: #A7A7A7">44 · touch</span>
+</div>
+</div>
+</div>
+
+<div>
+<div style="display: flex; align-items: center; gap: 16px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; letter-spacing: 0.08em; text-transform: uppercase; color: #A7A7A7">
+<span>Keys and tooltip</span>
+<span style="flex-grow: 1; height: 1px; background: rgba(100,100,100,0.4)"></span>
+</div>
+<div style="margin-top: 14px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; align-items: center; gap: 8px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; line-height: 16px">
+<span style="padding: 2px 7px; border-radius: 4px; background: rgba(51,51,51,0.6); border: 1px solid rgba(100,100,100,0.5)">⌘</span><span style="padding: 2px 7px; border-radius: 4px; background: rgba(51,51,51,0.6); border: 1px solid rgba(100,100,100,0.5)">K</span>
+<span style="width: 12px"></span>
+<span style="padding: 2px 7px; border-radius: 4px; background: rgba(51,51,51,0.6); border: 1px solid rgba(100,100,100,0.5)">Ctrl</span><span style="padding: 2px 7px; border-radius: 4px; background: rgba(51,51,51,0.6); border: 1px solid rgba(100,100,100,0.5)">J</span>
+<span style="width: 12px"></span>
+<span style="padding: 2px 7px; border-radius: 4px; background: rgba(51,51,51,0.6); border: 1px solid rgba(100,100,100,0.5)">Esc</span>
+</div>
+<div style="display: flex; flex-direction: column; align-items: flex-start; gap: 0">
+<div style="padding: 6px 10px; border-radius: 8px; background: #333333; font-size: 12px; line-height: 16px; font-weight: 500; box-shadow: inset 0 0 0 0.5px rgba(249,249,249,0.2)">Terminal</div>
+<div style="margin-left: 18px; width: 8px; height: 8px; background: #333333; transform: translateY(-4px) rotate(45deg)"></div>
+</div>
+</div>
+</div>
+
+<div>
+<div style="display: flex; align-items: center; gap: 16px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; letter-spacing: 0.08em; text-transform: uppercase; color: #A7A7A7">
+<span>List rows</span>
+<span style="flex-grow: 1; height: 1px; background: rgba(100,100,100,0.4)"></span>
+</div>
+<div style="margin-top: 14px; display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; align-items: center; justify-content: space-between; height: 36px; padding: 0 12px; border-radius: 12px; background: #333333; font-size: 13px; font-weight: 500">
+<span style="display: flex; align-items: center; gap: 10px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F9F9F9" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="3" x2="6" y2="15"></line><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><path d="M18 9a9 9 0 0 1-9 9"></path></svg>My pull requests</span>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; color: #A7A7A7">Enter</span>
+</div>
+<div style="display: flex; align-items: center; justify-content: space-between; height: 36px; padding: 0 12px; border-radius: 12px; font-size: 13px; color: #A7A7A7">
+<span style="display: flex; align-items: center; gap: 10px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A7A7A7" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>Review requests</span>
+</div>
+</div>
+</div>
+
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1200}}'>
+class Component extends DCLogic {
+renderVals() {
+const ring = '0 0 0 2px #000000, 0 0 0 4px #F9F9F9';
+const press = (a) => 'inset 0 0 0 100px rgba(0,0,0,' + a + ')';
+const scale = 'scale(0.97)';
+const cell = (label, bg, fg, sh, tf, disabled) => ({ label, bg, fg, sh, tf, disabled });
+const buttonRows = [
+{ name: 'Primary', cells: [
+cell('Allow', '#E85002', '#000000', 'none', 'none', false),
+cell('Allow', '#F16001', '#000000', 'none', 'none', false),
+cell('Allow', '#E85002', '#000000', press(0.08), scale, false),
+cell('Allow', '#E85002', '#000000', ring, 'none', false),
+cell('Allow', '#333333', '#646464', 'none', 'none', true)
+] },
+{ name: 'Secondary', cells: [
+cell('Show commands', '#333333', '#F9F9F9', 'none', 'none', false),
+cell('Show commands', '#434343', '#F9F9F9', 'none', 'none', false),
+cell('Show commands', '#333333', '#F9F9F9', press(0.2), scale, false),
+cell('Show commands', '#333333', '#F9F9F9', ring, 'none', false),
+cell('Show commands', '#242424', '#646464', 'none', 'none', true)
+] },
+{ name: 'Ghost', cells: [
+cell('Cancel', 'transparent', '#F9F9F9', 'none', 'none', false),
+cell('Cancel', 'rgba(249,249,249,0.08)', '#F9F9F9', 'none', 'none', false),
+cell('Cancel', 'rgba(249,249,249,0.12)', '#F9F9F9', 'none', scale, false),
+cell('Cancel', 'transparent', '#F9F9F9', ring, 'none', false),
+cell('Cancel', 'transparent', '#646464', 'none', 'none', true)
+] },
+{ name: 'Danger', cells: [
+cell('Discard', '#C10801', '#F9F9F9', 'none', 'none', false),
+cell('Discard', '#C61B15', '#F9F9F9', 'none', 'none', false),
+cell('Discard', '#C10801', '#F9F9F9', press(0.12), scale, false),
+cell('Discard', '#C10801', '#F9F9F9', ring, 'none', false),
+cell('Discard', '#333333', '#646464', 'none', 'none', true)
+] }
+];
+return { buttonRows };
+}
+}
+</script>
+</body>
+</html>

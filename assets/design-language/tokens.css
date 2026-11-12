@@ -1,0 +1,89 @@
+/* Engineered by uncoalesced */
+/* TuringOS design language tokens. Source of truth: assets/pallete/renewed_palette.jpg
+   Only the six swatches and the four gradient stops are brand colours.
+   Every other value below is a tint (alpha, or a mix with Black or White). No new hues. */
+
+:root {
+  /* Palette (renewed, 2026-10-18) */
+  --tos-brand-orange: #e85002;
+  --tos-primary-bg: #000000;
+  --tos-dark-gray: #333333;
+  --tos-gray: #646464;
+  --tos-light-gray: #a7a7a7;
+  --tos-white: #f9f9f9;
+
+  /* Gradient stops, 135deg black to cream */
+  --tos-gradient-stop-1: #000000;
+  --tos-gradient-stop-2: #c10801; /* also: danger fill, light-ground accent text */
+  --tos-gradient-stop-3: #f16001; /* also: orange hover */
+  --tos-gradient-stop-4: #d9c3ab; /* cream: done, added lines */
+  --tos-brand-gradient: linear-gradient(135deg, #000000 0%, #c10801 35%, #f16001 70%, #d9c3ab 100%);
+  --tos-active-border-gradient: linear-gradient(45deg, #e85002 0%, #f16001 100%);
+
+  /* Type (fonts live in ui/web/fonts; JetBrains Mono is optional, falls back to system mono) */
+  --sans: "Timeless Sans", system-ui, -apple-system, "Segoe UI", "Noto Sans", sans-serif;
+  --serif: "Timeless Serif", "Iowan Old Style", Georgia, "Noto Serif", serif;
+  --mono: "JetBrains Mono", "SF Mono", ui-monospace, "Noto Sans Mono", monospace;
+
+  /* Radii */
+  --r-xs: 4px; --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 22px; --r-pill: 999px; --r-icon: 26%;
+
+  /* Space (4px base) */
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px; --s-6: 24px; --s-7: 32px; --s-8: 48px; --s-9: 64px;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --dur-exit: 150ms; --dur-base: 160ms; --dur-enter: 220ms; --dur-slow: 360ms;
+
+  /* Glass (set to none for data-gfx="lite" / "minimal") */
+  --glass-sm: blur(20px); --glass-md: blur(24px) saturate(1.4); --glass-lg: blur(28px) saturate(1.5); --glass-xl: blur(40px) saturate(1.6);
+
+  --menubar-h: 34px;
+
+  /* Button states: tints only */
+  --btn-secondary-hover: #434343;      /* Dark Gray + 8% White */
+  --btn-danger-hover: #c61b15;         /* Red + 8% White */
+  --btn-ghost-hover: rgb(249 249 249 / 0.08);
+  --btn-ghost-press: rgb(249 249 249 / 0.12);
+  --btn-press-overlay: inset 0 0 0 100px rgb(0 0 0 / 0.08); /* with transform: scale(.97) */
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #000000;                 /* Primary */
+  --surface: #141414;            /* Dark Gray at 40% */
+  --surface-2: #242424;          /* Dark Gray at 70% */
+  --surface-strong: #333333;     /* Dark Gray */
+  --line: rgb(100 100 100 / 0.28);
+  --text: #f9f9f9;
+  --muted: #a7a7a7;
+  --faint: #646464;              /* graphics and 24px+ only */
+  --accent: #e85002;
+  --accent-hover: #f16001;
+  --on-accent: #000000;          /* labels on orange are Black (5.58:1) */
+  --danger: #c10801;             /* fill only, with a White label */
+  --done: #d9c3ab;
+  --glow: rgb(232 80 2 / 0.25);
+  --bar: rgb(20 20 20 / 0.75);
+  --focus-ring: 0 0 0 2px #000000, 0 0 0 4px #f9f9f9;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f9f9f9;                 /* White */
+  --surface: #efefef;            /* Black at 4% */
+  --surface-2: #e5e5e5;          /* Black at 8% */
+  --surface-strong: #d4d4d4;     /* Light Gray at 45% */
+  --line: rgb(51 51 51 / 0.14);
+  --text: #000000;
+  --muted: #333333;
+  --faint: #646464;              /* 5.62:1, safe for text on light */
+  --accent: #e85002;             /* fills */
+  --accent-text: #c10801;        /* text and links on light (6.04:1) */
+  --accent-hover: #f16001;
+  --on-accent: #000000;
+  --danger: #c10801;
+  --glow: rgb(232 80 2 / 0.18);
+  --bar: rgb(249 249 249 / 0.75);
+  --focus-ring: 0 0 0 2px #f9f9f9, 0 0 0 4px #000000;
+}
