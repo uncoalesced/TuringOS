@@ -14,6 +14,12 @@ set -euo pipefail
 THEME=/usr/share/plymouth/themes/turingos
 command -v plymouth-set-default-theme >/dev/null \
     || { echo "ERROR: [0460-plymouth-theme] plymouth is not installed (package list)" >&2; exit 1; }
+# Without these plymouth silently falls back to the text theme, or draws an
+# invisible passphrase prompt (script.so: plymouth; label-*.so: plymouth-label)
+compgen -G '/usr/lib/*/plymouth/script.so' >/dev/null \
+    || { echo "ERROR: [0460-plymouth-theme] plymouth script plugin missing" >&2; exit 1; }
+compgen -G '/usr/lib/*/plymouth/label-*.so' >/dev/null \
+    || { echo "ERROR: [0460-plymouth-theme] plymouth label plugin missing (plymouth-label)" >&2; exit 1; }
 for f in turingos.plymouth turingos.script logo.png dot.png strip.png; do
     [[ -f "${THEME}/${f}" ]] \
         || { echo "ERROR: [0460-plymouth-theme] ${THEME}/${f} not staged (run sync-scripts.sh)" >&2; exit 1; }

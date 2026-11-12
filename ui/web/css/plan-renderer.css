@@ -72,7 +72,15 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
-.omni-bar-title::before { content: "\1F512\FE0E"; font-size: 10px; }
+/* Feather "lock", drawn in currentColor (no emoji font in the image) */
+.omni-bar-title::before {
+  content: "";
+  width: 12px;
+  height: 12px;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='11' width='18' height='11' rx='2'/%3E%3Cpath d='M7 11V7a5 5 0 0 1 10 0v4'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='11' width='18' height='11' rx='2'/%3E%3Cpath d='M7 11V7a5 5 0 0 1 10 0v4'/%3E%3C/svg%3E") center / contain no-repeat;
+}
 
 .omni-bar-close {
   width: 28px;
@@ -225,13 +233,15 @@
   background: var(--btn-secondary-hover);
 }
 
+/* Reject is "Deny" on the permission sheet board: a Secondary button, not red.
+   Nothing is lost by saying no, so it is not a destructive action. */
 .omni-bar-btn.danger {
-  background: var(--danger);
+  background: var(--tos-dark-gray);
   color: var(--tos-white);
 }
 
 .omni-bar-btn.danger:hover {
-  background: var(--btn-danger-hover);
+  background: var(--btn-secondary-hover);
 }
 
 body.omni-bar-open {
