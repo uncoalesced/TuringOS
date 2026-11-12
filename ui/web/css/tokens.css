@@ -1,7 +1,8 @@
-/* Design tokens: fonts, brand colors, light/dark themes. */
-
-/* ui-shell — design tokens from Claude's brand colors:
-   Japonica #D97757 · Pampas #F4F3EE · Cloudy #B1ADA1 · Tuatara #373734 · White #FFFFFF */
+/* Design tokens: fonts, palette, roles, shape, motion, light/dark themes.
+   Source of truth: assets/design-language/ (DESIGN_LANGUAGE.md, tokens.css).
+   Only the six swatches and the four gradient stops are brand colours. Every
+   other value is a tint of them (alpha, or a mix with Black or White). The
+   palette has no green, blue or yellow; do not add them. */
 
 /* Timeless type, bundled in ui/web/fonts. Variable: Sans 300–800, Serif 200–700. */
 @font-face {
@@ -18,7 +19,7 @@
 }
 
 :root {
-  /* TuringOS Renewed Palette (2026-10-18 - assets/pallete/renewed_palette.jpg) */
+  /* Palette (renewed, 2026-10-18, assets/pallete/renewed_palette.jpg) */
   --tos-brand-orange: #e85002;
   --tos-primary-bg: #000000;
   --tos-dark-gray: #333333;
@@ -26,11 +27,11 @@
   --tos-light-gray: #a7a7a7;
   --tos-white: #f9f9f9;
 
-  /* Gradient Stops */
+  /* Gradient stops, 135deg black to cream */
   --tos-gradient-stop-1: #000000;
-  --tos-gradient-stop-2: #c10801;
-  --tos-gradient-stop-3: #f16001;
-  --tos-gradient-stop-4: #d9c3ab;
+  --tos-gradient-stop-2: #c10801; /* also: danger fill, light-ground accent text */
+  --tos-gradient-stop-3: #f16001; /* also: orange hover */
+  --tos-gradient-stop-4: #d9c3ab; /* cream: done, added lines */
 
   --tos-brand-gradient: linear-gradient(
     135deg,
@@ -44,31 +45,28 @@
     var(--tos-brand-orange) 0%,
     var(--tos-gradient-stop-3) 100%
   );
-
-  /* Legacy Brand aliases for backward compatibility */
-  --japonica: var(--tos-brand-orange);
-  --pampas: #f4f3ee;
-  --cloudy: var(--tos-light-gray);
-  --tuatara: var(--tos-dark-gray);
-  --white: #ffffff;
-
-  /* Derived (not brand colors, only for contrast and states) */
-  --tuatara-deep: #141413;
-  --ink: #000000;
-  --japonica-light: #f16001;
-  --japonica-dark: #c10801;
-  --tuatara-raised: #42423f;
-  --stone: var(--tos-gray);
-  --focus: var(--tos-brand-orange);
-  --error: #bf4d43;
+  /* App tiles (Bazaar, dock): the orange end of the brand gradient */
+  --tos-tile-gradient: linear-gradient(
+    160deg,
+    var(--tos-gradient-stop-3),
+    var(--tos-brand-orange) 55%,
+    var(--tos-gradient-stop-2)
+  );
 
   /* Type */
   --sans: "Timeless Sans", system-ui, -apple-system, "Segoe UI", "Noto Sans", sans-serif;
   --serif: "Timeless Serif", "Iowan Old Style", Georgia, "Noto Serif", serif;
   --mono: "JetBrains Mono", "SF Mono", ui-monospace, "Noto Sans Mono", monospace;
 
+  /* Radii */
+  --r-xs: 4px; --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 22px; --r-pill: 999px; --r-icon: 26%;
+
+  /* Space (4px base) */
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px; --s-6: 24px; --s-7: 32px; --s-8: 48px; --s-9: 64px;
+
   /* Motion */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --dur-exit: 150ms; --dur-base: 160ms; --dur-enter: 220ms; --dur-slow: 360ms;
 
   /* Frosted glass, by surface size. Every backdrop-filter goes through
      these so the lighter graphics levels can switch it off in one place. */
@@ -78,6 +76,13 @@
   --glass-xl: blur(40px) saturate(1.6);
 
   --menubar-h: 34px;
+
+  /* Button states: tints only */
+  --btn-secondary-hover: #434343;      /* Dark Gray + 8% White */
+  --btn-danger-hover: #c61b15;         /* Red + 8% White */
+  --btn-ghost-hover: rgb(249 249 249 / 0.08);
+  --btn-ghost-press: rgb(249 249 249 / 0.12);
+  --btn-press-overlay: inset 0 0 0 100px rgb(0 0 0 / 0.08); /* with transform: scale(.97) */
 }
 
 /* Graphics levels (data-gfx on <html>): "lite" and "minimal" are for
@@ -90,32 +95,48 @@
   --glass-xl: none;
 }
 
-:root[data-theme="light"] {
-  color-scheme: light;
-  --bg: #f4f3ee;
-  --surface: #ffffff;
-  --surface-strong: #e9e7df;
-  --line: rgb(51 51 51 / 0.14);
-  --text: #141413;
-  --muted: var(--tos-gray);
-  --faint: var(--tos-light-gray);
-  --accent: var(--tos-brand-orange);
-  --glow: rgb(232 80 2 / 0.18);
-  --danger: var(--error);
-  --bar: rgb(244 243 238 / 0.72);
-}
-
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: var(--tos-primary-bg);
-  --surface: #141413;
-  --surface-strong: var(--tos-dark-gray);
+  --bg: #000000;                 /* Primary */
+  --surface: #141414;            /* Dark Gray at 40% */
+  --surface-2: #242424;          /* Dark Gray at 70% */
+  --surface-strong: #333333;     /* Dark Gray */
   --line: rgb(100 100 100 / 0.28);
-  --text: var(--tos-white);
-  --muted: var(--tos-light-gray);
-  --faint: var(--tos-gray);
-  --accent: var(--tos-brand-orange);
+  --text: #f9f9f9;
+  --muted: #a7a7a7;
+  --faint: #646464;              /* graphics and 24px+ only */
+  --accent: #e85002;
+  --accent-text: #e85002;        /* 5.58:1 on Black */
+  --accent-hover: #f16001;
+  --on-accent: #000000;          /* labels on orange are Black (5.58:1) */
+  --danger: #c10801;             /* fill only, with a White label */
+  --danger-text: #d76864;        /* Red + 40% White, readable on Black; error text */
+  --done: #d9c3ab;
   --glow: rgb(232 80 2 / 0.25);
-  --danger: #e07a70;
-  --bar: rgb(20 20 19 / 0.75);
+  --bar: rgb(20 20 20 / 0.75);
+  --focus-ring: 0 0 0 2px #000000, 0 0 0 4px #f9f9f9;
+  --focus-outline: #f9f9f9;      /* outline form of the ring, for outline-offset users */
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f9f9f9;                 /* White */
+  --surface: #efefef;            /* Black at 4% */
+  --surface-2: #e5e5e5;          /* Black at 8% */
+  --surface-strong: #d4d4d4;     /* Light Gray at 45% */
+  --line: rgb(51 51 51 / 0.14);
+  --text: #000000;
+  --muted: #333333;
+  --faint: #646464;              /* 5.62:1, safe for text on light */
+  --accent: #e85002;             /* fills */
+  --accent-text: #c10801;        /* text and links on light (6.04:1) */
+  --accent-hover: #f16001;
+  --on-accent: #000000;
+  --danger: #c10801;
+  --danger-text: #c10801;        /* 6.04:1 on White */
+  --done: #6b5a48;               /* Cream + 50% Black, readable on White */
+  --glow: rgb(232 80 2 / 0.18);
+  --bar: rgb(249 249 249 / 0.75);
+  --focus-ring: 0 0 0 2px #f9f9f9, 0 0 0 4px #000000;
+  --focus-outline: #000000;
 }

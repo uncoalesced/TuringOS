@@ -28,15 +28,15 @@
 .clawd-fig { transform-origin: center bottom; transition: transform 160ms var(--ease-out); }
 
 .clawd-fill { fill: var(--accent); }
-.clawd-eyes-dot rect { fill: #141413; }
+.clawd-eyes-dot rect { fill: var(--tos-primary-bg); }
 .clawd-eyes-squint path,
-.clawd-eyes-spiral path { fill: none; stroke: #141413; stroke-width: 12; stroke-linecap: square; stroke-linejoin: miter; }
+.clawd-eyes-spiral path { fill: none; stroke: var(--tos-primary-bg); stroke-width: 12; stroke-linecap: square; stroke-linejoin: miter; }
 .clawd-eyes-spiral path { stroke-width: 11; }
-.clawd-heart path { fill: #e5484d; }
-.clawd-deck { fill: #5c1a33; }
-.clawd-wheel { fill: #f0b450; }
-.clawd-mug-body { fill: #b5b3aa; }
-.clawd-mug-slot { fill: #141413; }
+.clawd-heart path { fill: var(--tos-gradient-stop-2); }
+.clawd-deck { fill: var(--tos-dark-gray); }
+.clawd-wheel { fill: var(--tos-gradient-stop-4); }
+.clawd-mug-body { fill: var(--tos-light-gray); }
+.clawd-mug-slot { fill: var(--tos-primary-bg); }
 
 /* Faces and props by mood: everything optional starts hidden */
 .clawd-eyes-squint, .clawd-eyes-spiral, .clawd-heart, .clawd-board, .clawd-mug { display: none; }
@@ -145,4 +145,4 @@
 
 .clawd-answer:empty { display: none; }
 .clawd-answer.is-pending { color: var(--muted); font-style: italic; }
-.clawd-answer.is-error { color: var(--danger); }
+.clawd-answer.is-error { color: var(--danger-text); }

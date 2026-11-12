@@ -20,7 +20,7 @@
 
 .model-picker-button:hover { background: var(--surface-strong); }
 .model-picker-button:active { transform: scale(0.97); }
-.model-picker-button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.model-picker-button:focus-visible { outline: 2px solid var(--focus-outline); outline-offset: 2px; }
 
 .model-picker-effort { color: var(--muted); }
 
@@ -63,7 +63,7 @@
 .model-option-desc { font-size: 12px; color: var(--muted); }
 
 .model-option .icon,
-.effort-option .icon { width: 16px; height: 16px; color: var(--focus); flex: none; }
+.effort-option .icon { width: 16px; height: 16px; color: var(--accent); flex: none; }
 
 .model-menu-divider {
   margin: 6px 4px;

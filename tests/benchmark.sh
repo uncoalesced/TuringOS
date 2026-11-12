@@ -140,6 +140,22 @@ test_border_compliance() {
 }
 run_suite "Renewed Palette Window Border & Token Compliance" "test_border_compliance"
 
+# ── 6b. Design Language Palette Guard ─────────────────────────────────────────
+# assets/design-language/DESIGN_LANGUAGE.md bans the old Claude palette. Fail on
+# its token names or hex values anywhere the shell UI or the image is built from.
+# shellcheck disable=SC2317,SC2329  # run via run_suite
+test_palette_guard() {
+    local banned='--(japonica|cloudy|pampas|tuatara)|#(d97757|141413|faf9f5|f4f3ee|b1ada1|373734|c15f3c|bf4d43)\b'
+    local hits
+    hits="$(grep -rniE -- "$banned" "${ROOT}/ui/web" "${ROOT}/debian-live/config" "${ROOT}/session" 2>/dev/null || true)"
+    if [[ -n "$hits" ]]; then
+        echo "$hits" >&2
+        return 1
+    fi
+    return 0
+}
+run_suite "Design Language Palette Guard (no legacy Claude palette)" "test_palette_guard"
+
 # ── 7. Kernel Persistence Cmdline Benchmark ───────────────────────────────────
 # shellcheck disable=SC2317,SC2329  # run via run_suite
 test_live_build_persistence() {
