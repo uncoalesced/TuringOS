@@ -45,13 +45,31 @@ gfx::forced_software() {
     [[ -n "$boot" && -f "$flag" && "$(cat "$flag" 2>/dev/null)" == "$boot" ]]
 }
 
-gfx::screen_pixels() {
-    local size
-    # awk reads to the end: leaving early would kill xdpyinfo with SIGPIPE,
-    # which pipefail turns into a failure of the whole line
-    size="$(xdpyinfo 2>/dev/null | awk '/dimensions:/ && !seen { print $2; seen = 1 }' || true)"
+# gfx::screen_size -> "WIDTH HEIGHT", or nothing when no display answers.
+# Under Wayland ask the compositor: DISPLAY there is XWayland, which may never
+# start, and an X client would then wait on its socket forever. Every probe
+# has a timeout so a stuck display cannot hang the session.
+gfx::screen_size() {
+    local size=""
+    if [[ -n "${WAYLAND_DISPLAY:-}" ]] && command -v hyprctl &>/dev/null; then
+        # "	1280x800@60.00000 at 0x0" under each monitor
+        size="$(timeout 3 hyprctl monitors 2>/dev/null \
+            | awk '/^[[:space:]]+[0-9]+x[0-9]+@/ && !seen { sub(/@.*/, "", $1); print $1; seen = 1 }' || true)"
+    fi
+    if [[ ! "$size" =~ ^[0-9]+x[0-9]+$ && -n "${DISPLAY:-}" ]]; then
+        # awk reads to the end: leaving early would kill xdpyinfo with SIGPIPE,
+        # which pipefail turns into a failure of the whole line
+        size="$(timeout 3 xdpyinfo 2>/dev/null | awk '/dimensions:/ && !seen { print $2; seen = 1 }' || true)"
+    fi
     if [[ "$size" =~ ^([0-9]+)x([0-9]+)$ ]]; then
-        echo $(( BASH_REMATCH[1] * BASH_REMATCH[2] ))
+        echo "${BASH_REMATCH[1]} ${BASH_REMATCH[2]}"
+    fi
+}
+
+gfx::screen_pixels() {
+    local width height
+    if read -r width height < <(gfx::screen_size) && [[ -n "$height" ]]; then
+        echo $(( width * height ))
     else
         echo 0
     fi

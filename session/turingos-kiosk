@@ -43,7 +43,7 @@ kiosk::args() {
         "--user-data-dir=${profile}" \
         "--class=turingos-shell" \
         "--app=${url}" \
-        "--ozone-platform=x11" \
+        "--ozone-platform=$(kiosk::ozone)" \
         "--window-position=0,0" \
         "--window-size=${width},${height}" \
         "--no-first-run" \
@@ -80,15 +80,18 @@ kiosk::seed_profile() {
 }
 
 kiosk::screen_size() {
-    local size
-    # awk reads to the end: leaving early would kill xdpyinfo with SIGPIPE,
-    # which pipefail turns into a failure of the whole line
-    size="$(xdpyinfo 2>/dev/null | awk '/dimensions:/ && !seen { print $2; seen = 1 }' || true)"
-    if [[ "$size" =~ ^([0-9]+)x([0-9]+)$ ]]; then
-        echo "${BASH_REMATCH[1]} ${BASH_REMATCH[2]}"
+    local width height
+    if read -r width height < <(gfx::screen_size) && [[ -n "$height" ]]; then
+        echo "$width $height"
     else
         echo "1440 900"
     fi
+}
+
+# Wayland when the session has a compositor: under Hyprland the X11 platform
+# needs XWayland, and the shell would never appear if it fails to start
+kiosk::ozone() {
+    if [[ -n "${WAYLAND_DISPLAY:-}" ]]; then echo wayland; else echo x11; fi
 }
 
 # The bridge is a system service and may still be starting at login

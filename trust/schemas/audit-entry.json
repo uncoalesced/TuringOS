@@ -51,7 +51,7 @@
       "properties": {
         "kind": {
           "type": "string",
-          "enum": ["fs.read", "fs.write", "fs.execute", "net.egress", "sandbox.spawn", "memory.read", "memory.write", "bridge.egress", "grant.issue", "grant.revoke", "process.kill", "plan.create", "plan.approve", "plan.execute", "ui.create", "ui.dismiss", "ui.ttl_expire"]
+          "enum": ["fs.read", "fs.write", "fs.execute", "net.egress", "sandbox.spawn", "memory.read", "memory.write", "bridge.egress", "grant.issue", "grant.revoke", "process.kill", "plan.create", "plan.approve", "plan.reject", "plan.execute", "ui.create", "ui.dismiss", "ui.ttl_expire"]
         },
         "path": {
           "type": "string"
