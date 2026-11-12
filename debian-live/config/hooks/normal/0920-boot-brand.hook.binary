@@ -1,0 +1,82 @@
+#!/bin/bash
+# 0920-boot-brand.hook.binary
+#
+# Replace live-build's stock Debian boot art with the TuringOS look
+# (assets/design-language): black room, the mark above the menu, Black labels
+# on an Orange selection bar, Light Gray for everything else. Menu entries say
+# "TuringOS" instead of "Live system".
+#
+# The art is rendered by debian-live/branding/make-boot-art.py and staged into
+# config/includes.binary/turingos-boot/ by sync-scripts.sh; live-build copies
+# it into the binary tree before hooks run. This hook moves it into place and
+# deletes the staging directory so it doesn't ship on the ISO.
+#
+# Runs after 0910-persistence-menu, so its cloned entries are renamed too.
+# arm64 images are EFI/GRUB-only (no isolinux/).
+
+set -euo pipefail
+shopt -s nullglob
+
+ART=turingos-boot
+[[ -f "${ART}/grub-splash.png" && -f "${ART}/isolinux-splash.png" ]] \
+    || { echo "ERROR: [0920-boot-brand] ${ART}/ not staged (run debian-live/sync-scripts.sh)" >&2; exit 1; }
+
+# ── isolinux (BIOS, amd64) ────────────────────────────────────────────────────
+if [[ -f isolinux/isolinux.cfg ]]; then
+    install -m644 "${ART}/isolinux-splash.png" isolinux/splash.png
+
+    # vesamenu colours are #AARRGGBB; later lines win, so append to stdmenu.cfg.
+    # Black on Orange is 5.58:1; Light Gray on Black 8.73:1.
+    cat >> isolinux/stdmenu.cfg <<'EOF'
+
+# TuringOS (0920-boot-brand)
+menu color border	* #00000000 #00000000 none
+menu color title	* #fff9f9f9 #00000000 none
+menu color unsel	* #ffa7a7a7 #00000000 none
+menu color hotkey	* #ffe85002 #00000000 none
+menu color sel		* #ff000000 #ffe85002 none
+menu color hotsel	* #ff000000 #ffe85002 none
+menu color tabmsg	* #ffa7a7a7 #00000000 none
+menu color help		* #ffa7a7a7 #00000000 none
+menu color timeout_msg	* #ffa7a7a7 #00000000 none
+menu color timeout	* #ffe85002 #00000000 none
+EOF
+
+    # The splash already carries the wordmark, so "Boot menu" stays as the title
+    for f in isolinux/*.cfg; do
+        sed -i 's/^\([[:space:]]*menu label[[:space:]]\+\^\{0,1\}\)Live system/\1TuringOS/' "$f"
+    done
+    grep -q 'menu label ^TuringOS' isolinux/live.cfg \
+        || { echo "ERROR: [0920-boot-brand] isolinux entries were not renamed" >&2; exit 1; }
+fi
+
+# ── GRUB (UEFI on both arches, BIOS fallback) ─────────────────────────────────
+[[ -d boot/grub ]] || { echo "ERROR: [0920-boot-brand] no boot/grub/ in the binary tree" >&2; exit 1; }
+install -m644 "${ART}/grub-splash.png" boot/grub/splash.png
+
+theme=boot/grub/live-theme/theme.txt
+if [[ -f "$theme" ]]; then
+    set_key() { sed -i "s/^\([[:space:]]*$1[[:space:]]*[=:]\).*/\1 \"$2\"/" "$theme"; }
+    set_key title-color '#f9f9f9'
+    set_key item_color '#a7a7a7'
+    set_key selected_item_color '#e85002'
+    set_key color '#a7a7a7'
+    set_key text_color '#f9f9f9'
+    set_key fg_color '#e85002'
+    set_key bg_color '#333333'
+    set_key border_color '#646464'
+    grep -q 'selected_item_color[[:space:]]*= "#e85002"' "$theme" \
+        || { echo "ERROR: [0920-boot-brand] GRUB theme colours not applied" >&2; exit 1; }
+else
+    echo "WARN: [0920-boot-brand] ${theme} missing; GRUB gets the splash but stock colours" >&2
+fi
+
+# live-build writes double quotes; accept single quotes too
+for f in boot/grub/*.cfg; do
+    sed -i "s/^\([[:space:]]*menuentry [\"']\)Live system/\1TuringOS/" "$f"
+done
+grep -q "^menuentry [\"']TuringOS" boot/grub/grub.cfg \
+    || { echo "ERROR: [0920-boot-brand] GRUB entries were not renamed" >&2; exit 1; }
+
+rm -rf "$ART"
+echo "==> [0920-boot-brand] TuringOS boot art and menu colours applied"

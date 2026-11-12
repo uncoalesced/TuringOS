@@ -95,6 +95,8 @@ Buttons 36px high, radius 8, 13/500. Primary: Orange fill, Black label; hover `#
 01 Overview · 02 Palette · 03 Roles and contrast · 04 Type · 05 Shape and space · 06 Elevation, motion, icons · 07 Controls · 08 Surfaces (menu bar, permission sheet, task and diff, widgets, dock, notification) · 09 Desktop dark · 10 Desktop light.
 
 ## Open items
-- Apply `tokens.css` to `ui/web/css/tokens.css` and remove the legacy Claude aliases there (`--japonica`, `--pampas`, `--cloudy`, `--tuatara`, `--tuatara-deep`, `--error: #bf4d43`).
-- `ui/web/assets/brand/claude-symbol.svg` is still the Claude spark; replace with the TuringOS mark.
-- Boot splash, GRUB and Calamares slides are not designed yet.
+- `ui/web/assets/brand/claude-symbol.svg` (the `#claude-spark` sprite in `ui/web/index.html`) is still the Claude spark in the menu bar and hero greeting; replace with a vector TuringOS mark. Keep the spark where it means Claude itself (Claude notifications).
+
+## Done
+- `tokens.css` applied to `ui/web/css/tokens.css`; legacy Claude aliases removed. `tests/benchmark.sh` guards against their return.
+- Boot art: isolinux and GRUB splashes, plymouth theme and Calamares slides/colours, rendered by `debian-live/branding/make-boot-art.py` (hooks 0460, 0495, 0920).

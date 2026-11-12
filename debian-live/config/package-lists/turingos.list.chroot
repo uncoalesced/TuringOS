@@ -135,6 +135,8 @@ dbus-user-session
 dbus
 udev
 acpid
+# Boot splash (`splash` on the kernel line); hook 0460 sets the TuringOS theme
+plymouth
 
 # ── Installer (Calamares; hook 0495 brands it and adds turingos-install) ──────
 calamares

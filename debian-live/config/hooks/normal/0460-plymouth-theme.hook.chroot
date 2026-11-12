@@ -1,0 +1,33 @@
+#!/bin/bash
+# 0460-plymouth-theme.hook.chroot
+#
+# Make the TuringOS splash the plymouth theme, so `splash` on the kernel line
+# (build-amd64.sh, arm/build.sh) shows the TuringOS mark on black instead of
+# a text console. The theme lives in debian-live/branding/plymouth/turingos/
+# and is staged into /usr/share/plymouth/themes/turingos by sync-scripts.sh.
+#
+# plymouth's initramfs hook copies the default theme into the initrd, so the
+# initrd is rebuilt after the theme is set.
+
+set -euo pipefail
+
+THEME=/usr/share/plymouth/themes/turingos
+command -v plymouth-set-default-theme >/dev/null \
+    || { echo "ERROR: [0460-plymouth-theme] plymouth is not installed (package list)" >&2; exit 1; }
+for f in turingos.plymouth turingos.script logo.png dot.png strip.png; do
+    [[ -f "${THEME}/${f}" ]] \
+        || { echo "ERROR: [0460-plymouth-theme] ${THEME}/${f} not staged (run sync-scripts.sh)" >&2; exit 1; }
+done
+
+echo "==> [0460-plymouth-theme] Setting the TuringOS boot splash..."
+plymouth-set-default-theme turingos
+[[ "$(plymouth-set-default-theme)" == turingos ]] \
+    || { echo "ERROR: [0460-plymouth-theme] default theme is not turingos" >&2; exit 1; }
+
+# Only rebuild when a kernel is already installed; live-build regenerates the
+# initrd for later kernels itself
+if compgen -G '/boot/initrd.img-*' >/dev/null; then
+    update-initramfs -u -k all
+fi
+
+echo "==> [0460-plymouth-theme] Boot splash set"
