@@ -97,7 +97,19 @@ async def run_shell(command: str, timeout: float = SHELL_TIMEOUT) -> dict:
             os.killpg(proc.pid, signal.SIGKILL)
         except (AttributeError, ProcessLookupError):
             proc.kill()
-    code = await proc.wait()
+    # Once collect() stops reading (output cap) asyncio pauses the stdout pipe,
+    # and on Python 3.14 proc.wait() then never returns: the transport only
+    # finishes after the pipe reaches EOF. Drain it first, with a bound in case
+    # a grandchild in another session still holds the pipe open.
+    async def reap():
+        while await proc.stdout.read(65536):
+            pass
+        return await proc.wait()
+
+    try:
+        code = await asyncio.wait_for(reap(), 5)
+    except asyncio.TimeoutError:
+        code = -signal.SIGKILL
 
     output = buf[:SHELL_MAX_OUTPUT].decode(errors="replace")
     if len(buf) > SHELL_MAX_OUTPUT:
