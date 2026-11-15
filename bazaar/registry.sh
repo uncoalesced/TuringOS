@@ -48,12 +48,23 @@ registry::_fetch_remote() {
         if jq -e '(.entries // .tools) | type == "object"' "$tmp" &>/dev/null; then
             # Verify Ed25519 detached signature if public key is present
             pubkey="${TURINGOS_BAZAAR_PUBKEY:-/etc/turingos/trust/bazaar.pub}"
-            if [[ ! -f "$pubkey" && -f "${ROOT:-.}/trust/keys/bazaar.pub" ]]; then
-                pubkey="${ROOT:-.}/trust/keys/bazaar.pub"
+            local root="${TURINGOS_ROOT:-${ROOT:-.}}"
+            if [[ ! -f "$pubkey" && -f "${root}/trust/keys/bazaar.pub" ]]; then
+                pubkey="${root}/trust/keys/bazaar.pub"
             fi
-            if [[ -f "$pubkey" ]] && command -v openssl &>/dev/null; then
+            # Fail closed: a trusted key, openssl and a valid signature are all required.
+            if [[ ! -f "$pubkey" ]] || ! command -v openssl &>/dev/null; then
+                ui::warn "Bazaar: cannot verify catalog (missing public key or openssl). Rejecting remote index."
+                log::error "bazaar index not verifiable: pubkey=${pubkey}"
+                rm -f "$tmp" 2>/dev/null || true
+                return 1
+            fi
+            {
                 local sig_url="${TURINGOS_BAZAAR_REMOTE_URL}.sig"
-                tmp_sig=$(mktemp "${cache}.sig.XXXXXX" 2>/dev/null || mktemp /tmp/turingos_bazaar_sig.XXXXXX 2>/dev/null || echo "${cache}.sig")
+                tmp_sig=$(mktemp "${cache}.sig.XXXXXX" 2>/dev/null || mktemp /tmp/turingos_bazaar_sig.XXXXXX 2>/dev/null) || {
+                    rm -f "$tmp" 2>/dev/null || true
+                    return 1
+                }
                 local sig_fetched=0
                 if [[ "$sig_url" =~ ^file:// ]]; then
                     local sig_path="${sig_url#file://}"
@@ -67,17 +78,16 @@ registry::_fetch_remote() {
                     fi
                 fi
 
-                if (( sig_fetched )); then
-                    if ! openssl pkeyutl -verify -pubin -inkey "$pubkey" -rawin -in "$tmp" -sigfile "$tmp_sig" &>/dev/null; then
-                        ui::warn "Bazaar index signature verification failed! Rejecting untrusted catalog."
-                        log::error "bazaar index signature verification failed against $pubkey"
-                        rm -f "$tmp" "$tmp_sig" 2>/dev/null || true
-                        return 1
-                    fi
-                    log::audit BAZAAR_INDEX_VERIFIED "pubkey=${pubkey}"
+                if (( ! sig_fetched )) || \
+                   ! openssl pkeyutl -verify -pubin -inkey "$pubkey" -rawin -in "$tmp" -sigfile "$tmp_sig" &>/dev/null; then
+                    ui::warn "Bazaar index signature missing or invalid! Rejecting untrusted catalog."
+                    log::error "bazaar index signature missing/invalid against $pubkey"
+                    rm -f "$tmp" "$tmp_sig" 2>/dev/null || true
+                    return 1
                 fi
+                log::audit BAZAAR_INDEX_VERIFIED "pubkey=${pubkey}"
                 rm -f "$tmp_sig" 2>/dev/null || true
-            fi
+            }
 
             mkdir -p "$(dirname "$cache")" 2>/dev/null || true
             mv -f "$tmp" "$cache"

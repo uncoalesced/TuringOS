@@ -67,10 +67,12 @@ class Desktop(unittest.TestCase):
     def setUp(self):
         self.dir = tempfile.mkdtemp(prefix="tos-desk-")
         os.environ["TURINGOS_SESSION_DIR"] = self.dir
+        os.environ["TURINGOS_BRIDGE_PEER_CHECK"] = "0"  # see test_local_auth.py
         self.client = TestClient(bridge.app)
 
     def tearDown(self):
         os.environ.pop("TURINGOS_SESSION_DIR", None)
+        os.environ.pop("TURINGOS_BRIDGE_PEER_CHECK", None)
         shutil.rmtree(self.dir, ignore_errors=True)
 
     def test_frames_go_through_both_ways(self):

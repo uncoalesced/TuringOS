@@ -1,0 +1,35 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-10-26T18:26:00Z" },
+  "title": "TuringOS Design Language",
+  "launch": { "view": "canvas" },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 0, "w": 1440, "h": 900, "title": "01 Overview" },
+    "Palette.dc.html": { "x": 1520, "y": 0, "w": 1440, "h": 900, "title": "02 Palette" },
+    "Roles.dc.html": { "x": 0, "y": 1020, "w": 1440, "h": 1180, "title": "03 Colour roles and contrast" },
+    "Type.dc.html": { "x": 1520, "y": 1020, "w": 1440, "h": 1180, "title": "04 Type" },
+    "Shape.dc.html": { "x": 0, "y": 2320, "w": 1440, "h": 1000, "title": "05 Shape and space" },
+    "Motion.dc.html": { "x": 1520, "y": 2320, "w": 1440, "h": 1000, "title": "06 Elevation, motion and icons" },
+    "Controls.dc.html": { "x": 0, "y": 3440, "w": 1440, "h": 1200, "title": "07 Controls" },
+    "Surfaces.dc.html": { "x": 1520, "y": 3440, "w": 1440, "h": 1200, "title": "08 Surfaces" },
+    "Desktop.dc.html": { "x": 0, "y": 4760, "w": 1440, "h": 900, "title": "09 Desktop, dark" },
+    "DesktopLight.dc.html": { "x": 1520, "y": 4760, "w": 1440, "h": 900, "title": "10 Desktop, light" }
+  },
+  "order": [
+    "Main.dc.html",
+    "Palette.dc.html",
+    "Roles.dc.html",
+    "Type.dc.html",
+    "Shape.dc.html",
+    "Motion.dc.html",
+    "Controls.dc.html",
+    "Surfaces.dc.html",
+    "Desktop.dc.html",
+    "DesktopLight.dc.html"
+  ],
+  "notes": {
+    "t1": { "x": 0, "y": -300, "text": "TuringOS Design Language", "kind": "title1", "maxW": 2960 }
+  },
+  "designSystems": []
+}

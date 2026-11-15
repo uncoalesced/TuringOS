@@ -90,9 +90,13 @@
 }
 /* 44px-ish hit area without changing the look. */
 .app-light::after { content: ''; position: absolute; inset: -6px -4px; }
-.app-light--close { background: #ff5f57; }
-.app-light--min { background: #febc2e; }
-.app-light--zoom { background: #28c840; }
+.app-light--close,
+.app-light--min,
+.app-light--zoom { background: var(--faint); }
+/* Chrome stays grayscale; red appears only when close is about to happen */
+.app-light--close:hover { background: var(--danger); }
+.app-light--min:hover,
+.app-light--zoom:hover { background: var(--muted); }
 .app-light:active { filter: brightness(0.85); }
 
 .app-title {

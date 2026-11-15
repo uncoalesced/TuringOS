@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Colour roles and contrast</title>
+<!-- Engineered by uncoalesced -->
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+@font-face{font-family:"Timeless Sans";src:url("/_blob/3849ef377c5cff5166bc0f566e8086e6") format("truetype");font-weight:300 800;font-display:block}
+@font-face{font-family:"Timeless Serif";src:url("/_blob/dd5cc711bfc5dc6b0cfeced0520dfbe4") format("truetype");font-weight:200 700;font-display:block}
+body{margin:0;background:#000000}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1180px; position: relative; overflow: hidden; box-sizing: border-box; padding: 48px 64px; display: flex; flex-direction: column; background: #000000; color: #F9F9F9; font-family: 'Timeless Sans', system-ui, sans-serif">
+
+<div style="display: flex; justify-content: space-between; align-items: center; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; letter-spacing: 0.08em; text-transform: uppercase; color: #A7A7A7">
+<span>TuringOS · Colour · Roles and contrast</span>
+<span>03 / 10</span>
+</div>
+
+<div style="margin-top: 24px; display: flex; justify-content: space-between; align-items: flex-end; gap: 48px">
+<h2 style="margin: 0; font-family: 'Timeless Serif', Georgia, serif; font-weight: 400; font-size: 56px; line-height: 1.05; letter-spacing: -0.02em">Roles, tints and contrast.</h2>
+<p style="margin: 0; max-width: 470px; font-size: 14px; line-height: 21px; color: #A7A7A7">A tint is a palette colour at an alpha, or mixed with Black or White. No new hues anywhere, so there is no green, no blue, no yellow. State is carried by shape and label.</p>
+</div>
+
+<div style="margin-top: 28px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px">
+
+<div style="background: #000000; border: 1px solid rgba(100,100,100,0.6); border-radius: 22px; padding: 18px 22px 10px; box-sizing: border-box">
+<div style="display: flex; justify-content: space-between; align-items: baseline; padding-bottom: 12px">
+<div style="font-size: 17px; line-height: 22px; font-weight: 500">Dark ground <span style="color: #A7A7A7; font-weight: 400">· default</span></div>
+<div style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #A7A7A7">data-theme="dark"</div>
+</div>
+<sc-for list="{{darkRows}}" as="r" hint-placeholder-count="9">
+<div style="display: flex; align-items: center; gap: 14px; height: 34px; border-top: 1px solid rgba(100,100,100,0.28)">
+<span style="width: 22px; height: 22px; border-radius: 7px; flex: none; box-sizing: border-box; border: 1px solid rgba(249,249,249,0.28); background: {{r.sw}}"></span>
+<span style="width: 118px; flex: none; font-size: 14px; line-height: 20px; font-weight: 500; color: #F9F9F9">{{r.role}}</span>
+<span style="flex-grow: 1; font-size: 13px; line-height: 18px; color: #A7A7A7">{{r.how}}</span>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; color: #A7A7A7">{{r.token}}</span>
+</div>
+</sc-for>
+</div>
+
+<div style="background: #F9F9F9; color: #000000; border-radius: 22px; padding: 18px 22px 10px; box-sizing: border-box">
+<div style="display: flex; justify-content: space-between; align-items: baseline; padding-bottom: 12px">
+<div style="font-size: 17px; line-height: 22px; font-weight: 500">Light ground <span style="color: #333333; font-weight: 400">· toggle</span></div>
+<div style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #333333">data-theme="light"</div>
+</div>
+<sc-for list="{{lightRows}}" as="r" hint-placeholder-count="9">
+<div style="display: flex; align-items: center; gap: 14px; height: 34px; border-top: 1px solid rgba(51,51,51,0.14)">
+<span style="width: 22px; height: 22px; border-radius: 7px; flex: none; box-sizing: border-box; border: 1px solid rgba(51,51,51,0.3); background: {{r.sw}}"></span>
+<span style="width: 118px; flex: none; font-size: 14px; line-height: 20px; font-weight: 500; color: #000000">{{r.role}}</span>
+<span style="flex-grow: 1; font-size: 13px; line-height: 18px; color: #333333">{{r.how}}</span>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; color: #646464">{{r.token}}</span>
+</div>
+</sc-for>
+</div>
+</div>
+
+<div style="margin-top: 36px">
+<div style="display: flex; align-items: center; gap: 16px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; letter-spacing: 0.08em; text-transform: uppercase; color: #A7A7A7">
+<span>Agent states</span>
+<span style="flex-grow: 1; height: 1px; background: rgba(100,100,100,0.4)"></span>
+<span>Shape and label first, colour second</span>
+</div>
+<div style="margin-top: 16px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 20px">
+
+<div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start">
+<div style="display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px 0 10px; border-radius: 999px; background: rgba(51,51,51,0.4); border: 1px solid rgba(100,100,100,0.28); font-size: 13px; line-height: 18px">
+<span style="width: 8px; height: 8px; border-radius: 50%; background: #A7A7A7"></span>Idle
+</div>
+<div style="font-size: 13px; line-height: 19px; color: #A7A7A7">Light Gray dot. Nothing running.</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start">
+<div style="display: flex; align-items: center; gap: 9px; height: 30px; padding: 0 12px 0 11px; border-radius: 999px; background: rgba(51,51,51,0.4); border: 1px solid rgba(100,100,100,0.28); font-size: 13px; line-height: 18px">
+<span style="width: 8px; height: 8px; border-radius: 50%; background: #E85002; box-shadow: 0 0 0 4px rgba(232,80,2,0.25)"></span>Working
+</div>
+<div style="font-size: 13px; line-height: 19px; color: #A7A7A7">Orange dot with a soft halo. The one live thing.</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start">
+<div style="display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px 0 10px; border-radius: 999px; background: rgba(51,51,51,0.4); border: 1px solid #E85002; font-size: 13px; line-height: 18px; color: #F9F9F9">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E85002" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>Needs approval
+</div>
+<div style="font-size: 13px; line-height: 19px; color: #A7A7A7">Orange outline and a lock. Shows with the permission sheet.</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start">
+<div style="display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px 0 10px; border-radius: 999px; background: rgba(51,51,51,0.4); border: 1px solid rgba(100,100,100,0.28); font-size: 13px; line-height: 18px">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D9C3AB" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>Merged
+</div>
+<div style="font-size: 13px; line-height: 19px; color: #A7A7A7">Cream check. The palette has no green, so done is cream plus a glyph.</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start">
+<div style="display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px 0 10px; border-radius: 999px; background: #C10801; font-size: 13px; line-height: 18px; color: #F9F9F9">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F9F9F9" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>Failed
+</div>
+<div style="font-size: 13px; line-height: 19px; color: #A7A7A7">Red fill, White label. Red alone is 3.30:1 on Black, so it never carries text.</div>
+</div>
+
+</div>
+</div>
+
+<div style="margin-top: 36px">
+<div style="display: flex; align-items: center; gap: 16px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; letter-spacing: 0.08em; text-transform: uppercase; color: #A7A7A7">
+<span>Contrast pairs</span>
+<span style="flex-grow: 1; height: 1px; background: rgba(100,100,100,0.4)"></span>
+<span>WCAG 2.x, measured from the hex values</span>
+</div>
+<div style="margin-top: 16px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px">
+<sc-for list="{{pairs}}" as="p" hint-placeholder-count="16">
+<div style="display: flex; align-items: center; gap: 12px; padding: 8px; border-radius: 14px; border: 1px solid rgba(100,100,100,0.4); box-sizing: border-box">
+<div style="width: 48px; height: 48px; flex: none; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; line-height: 28px; font-weight: 500; box-sizing: border-box; border: 1px solid rgba(100,100,100,0.4); background: {{p.bg}}; color: {{p.fg}}">Aa</div>
+<div style="min-width: 0">
+<div style="font-size: 17px; line-height: 22px; font-weight: 500">{{p.ratio}}</div>
+<div style="font-size: 12px; line-height: 16px; color: #A7A7A7">{{p.verdict}}</div>
+</div>
+</div>
+</sc-for>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+const darkRows = [
+{ role: 'Background', how: 'Primary #000000', token: '--bg', sw: '#000000' },
+{ role: 'Surface', how: 'Dark Gray at 40%, #141414', token: '--surface', sw: '#141414' },
+{ role: 'Surface raised', how: 'Dark Gray at 70%, #242424', token: '--surface-2', sw: '#242424' },
+{ role: 'Surface strong', how: 'Dark Gray #333333', token: '--surface-strong', sw: '#333333' },
+{ role: 'Line', how: 'Gray at 28%', token: '--line', sw: '#1C1C1C' },
+{ role: 'Text', how: 'White #F9F9F9', token: '--text', sw: '#F9F9F9' },
+{ role: 'Text muted', how: 'Light Gray #A7A7A7', token: '--muted', sw: '#A7A7A7' },
+{ role: 'Text faint', how: 'Gray #646464, graphics and 24px+ only', token: '--faint', sw: '#646464' },
+{ role: 'Accent', how: 'Branding Orange #E85002, hover #F16001', token: '--accent', sw: '#E85002' }
+];
+const lightRows = [
+{ role: 'Background', how: 'White #F9F9F9', token: '--bg', sw: '#F9F9F9' },
+{ role: 'Surface', how: 'Black at 4%, #EFEFEF', token: '--surface', sw: '#EFEFEF' },
+{ role: 'Surface raised', how: 'Black at 8%, #E5E5E5', token: '--surface-2', sw: '#E5E5E5' },
+{ role: 'Surface strong', how: 'Light Gray at 45%, #D4D4D4', token: '--surface-strong', sw: '#D4D4D4' },
+{ role: 'Line', how: 'Dark Gray at 14%', token: '--line', sw: '#DDDDDD' },
+{ role: 'Text', how: 'Primary #000000', token: '--text', sw: '#000000' },
+{ role: 'Text muted', how: 'Dark Gray #333333', token: '--muted', sw: '#333333' },
+{ role: 'Text faint', how: 'Gray #646464, 5.62:1 so safe for text', token: '--faint', sw: '#646464' },
+{ role: 'Accent', how: 'Orange fill #E85002, text #C10801', token: '--accent', sw: '#E85002' }
+];
+const pairs = [
+{ fg: '#F9F9F9', bg: '#000000', ratio: '19.95:1', verdict: 'AAA · White on Black' },
+{ fg: '#A7A7A7', bg: '#000000', ratio: '8.73:1', verdict: 'AAA · Light Gray on Black' },
+{ fg: '#646464', bg: '#000000', ratio: '3.55:1', verdict: 'Graphics and 24px+ only' },
+{ fg: '#D9C3AB', bg: '#000000', ratio: '12.34:1', verdict: 'AAA · Cream on Black' },
+{ fg: '#E85002', bg: '#000000', ratio: '5.58:1', verdict: 'AA · Orange on Black' },
+{ fg: '#000000', bg: '#E85002', ratio: '5.58:1', verdict: 'AA · button label' },
+{ fg: '#F9F9F9', bg: '#E85002', ratio: '3.57:1', verdict: '24px+ only' },
+{ fg: '#F9F9F9', bg: '#C10801', ratio: '6.04:1', verdict: 'AA · danger fill' },
+{ fg: '#C10801', bg: '#000000', ratio: '3.30:1', verdict: 'Graphics only, no text' },
+{ fg: '#A7A7A7', bg: '#333333', ratio: '5.25:1', verdict: 'AA · muted on Dark Gray' },
+{ fg: '#646464', bg: '#333333', ratio: '2.14:1', verdict: 'Never for text' },
+{ fg: '#F9F9F9', bg: '#333333', ratio: '12.00:1', verdict: 'AAA · White on Dark Gray' },
+{ fg: '#333333', bg: '#F9F9F9', ratio: '12.00:1', verdict: 'AAA · light ground' },
+{ fg: '#646464', bg: '#F9F9F9', ratio: '5.62:1', verdict: 'AA · faint, light ground' },
+{ fg: '#C10801', bg: '#F9F9F9', ratio: '6.04:1', verdict: 'AA · accent text, light' },
+{ fg: '#A7A7A7', bg: '#F9F9F9', ratio: '2.29:1', verdict: 'Decoration only' }
+];
+return { darkRows, lightRows, pairs };
+}
+}
+</script>
+</body>
+</html>

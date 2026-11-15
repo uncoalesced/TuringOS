@@ -52,8 +52,24 @@ install -m755 "${REPO_ROOT}/pkg/turingos-respawn.sh" "${INC}/usr/bin/turingos-re
 install -m644 "${REPO_ROOT}/pkg/turingos-first-run.sh" "${INC}/etc/profile.d/turingos-first-run.sh"
 install -m644 "${REPO_ROOT}/LICENSE" "${DOC}/copyright"
 install -m644 "${REPO_ROOT}/WORKFLOW.md" "${DOC}/"
-# Installer branding (hook 0495)
-install -Dm644 "${REPO_ROOT}/assets/logo/turing-os-logo.png" "${INC}/usr/share/pixmaps/turingos.png"
+# Installer branding (hook 0495): the transparent mark, sized for Calamares.
+# Boot art and the plymouth theme come from debian-live/branding
+# (make-boot-art.py renders the PNGs; they are committed).
+BRANDING="${SCRIPT_DIR}/branding"
+install -Dm644 "${BRANDING}/logo-256.png" "${INC}/usr/share/pixmaps/turingos.png"
+rm -rf "${INC}/usr/share/turingos/installer"
+install -d "${INC}/usr/share/turingos/installer"
+install -m644 "${BRANDING}/slides/"slide-*.png "${INC}/usr/share/turingos/installer/"
+# Plymouth theme (hook 0460 makes it the default)
+rm -rf "${INC}/usr/share/plymouth/themes/turingos"
+install -d "${INC}/usr/share/plymouth/themes/turingos"
+install -m644 "${BRANDING}/plymouth/turingos/"* "${INC}/usr/share/plymouth/themes/turingos/"
+# Boot menu splashes, copied into the ISO tree; hook 0920 moves them into
+# isolinux/ and boot/grub/ and removes the staging directory
+rm -rf "${SCRIPT_DIR}/config/includes.binary/turingos-boot"
+install -d "${SCRIPT_DIR}/config/includes.binary/turingos-boot"
+install -m644 "${BRANDING}/isolinux-splash.png" "${BRANDING}/grub-splash.png" \
+    "${SCRIPT_DIR}/config/includes.binary/turingos-boot/"
 # Bazaar trust anchor (Ed25519 public key)
 if [[ -f "${REPO_ROOT}/trust/keys/bazaar.pub" ]]; then
     install -Dm644 "${REPO_ROOT}/trust/keys/bazaar.pub" "${INC}/etc/turingos/trust/bazaar.pub"

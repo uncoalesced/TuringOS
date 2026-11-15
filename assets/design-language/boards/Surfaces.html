@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+<title>Surfaces</title>
+<!-- Engineered by uncoalesced -->
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+@font-face{font-family:"Timeless Sans";src:url("../../../ui/web/fonts/TimelessSansVF.ttf") format("truetype");font-weight:300 800;font-display:block}
+@font-face{font-family:"Timeless Serif";src:url("../../../ui/web/fonts/TimelessSerifVF.ttf") format("truetype");font-weight:200 700;font-display:block}
+body{margin:0;background:#000000}
+</style>
+
+</head>
+<body>
+
+
+<div style="width: 1440px; height: 1200px; position: relative; overflow: hidden; box-sizing: border-box; padding: 48px 64px; display: flex; flex-direction: column; background: #000000; color: #F9F9F9; font-family: 'Timeless Sans', system-ui, sans-serif">
+
+<div style="display: flex; justify-content: space-between; align-items: center; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; letter-spacing: 0.08em; text-transform: uppercase; color: #A7A7A7">
+<span>TuringOS · Components · Surfaces</span>
+<span>08 / 10</span>
+</div>
+
+<div style="margin-top: 24px; display: flex; justify-content: space-between; align-items: flex-end; gap: 48px">
+<h2 style="margin: 0; font-family: 'Timeless Serif', Georgia, serif; font-weight: 400; font-size: 56px; line-height: 1.05; letter-spacing: -0.02em">Surfaces.</h2>
+<p style="margin: 0; max-width: 470px; font-size: 14px; line-height: 21px; color: #A7A7A7">The pieces people actually see: the bar, the approval sheet, a running task and its diff, the side panel, the dock. Diffs use Cream for added and Red for removed, with a sign in the gutter.</p>
+</div>
+
+<div style="margin-top: 28px">
+<div style="display: flex; align-items: center; gap: 16px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; letter-spacing: 0.08em; text-transform: uppercase; color: #A7A7A7">
+<span>Menu bar</span>
+<span style="flex-grow: 1; height: 1px; background: rgba(100,100,100,0.4)"></span>
+<span>34px · glass · hairline below</span>
+</div>
+<div style="margin-top: 14px; height: 84px; border-radius: 16px; overflow: hidden; position: relative; border: 1px solid rgba(100,100,100,0.28); box-sizing: border-box; background: radial-gradient(60% 150% at 50% 170%, rgba(232,80,2,0.4), rgba(232,80,2,0) 70%), #000000">
+<div style="height: 34px; padding: 0 16px; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; background: rgba(20,20,20,0.75); backdrop-filter: blur(24px) saturate(1.4); border-bottom: 1px solid rgba(100,100,100,0.28); font-size: 13px; line-height: 18px">
+<div style="display: flex; align-items: center; gap: 12px">
+<img src="../../logo/turing-os-no-bg-logopng.png" alt="TuringOS" style="width: 18px; height: 18px; object-fit: contain; display: block">
+<span style="font-weight: 500">TuringOS</span>
+<span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #A7A7A7"><span style="width: 6px; height: 6px; border-radius: 50%; background: #A7A7A7"></span>idle</span>
+</div>
+<div style="display: flex; align-items: center; gap: 16px; color: #F9F9F9">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.55a11 11 0 0 1 14.08 0"></path><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg>
+<svg width="18" height="16" viewBox="0 0 26 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="6" width="18" height="12" rx="2"></rect><line x1="23" y1="13" x2="23" y2="11"></line></svg>
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+<span style="font-size: 13px">Mon 26 Oct&nbsp;&nbsp;10:42</span>
+</div>
+</div>
+</div>
+</div>
+
+<div style="margin-top: 32px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px">
+
+<div>
+<div style="display: flex; align-items: center; gap: 16px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; letter-spacing: 0.08em; text-transform: uppercase; color: #A7A7A7">
+<span>Permission sheet</span>
+<span style="flex-grow: 1; height: 1px; background: rgba(100,100,100,0.4)"></span>
+<span>Esc means Deny</span>
+</div>
+<div style="margin-top: 14px; box-sizing: border-box; border-radius: 22px; padding: 24px; background: rgba(20,20,20,0.85); box-shadow: inset 0 0 0 0.5px rgba(249,249,249,0.2), 0 20px 48px rgba(0,0,0,0.5); corner-shape: squircle">
+<div style="display: inline-flex; align-items: center; gap: 8px; height: 28px; padding: 0 12px 0 10px; border-radius: 999px; border: 1px solid #E85002; box-sizing: border-box; font-size: 12px; font-weight: 500">
+<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#E85002" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>Needs approval
+</div>
+<h3 style="margin: 14px 0 0; font-family: 'Timeless Serif', Georgia, serif; font-weight: 500; font-size: 22px; line-height: 1.3">Allow this agent to change 14 files?</h3>
+<p style="margin: 8px 0 0; font-size: 14px; line-height: 21px; color: #A7A7A7">It works in a sandbox copy of turingos. Nothing is merged until you review the diff.</p>
+<div style="margin-top: 16px; display: flex; flex-direction: column; gap: 4px; font-size: 13px; line-height: 18px">
+<div style="display: flex; align-items: center; gap: 10px; height: 28px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A7A7A7" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>Edit files in ui/web/js</div>
+<div style="display: flex; align-items: center; gap: 10px; height: 28px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A7A7A7" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>Run 2 commands in the sandbox</div>
+<div style="display: flex; align-items: center; gap: 10px; height: 28px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A7A7A7" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>No network access, no sudo</div>
+</div>
+<div style="margin-top: 14px; padding: 12px 14px; border-radius: 12px; background: #000000; border: 1px solid rgba(100,100,100,0.28); font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 20px">
+<div><span style="color: #A7A7A7">$</span> git checkout -b agent/dock-spring</div>
+<div><span style="color: #A7A7A7">$</span> ./turingos test ui</div>
+</div>
+<div style="margin-top: 20px; display: flex; align-items: center; justify-content: space-between">
+<span style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #A7A7A7"><span style="padding: 2px 7px; border-radius: 4px; background: rgba(51,51,51,0.6); border: 1px solid rgba(100,100,100,0.5); font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; color: #F9F9F9">Esc</span>to deny</span>
+<div style="display: flex; gap: 8px">
+<button type="button" style="height: 36px; padding: 0 16px; border: 0; border-radius: 8px; background: #333333; color: #F9F9F9; font-family: 'Timeless Sans', system-ui, sans-serif; font-size: 13px; font-weight: 500">Deny</button>
+<button type="button" style="height: 36px; padding: 0 16px; border: 0; border-radius: 8px; background: #E85002; color: #000000; font-family: 'Timeless Sans', system-ui, sans-serif; font-size: 13px; font-weight: 500">Allow</button>
+</div>
+</div>
+</div>
+</div>
+
+<div>
+<div style="display: flex; align-items: center; gap: 16px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; letter-spacing: 0.08em; text-transform: uppercase; color: #A7A7A7">
+<span>Task and diff</span>
+<span style="flex-grow: 1; height: 1px; background: rgba(100,100,100,0.4)"></span>
+<span>Plan, live steps, result</span>
+</div>
+<div style="margin-top: 14px; box-sizing: border-box; border-radius: 16px; padding: 20px; background: rgba(51,51,51,0.4); border: 1px solid rgba(100,100,100,0.28)">
+<div style="display: flex; align-items: center; justify-content: space-between">
+<div style="font-size: 15px; line-height: 20px; font-weight: 500">Add a spring to the dock</div>
+<div style="display: flex; align-items: center; gap: 9px; height: 28px; padding: 0 12px 0 11px; border-radius: 999px; background: #000000; border: 1px solid rgba(100,100,100,0.28); font-size: 12px"><span style="width: 8px; height: 8px; border-radius: 50%; background: #E85002; box-shadow: 0 0 0 4px rgba(232,80,2,0.25)"></span>Working</div>
+</div>
+<div style="margin-top: 12px; display: flex; flex-direction: column; font-size: 13px; line-height: 18px">
+<div style="display: flex; align-items: center; gap: 10px; height: 28px; color: #A7A7A7"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D9C3AB" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>Read dock.js and the CSS it uses</div>
+<div style="display: flex; align-items: center; gap: 10px; height: 28px; color: #F9F9F9; font-weight: 500"><span style="width: 14px; height: 14px; box-sizing: border-box; border-radius: 50%; border: 2px solid #E85002; border-top-color: transparent"></span>Write the mass-spring-damper solver</div>
+<div style="display: flex; align-items: center; gap: 10px; height: 28px; color: #A7A7A7"><span style="width: 14px; height: 14px; box-sizing: border-box; border-radius: 50%; border: 1.5px solid #646464"></span>Run the UI tests</div>
+</div>
+<div style="margin-top: 12px; border-radius: 12px; overflow: hidden; border: 1px solid rgba(100,100,100,0.28); background: #000000; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 20px">
+<div style="display: flex; justify-content: space-between; padding: 4px 12px; border-bottom: 1px solid rgba(100,100,100,0.28); color: #A7A7A7"><span>ui/web/js/dock.js</span><span>+3 −1</span></div>
+<div style="display: flex; padding: 0 12px"><span style="width: 18px; color: #646464"> </span><span style="white-space: pre">function magnify(icon, d) {</span></div>
+<div style="display: flex; padding: 0 12px; background: rgba(193,8,1,0.22)"><span style="width: 18px; color: #F9F9F9; font-weight: 500">−</span><span style="white-space: pre">  icon.scale = lerp(icon.scale, target, 0.18);</span></div>
+<div style="display: flex; padding: 0 12px; background: rgba(217,195,171,0.12)"><span style="width: 18px; color: #D9C3AB; font-weight: 500">+</span><span style="white-space: pre">  const a = -k * (icon.scale - target) - c * icon.v;</span></div>
+<div style="display: flex; padding: 0 12px; background: rgba(217,195,171,0.12)"><span style="width: 18px; color: #D9C3AB; font-weight: 500">+</span><span style="white-space: pre">  icon.v += a * dt;</span></div>
+<div style="display: flex; padding: 0 12px; background: rgba(217,195,171,0.12)"><span style="width: 18px; color: #D9C3AB; font-weight: 500">+</span><span style="white-space: pre">  icon.scale += icon.v * dt;</span></div>
+<div style="display: flex; padding: 0 12px"><span style="width: 18px; color: #646464"> </span><span style="white-space: pre">}</span></div>
+</div>
+<div style="margin-top: 14px; display: flex; gap: 8px">
+<button type="button" style="height: 36px; padding: 0 16px; border: 0; border-radius: 8px; background: #E85002; color: #000000; font-family: 'Timeless Sans', system-ui, sans-serif; font-size: 13px; font-weight: 500">Review diff</button>
+<button type="button" style="height: 36px; padding: 0 16px; border: 0; border-radius: 8px; background: transparent; color: #F9F9F9; font-family: 'Timeless Sans', system-ui, sans-serif; font-size: 13px; font-weight: 500">Roll back</button>
+</div>
+</div>
+</div>
+
+</div>
+
+<div style="margin-top: 28px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px">
+
+<div>
+<div style="display: flex; align-items: center; gap: 16px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; letter-spacing: 0.08em; text-transform: uppercase; color: #A7A7A7">
+<span>Side panel widgets</span>
+<span style="flex-grow: 1; height: 1px; background: rgba(100,100,100,0.4)"></span>
+<span>Honest empty states</span>
+</div>
+<div style="margin-top: 14px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+<div style="box-sizing: border-box; border-radius: 16px; padding: 14px 16px; background: rgba(51,51,51,0.4); border: 1px solid rgba(100,100,100,0.28); display: flex; flex-direction: column; gap: 8px">
+<div style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #A7A7A7">GitHub · My PRs</div>
+<div style="font-size: 13px; line-height: 18px; font-weight: 500">Dock spring tuning</div>
+<div style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; color: #A7A7A7">uncoalesced/TuringOS</div>
+<div style="font-size: 13px; line-height: 18px; font-weight: 500">Bazaar install flow</div>
+<div style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; color: #A7A7A7">uncoalesced/TuringOS</div>
+</div>
+<div style="box-sizing: border-box; border-radius: 16px; padding: 14px 16px; background: rgba(51,51,51,0.4); border: 1px solid rgba(100,100,100,0.28); display: flex; flex-direction: column; gap: 8px; align-items: flex-start">
+<div style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #A7A7A7">Calendar</div>
+<div style="font-size: 13px; line-height: 19px; color: #A7A7A7">Not connected. Connect Google Calendar to see your next event here.</div>
+<button type="button" style="height: 30px; padding: 0 12px; border: 0; border-radius: 8px; background: #333333; color: #F9F9F9; font-family: 'Timeless Sans', system-ui, sans-serif; font-size: 12px; font-weight: 500">Connect</button>
+</div>
+</div>
+</div>
+
+<div>
+<div style="display: flex; align-items: center; gap: 16px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; letter-spacing: 0.08em; text-transform: uppercase; color: #A7A7A7">
+<span>Dock and notification</span>
+<span style="flex-grow: 1; height: 1px; background: rgba(100,100,100,0.4)"></span>
+<span>Dock magnifies toward the cursor</span>
+</div>
+<div style="margin-top: 14px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 6px">
+<div style="padding: 5px 10px; border-radius: 8px; background: #333333; font-size: 12px; line-height: 16px; font-weight: 500; box-shadow: inset 0 0 0 0.5px rgba(249,249,249,0.2)">Files</div>
+<div style="display: flex; align-items: flex-end; gap: 8px; padding: 8px; border-radius: 22px; background: rgba(20,20,20,0.75); backdrop-filter: blur(24px) saturate(1.4); box-shadow: inset 0 0 0 0.5px rgba(249,249,249,0.2), 0 20px 48px rgba(0,0,0,0.5); corner-shape: squircle">
+<div style="width: 44px; height: 44px; border-radius: 26%; background: #333333; display: flex; align-items: center; justify-content: center; corner-shape: squircle"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F9F9F9" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg></div>
+<div style="width: 60px; height: 60px; border-radius: 26%; background: #333333; display: flex; align-items: center; justify-content: center; corner-shape: squircle"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#F9F9F9" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg></div>
+<div style="width: 48px; height: 48px; border-radius: 26%; background: #333333; display: flex; align-items: center; justify-content: center; corner-shape: squircle"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F9F9F9" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg></div>
+<div style="width: 44px; height: 44px; border-radius: 26%; background: #333333; display: flex; align-items: center; justify-content: center; corner-shape: squircle"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F9F9F9" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg></div>
+</div>
+</div>
+<div style="display: flex; align-items: center; gap: 12px; box-sizing: border-box; border-radius: 16px; padding: 10px 12px 10px 14px; background: rgba(20,20,20,0.85); box-shadow: inset 0 0 0 0.5px rgba(249,249,249,0.2), 0 8px 24px -12px rgba(0,0,0,0.6); font-size: 13px; line-height: 18px">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D9C3AB" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
+<span style="flex-grow: 1">Merged 3 files into turingos</span>
+<button type="button" style="height: 28px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: #F9F9F9; font-family: 'Timeless Sans', system-ui, sans-serif; font-size: 13px; font-weight: 500">Undo</button>
+</div>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Shape and space</title>
+<!-- Engineered by uncoalesced -->
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+@font-face{font-family:"Timeless Sans";src:url("/_blob/3849ef377c5cff5166bc0f566e8086e6") format("truetype");font-weight:300 800;font-display:block}
+@font-face{font-family:"Timeless Serif";src:url("/_blob/dd5cc711bfc5dc6b0cfeced0520dfbe4") format("truetype");font-weight:200 700;font-display:block}
+body{margin:0;background:#000000}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1000px; position: relative; overflow: hidden; box-sizing: border-box; padding: 48px 64px; display: flex; flex-direction: column; background: #000000; color: #F9F9F9; font-family: 'Timeless Sans', system-ui, sans-serif">
+
+<div style="display: flex; justify-content: space-between; align-items: center; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; letter-spacing: 0.08em; text-transform: uppercase; color: #A7A7A7">
+<span>TuringOS · Shape and space</span>
+<span>05 / 10</span>
+</div>
+
+<div style="margin-top: 24px; display: flex; justify-content: space-between; align-items: flex-end; gap: 48px">
+<h2 style="margin: 0; font-family: 'Timeless Serif', Georgia, serif; font-weight: 400; font-size: 56px; line-height: 1.05; letter-spacing: -0.02em">Soft geometry.</h2>
+<p style="margin: 0; max-width: 470px; font-size: 14px; line-height: 21px; color: #A7A7A7">Continuous corners, a 4px grid, and surfaces that float. The shell already uses 9, 10, 14, 18 and 20px radii; this scale folds them into seven.</p>
+</div>
+
+<div style="margin-top: 28px">
+<div style="display: flex; align-items: center; gap: 16px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; letter-spacing: 0.08em; text-transform: uppercase; color: #A7A7A7">
+<span>Radius</span>
+<span style="flex-grow: 1; height: 1px; background: rgba(100,100,100,0.4)"></span>
+<span>Floating surfaces use corner-shape: squircle</span>
+</div>
+<div style="margin-top: 14px; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 14px">
+<sc-for list="{{radii}}" as="r" hint-placeholder-count="8">
+<div style="border: 1px solid rgba(100,100,100,0.4); border-radius: 16px; padding: 16px 10px 14px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 12px">
+<div style="height: 88px; display: flex; align-items: center">
+<div style="width: 88px; background: #333333; height: {{r.h}}px; border-radius: {{r.css}}; corner-shape: {{r.shape}}"></div>
+</div>
+<div style="text-align: center">
+<div style="font-size: 14px; line-height: 18px; font-weight: 500">{{r.val}}</div>
+<div style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; line-height: 16px; color: #A7A7A7">{{r.token}}</div>
+<div style="margin-top: 2px; font-size: 12px; line-height: 16px; color: #A7A7A7">{{r.use}}</div>
+</div>
+</div>
+</sc-for>
+</div>
+</div>
+
+<div style="margin-top: 32px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px">
+
+<div>
+<div style="display: flex; align-items: center; gap: 16px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; letter-spacing: 0.08em; text-transform: uppercase; color: #A7A7A7">
+<span>Space · 4px grid</span>
+<span style="flex-grow: 1; height: 1px; background: rgba(100,100,100,0.4)"></span>
+<span>Bars drawn at 4×</span>
+</div>
+<div style="margin-top: 12px">
+<sc-for list="{{space}}" as="s" hint-placeholder-count="9">
+<div style="display: flex; align-items: center; gap: 14px; height: 30px">
+<span style="width: 34px; flex: none; font-size: 14px; line-height: 18px; font-weight: 500">{{s.val}}</span>
+<span style="width: 62px; flex: none; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; line-height: 16px; color: #A7A7A7">{{s.token}}</span>
+<span style="height: 12px; border-radius: 3px; background: #A7A7A7; flex: none; width: {{s.w}}px"></span>
+<span style="font-size: 12px; line-height: 16px; color: #A7A7A7">{{s.use}}</span>
+</div>
+</sc-for>
+</div>
+</div>
+
+<div>
+<div style="display: flex; align-items: center; gap: 16px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; letter-spacing: 0.08em; text-transform: uppercase; color: #A7A7A7">
+<span>Edges</span>
+<span style="flex-grow: 1; height: 1px; background: rgba(100,100,100,0.4)"></span>
+<span>How a surface announces itself</span>
+</div>
+<div style="margin-top: 12px; display: flex; flex-direction: column; gap: 12px">
+
+<div style="display: flex; align-items: center; gap: 20px">
+<div style="width: 190px; height: 74px; flex: none; box-sizing: border-box; border-radius: 16px; background: rgba(51,51,51,0.4); border: 1px solid rgba(100,100,100,0.28); display: flex; align-items: center; justify-content: center; font-size: 13px; color: #A7A7A7">Panel at rest</div>
+<div>
+<div style="font-size: 14px; line-height: 20px; font-weight: 500">Hairline</div>
+<div style="font-size: 12px; line-height: 17px; color: #A7A7A7">1px Gray at 28%. Docked surfaces: side panel, menu bar, list rows.</div>
+</div>
+</div>
+
+<div style="display: flex; align-items: center; gap: 20px">
+<div style="width: 190px; height: 74px; flex: none; border-radius: 16px; background: #333333; display: flex; align-items: center; justify-content: center">
+<div style="width: 150px; height: 46px; box-sizing: border-box; border-radius: 12px; background: #141414; box-shadow: inset 0 0 0 0.5px rgba(249,249,249,0.2), 0 12px 24px -8px rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; font-size: 13px; color: #F9F9F9; corner-shape: squircle">Floating</div>
+</div>
+<div>
+<div style="font-size: 14px; line-height: 20px; font-weight: 500">Inset highlight and shadow</div>
+<div style="font-size: 12px; line-height: 17px; color: #A7A7A7">0.5px inset at 10 to 20% White, soft shadow. Dock, sheets, popovers.</div>
+</div>
+</div>
+
+<div style="display: flex; align-items: center; gap: 20px">
+<div style="width: 190px; height: 74px; flex: none; box-sizing: border-box; border-radius: 16px; padding: 1.5px; background: linear-gradient(45deg, #E85002 0%, #F16001 100%)">
+<div style="width: 100%; height: 100%; box-sizing: border-box; border-radius: 14.5px; background: #000000; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #F9F9F9">Active</div>
+</div>
+<div>
+<div style="font-size: 14px; line-height: 20px; font-weight: 500">Active border</div>
+<div style="font-size: 12px; line-height: 17px; color: #A7A7A7">1.5px, Orange to Ember at 45°. The selected card or focused panel. One per view.</div>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+
+<div style="margin-top: 28px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px">
+<div style="border-top: 1px solid rgba(100,100,100,0.6); padding-top: 14px">
+<div style="font-size: 15px; line-height: 20px; font-weight: 500">Corners are concentric</div>
+<div style="margin-top: 6px; font-size: 13px; line-height: 19px; color: #A7A7A7">Inner radius is outer radius minus padding. A 22px sheet with 10px padding holds 12px cards.</div>
+</div>
+<div style="border-top: 1px solid rgba(100,100,100,0.6); padding-top: 14px">
+<div style="font-size: 15px; line-height: 20px; font-weight: 500">Float, don't frame</div>
+<div style="margin-top: 6px; font-size: 13px; line-height: 19px; color: #A7A7A7">Dock, sheets and popovers float: squircle, inset highlight, soft shadow. Docked things get a hairline.</div>
+</div>
+<div style="border-top: 1px solid rgba(100,100,100,0.6); padding-top: 14px">
+<div style="font-size: 15px; line-height: 20px; font-weight: 500">Targets: 28 pointer, 44 touch</div>
+<div style="margin-top: 6px; font-size: 13px; line-height: 19px; color: #A7A7A7">TuringOS is meant for tablets too. Hit areas grow to 44px under a coarse pointer; drawn size stays.</div>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() {
+const radii = [
+{ val: '4', token: '--r-xs', use: 'Key caps, tags', css: '4px', shape: 'round', h: 88 },
+{ val: '8', token: '--r-sm', use: 'Buttons, fields', css: '8px', shape: 'round', h: 88 },
+{ val: '12', token: '--r-md', use: 'Cards, rows', css: '12px', shape: 'round', h: 88 },
+{ val: '16', token: '--r-lg', use: 'Panels, popovers', css: '16px', shape: 'round', h: 88 },
+{ val: '22', token: '--r-xl', use: 'Sheets, swatches', css: '22px', shape: 'round', h: 88 },
+{ val: '22 squircle', token: '--r-xl', use: 'Floating only', css: '22px', shape: 'squircle', h: 88 },
+{ val: 'Pill', token: '--r-pill', use: 'Chips, composer', css: '999px', shape: 'round', h: 44 },
+{ val: '26%', token: '--r-icon', use: 'App icons', css: '26%', shape: 'squircle', h: 88 }
+];
+const space = [
+{ val: '4', token: '--s-1', use: 'Icon to label', w: 16 },
+{ val: '8', token: '--s-2', use: 'Inside controls', w: 32 },
+{ val: '12', token: '--s-3', use: 'Between controls', w: 48 },
+{ val: '16', token: '--s-4', use: 'Panel padding', w: 64 },
+{ val: '20', token: '--s-5', use: 'Card padding', w: 80 },
+{ val: '24', token: '--s-6', use: 'Between cards', w: 96 },
+{ val: '32', token: '--s-7', use: 'Section gap', w: 128 },
+{ val: '48', token: '--s-8', use: 'Screen margins', w: 192 },
+{ val: '64', token: '--s-9', use: 'Hero spacing', w: 256 }
+];
+return { radii, space };
+}
+}
+</script>
+</body>
+</html>

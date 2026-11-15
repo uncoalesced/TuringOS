@@ -75,10 +75,34 @@ class PlanStore:
     def get(self, plan_id: str) -> dict | None:
         return self.plans.get(plan_id)
 
+    def reject(self, plan_id: str, session_id: str) -> dict:
+        plan = self.plans.get(plan_id)
+        if not plan:
+            return {"status": "error", "errors": [f"plan not found: {plan_id}"]}
+        if plan["status"] != "pending_approval":
+            return {"status": "error", "errors": [f"plan is {plan['status']}, cannot reject"]}
+
+        plan["status"] = "rejected"
+        audit({
+            "version": 1,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "subject": {"kind": "user", "id": "local"},
+            "session_id": session_id,
+            "action": {"kind": "plan.reject", "plan_id": plan_id},
+            "provenance": {"origin": "user_request", "taint": "trusted", "chain": []},
+            "outcome": "denied",
+        })
+        # wake the waiter: it sees a non-approved plan and does nothing
+        if plan_id in self.approval_events:
+            self.approval_events[plan_id].set()
+        return {"status": "ok", "plan_id": plan_id, "rejected": True}
+
     def approve(self, plan_id: str, session_id: str) -> dict:
         plan = self.plans.get(plan_id)
         if not plan:
             return {"status": "error", "errors": [f"plan not found: {plan_id}"]}
+        if plan["status"] != "pending_approval":
+            return {"status": "error", "errors": [f"plan is {plan['status']}, cannot approve"]}
 
         now = datetime.now(timezone.utc).isoformat()
         plan["approval"]["granted_by"] = "local"
@@ -125,6 +149,11 @@ async def execute_plan(plan: dict) -> dict:
     plan_id = plan["plan_id"]
     results = []
 
+    # Only an approved plan runs, and only once
+    if plan["status"] != "approved":
+        return {"status": "error", "errors": [f"plan is {plan['status']}, not approved"]}
+    plan["status"] = "executing"
+
     audit({
         "version": 1,
         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -136,7 +165,7 @@ async def execute_plan(plan: dict) -> dict:
     })
 
     for step in plan["steps"]:
-        if plan["status"] != "approved":
+        if plan["status"] != "executing":
             step["status"] = "cancelled"
             results.append({"step_id": step["step_id"], "error": "plan not approved"})
             continue
@@ -186,6 +215,7 @@ async def execute_plan(plan: dict) -> dict:
         "outcome": "complete",
     })
 
+    plan["status"] = "completed"
     return {"status": "ok", "plan_id": plan["plan_id"], "results": results}
 
 
@@ -203,7 +233,7 @@ async def execute_plan_after_approval(plan_id: str):
 
 async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
     try:
-        data = await reader.read(4096)
+        data = await asyncio.wait_for(reader.readline(), 30)
         if not data:
             return
 
@@ -229,7 +259,16 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
             asyncio.create_task(execute_plan_after_approval(plan["plan_id"]))
 
         elif action == "approve_plan":
-            result = plan_store.approve(msg.get("plan_id", ""), msg.get("session_id", "unknown"))
+            if msg.get("rejected"):
+                # older pages sent reject as approve_plan + rejected:true
+                result = plan_store.reject(msg.get("plan_id", ""), msg.get("session_id", "unknown"))
+            else:
+                result = plan_store.approve(msg.get("plan_id", ""), msg.get("session_id", "unknown"))
+            writer.write((json.dumps(result) + "\n").encode())
+            await writer.drain()
+
+        elif action == "reject_plan":
+            result = plan_store.reject(msg.get("plan_id", ""), msg.get("session_id", "unknown"))
             writer.write((json.dumps(result) + "\n").encode())
             await writer.drain()
 
@@ -262,7 +301,9 @@ async def run_daemon(socket_path: Path):
     if socket_path.exists():
         os.unlink(socket_path)
 
-    server = await asyncio.start_unix_server(handle_client, path=str(socket_path))
+    server = await asyncio.start_unix_server(
+        handle_client, path=str(socket_path), limit=4 * 1024 * 1024
+    )
     os.chmod(socket_path, 0o666)
 
     print(f"turingos-agentd-plan listening on {socket_path}", file=sys.stderr)

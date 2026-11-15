@@ -102,8 +102,8 @@
   color: var(--text);
 }
 .notif-app .icon, .notif-app .spark { width: 20px; height: 20px; }
-.notif-app[data-app="claude"] { background: var(--accent); color: var(--white); }
-.notif-app[data-app="terminal"] { background: var(--ink); color: #7ee07e; }
+.notif-app[data-app="claude"] { background: var(--accent); color: var(--tos-white); }
+.notif-app[data-app="terminal"] { background: var(--tos-primary-bg); color: var(--tos-white); }
 
 .notif-top { display: flex; align-items: baseline; gap: 8px; }
 .notif-title {
@@ -153,7 +153,7 @@
   padding: 6px 12px;
   border-radius: 999px;
   background: var(--accent);
-  color: var(--white);
+  color: var(--tos-white);
   font-size: 13px;
   font-weight: 500;
   transition: transform 160ms var(--ease-out);
@@ -190,7 +190,7 @@
 
 /* Wi-Fi group: status line, network rows, password row */
 .wifi-status { padding: 4px 10px 6px; color: var(--muted); font-size: 13px; }
-.wifi-error { color: var(--danger); }
+.wifi-error { color: var(--danger-text); }
 
 .wifi-row {
   display: flex;
@@ -204,7 +204,7 @@
 }
 .wifi-row .widget-row-title { flex: 1; min-width: 0; }
 .wifi-row .icon { flex: none; width: 15px; height: 15px; color: var(--accent); }
-.wifi-row:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.wifi-row:focus-visible { outline: 2px solid var(--focus-outline); outline-offset: -2px; }
 
 .wifi-form { display: flex; align-items: center; gap: 8px; padding: 4px 10px 8px; }
 .wifi-pw {

@@ -36,6 +36,9 @@ def setUpModule():
     _session_dir = tempfile.mkdtemp(prefix="turingos-session-")
     os.environ["TURINGOS_SESSION_DIR"] = _session_dir
     os.environ["TURINGOS_SHELL_ALLOW_UIDS"] = str(os.getuid())
+    # TestClient's peer isn't a real TCP connection; test_local_auth.py
+    # covers the peer check itself
+    os.environ["TURINGOS_BRIDGE_PEER_CHECK"] = "0"
     _helper_proc = subprocess.Popen(
         [sys.executable, str(HELPER)],
         stdout=subprocess.DEVNULL,
@@ -68,6 +71,7 @@ def tearDownModule():
         shutil.rmtree(_session_dir, ignore_errors=True)
     os.environ.pop("TURINGOS_SESSION_DIR", None)
     os.environ.pop("TURINGOS_SHELL_ALLOW_UIDS", None)
+    os.environ.pop("TURINGOS_BRIDGE_PEER_CHECK", None)
 
 
 def connect(host: str, origin: str):

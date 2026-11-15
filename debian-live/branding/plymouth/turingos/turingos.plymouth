@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=TuringOS
+Description=Black room, the TuringOS mark, one orange pulse while the system starts
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/turingos
+ScriptFile=/usr/share/plymouth/themes/turingos/turingos.script

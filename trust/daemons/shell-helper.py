@@ -97,7 +97,19 @@ async def run_shell(command: str, timeout: float = SHELL_TIMEOUT) -> dict:
             os.killpg(proc.pid, signal.SIGKILL)
         except (AttributeError, ProcessLookupError):
             proc.kill()
-    code = await proc.wait()
+    # Once collect() stops reading (output cap) asyncio pauses the stdout pipe,
+    # and on Python 3.14 proc.wait() then never returns: the transport only
+    # finishes after the pipe reaches EOF. Drain it first, with a bound in case
+    # a grandchild in another session still holds the pipe open.
+    async def reap():
+        while await proc.stdout.read(65536):
+            pass
+        return await proc.wait()
+
+    try:
+        code = await asyncio.wait_for(reap(), 5)
+    except asyncio.TimeoutError:
+        code = -signal.SIGKILL
 
     output = buf[:SHELL_MAX_OUTPUT].decode(errors="replace")
     if len(buf) > SHELL_MAX_OUTPUT:
@@ -115,7 +127,10 @@ async def handle(reader, writer):
         line = await asyncio.wait_for(reader.readline(), 10)
         msg = json.loads(line.decode(errors="replace") or "{}")
         command = str(msg.get("command", "")).strip()
-        if uid >= 0 and uid not in allowed_uids():
+        if uid < 0 and hasattr(socket, "SO_PEERCRED"):
+            # Linux can always say who connected; failing to means deny
+            reply = {"status": "error", "errors": ["cannot identify peer; refusing"]}
+        elif uid >= 0 and uid not in allowed_uids():
             reply = {"status": "error", "errors": [f"peer uid {uid} may not run commands"]}
         elif not command:
             reply = {"status": "error", "errors": ["missing command"]}

@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+<title>Elevation, motion and icons</title>
+<!-- Engineered by uncoalesced -->
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+@font-face{font-family:"Timeless Sans";src:url("../../../ui/web/fonts/TimelessSansVF.ttf") format("truetype");font-weight:300 800;font-display:block}
+@font-face{font-family:"Timeless Serif";src:url("../../../ui/web/fonts/TimelessSerifVF.ttf") format("truetype");font-weight:200 700;font-display:block}
+body{margin:0;background:#000000}
+</style>
+
+</head>
+<body>
+
+
+<div style="width: 1440px; height: 1000px; position: relative; overflow: hidden; box-sizing: border-box; padding: 48px 64px; display: flex; flex-direction: column; background: #000000; color: #F9F9F9; font-family: 'Timeless Sans', system-ui, sans-serif">
+
+<div style="display: flex; justify-content: space-between; align-items: center; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; letter-spacing: 0.08em; text-transform: uppercase; color: #A7A7A7">
+<span>TuringOS · Elevation, motion and icons</span>
+<span>06 / 10</span>
+</div>
+
+<div style="margin-top: 24px; display: flex; justify-content: space-between; align-items: flex-end; gap: 48px">
+<h2 style="margin: 0; font-family: 'Timeless Serif', Georgia, serif; font-weight: 400; font-size: 56px; line-height: 1.05; letter-spacing: -0.02em">Quiet motion.</h2>
+<p style="margin: 0; max-width: 470px; font-size: 14px; line-height: 21px; color: #A7A7A7">One curve, four durations, one real spring. Glass is a luxury: the shell drops it on machines without a GPU, and reduced-motion drops every animation.</p>
+</div>
+
+<div style="margin-top: 28px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px">
+
+<div>
+<div style="display: flex; align-items: center; gap: 16px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; letter-spacing: 0.08em; text-transform: uppercase; color: #A7A7A7">
+<span>Easing</span>
+<span style="flex-grow: 1; height: 1px; background: rgba(100,100,100,0.4)"></span>
+</div>
+<div style="margin-top: 14px; display: flex; gap: 28px; align-items: center">
+<svg width="240" height="240" viewBox="0 0 240 240" fill="none" role="img" aria-label="Easing curve: fast start, long settle" style="flex: none">
+<rect x="0.5" y="0.5" width="239" height="239" rx="12" stroke="rgba(100,100,100,0.5)"></rect>
+<line x1="60" y1="0" x2="60" y2="240" stroke="rgba(100,100,100,0.28)"></line>
+<line x1="120" y1="0" x2="120" y2="240" stroke="rgba(100,100,100,0.28)"></line>
+<line x1="180" y1="0" x2="180" y2="240" stroke="rgba(100,100,100,0.28)"></line>
+<line x1="0" y1="60" x2="240" y2="60" stroke="rgba(100,100,100,0.28)"></line>
+<line x1="0" y1="120" x2="240" y2="120" stroke="rgba(100,100,100,0.28)"></line>
+<line x1="0" y1="180" x2="240" y2="180" stroke="rgba(100,100,100,0.28)"></line>
+<line x1="0" y1="240" x2="240" y2="0" stroke="#646464" stroke-dasharray="4 5"></line>
+<line x1="0" y1="240" x2="55.2" y2="0" stroke="#A7A7A7" stroke-dasharray="2 4"></line>
+<line x1="240" y1="0" x2="76.8" y2="0" stroke="#A7A7A7" stroke-dasharray="2 4"></line>
+<path d="M0 240 C 55.2 0, 76.8 0, 240 0" stroke="#E85002" stroke-width="3" stroke-linecap="round"></path>
+<circle cx="55.2" cy="0" r="4" fill="#A7A7A7"></circle>
+<circle cx="76.8" cy="0" r="4" fill="#A7A7A7"></circle>
+</svg>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; color: #A7A7A7">--ease-out</div>
+<div style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 15px; line-height: 22px">cubic-bezier(0.23, 1, 0.32, 1)</div>
+<div style="font-size: 13px; line-height: 19px; color: #A7A7A7">Fast start, long settle. Every transition and entrance uses it. Nothing bounces except the dock, which runs a real mass-spring-damper.</div>
+</div>
+</div>
+</div>
+
+<div>
+<div style="display: flex; align-items: center; gap: 16px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; letter-spacing: 0.08em; text-transform: uppercase; color: #A7A7A7">
+<span>Duration</span>
+<span style="flex-grow: 1; height: 1px; background: rgba(100,100,100,0.4)"></span>
+<span>Bars to scale, 1px = 2ms</span>
+</div>
+<div style="margin-top: 14px">
+
+<div style="display: flex; align-items: center; gap: 14px; height: 44px; border-bottom: 1px solid rgba(100,100,100,0.28)">
+<span style="width: 104px; flex: none; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; line-height: 16px; color: #A7A7A7">--dur-exit</span>
+<span style="width: 62px; flex: none; font-size: 14px; line-height: 18px; font-weight: 500">150 ms</span>
+<span style="height: 12px; border-radius: 3px; flex: none; box-sizing: border-box; width: 75px; background: #A7A7A7; border: 0"></span>
+<span style="font-size: 12px; line-height: 16px; color: #A7A7A7">Pop-out, dismiss</span>
+</div>
+
+<div style="display: flex; align-items: center; gap: 14px; height: 44px; border-bottom: 1px solid rgba(100,100,100,0.28)">
+<span style="width: 104px; flex: none; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; line-height: 16px; color: #A7A7A7">--dur-base</span>
+<span style="width: 62px; flex: none; font-size: 14px; line-height: 18px; font-weight: 500">160 ms</span>
+<span style="height: 12px; border-radius: 3px; flex: none; box-sizing: border-box; width: 80px; background: #A7A7A7; border: 0"></span>
+<span style="font-size: 12px; line-height: 16px; color: #A7A7A7">Hover, press, colour</span>
+</div>
+
+<div style="display: flex; align-items: center; gap: 14px; height: 44px; border-bottom: 1px solid rgba(100,100,100,0.28)">
+<span style="width: 104px; flex: none; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; line-height: 16px; color: #A7A7A7">--dur-enter</span>
+<span style="width: 62px; flex: none; font-size: 14px; line-height: 18px; font-weight: 500">220 ms</span>
+<span style="height: 12px; border-radius: 3px; flex: none; box-sizing: border-box; width: 110px; background: #A7A7A7; border: 0"></span>
+<span style="font-size: 12px; line-height: 16px; color: #A7A7A7">Pop-in, menus, popovers</span>
+</div>
+
+<div style="display: flex; align-items: center; gap: 14px; height: 44px; border-bottom: 1px solid rgba(100,100,100,0.28)">
+<span style="width: 104px; flex: none; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; line-height: 16px; color: #A7A7A7">--dur-slow</span>
+<span style="width: 62px; flex: none; font-size: 14px; line-height: 18px; font-weight: 500">360 ms</span>
+<span style="height: 12px; border-radius: 3px; flex: none; box-sizing: border-box; width: 180px; background: #A7A7A7; border: 0"></span>
+<span style="font-size: 12px; line-height: 16px; color: #A7A7A7">Panel slide, large moves</span>
+</div>
+
+<div style="display: flex; align-items: center; gap: 14px; height: 44px; border-bottom: 1px solid rgba(100,100,100,0.28)">
+<span style="width: 104px; flex: none; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; line-height: 16px; color: #A7A7A7">spring</span>
+<span style="width: 62px; flex: none; font-size: 14px; line-height: 18px; font-weight: 500">physics</span>
+<span style="height: 12px; border-radius: 3px; flex: none; box-sizing: border-box; width: 120px; background: transparent; border: 1px dashed #A7A7A7"></span>
+<span style="font-size: 12px; line-height: 16px; color: #A7A7A7">Dock magnification only</span>
+</div>
+
+</div>
+</div>
+
+</div>
+
+<div style="margin-top: 28px">
+<div style="display: flex; align-items: center; gap: 16px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; letter-spacing: 0.08em; text-transform: uppercase; color: #A7A7A7">
+<span>Elevation</span>
+<span style="flex-grow: 1; height: 1px; background: rgba(100,100,100,0.4)"></span>
+<span>Four levels. Glass off at data-gfx lite and minimal</span>
+</div>
+<div style="margin-top: 14px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px">
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="height: 120px; border-radius: 14px; background: #000000; border: 1px dashed rgba(100,100,100,0.6); box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #A7A7A7">Ground</div>
+<div>
+<div style="font-size: 14px; line-height: 20px; font-weight: 500">0 · Ground</div>
+<div style="font-size: 12px; line-height: 17px; color: #A7A7A7">Primary Black, no edge. Desktop and canvas.</div>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="height: 120px; border-radius: 14px; background: #000000; border: 1px solid rgba(100,100,100,0.28); box-sizing: border-box; display: flex; align-items: center; justify-content: center">
+<div style="width: 150px; height: 64px; box-sizing: border-box; border-radius: 12px; background: rgba(51,51,51,0.4); border: 1px solid rgba(100,100,100,0.28); display: flex; align-items: center; justify-content: center; font-size: 13px">Panel</div>
+</div>
+<div>
+<div style="font-size: 14px; line-height: 20px; font-weight: 500">1 · Docked</div>
+<div style="font-size: 12px; line-height: 17px; color: #A7A7A7">Dark Gray at 40%, hairline. Side panel, list rows.</div>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="height: 120px; border-radius: 14px; background: #333333; display: flex; align-items: center; justify-content: center">
+<div style="width: 150px; height: 64px; box-sizing: border-box; border-radius: 12px; background: #141414; box-shadow: inset 0 0 0 0.5px rgba(249,249,249,0.2), 0 20px 48px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; font-size: 13px; corner-shape: squircle">Dock</div>
+</div>
+<div>
+<div style="font-size: 14px; line-height: 20px; font-weight: 500">2 · Floating</div>
+<div style="font-size: 12px; line-height: 17px; color: #A7A7A7">Inset highlight plus 0 20 48 shadow. Dock, popovers.</div>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="height: 120px; border-radius: 14px; overflow: hidden; position: relative; background: linear-gradient(135deg, #000000 0%, #C10801 35%, #F16001 70%, #D9C3AB 100%); display: flex; align-items: center; justify-content: center">
+<div style="width: 150px; height: 64px; box-sizing: border-box; border-radius: 12px; background: rgba(20,20,20,0.6); backdrop-filter: blur(24px) saturate(1.4); box-shadow: inset 0 0 0 0.5px rgba(249,249,249,0.2); display: flex; align-items: center; justify-content: center; font-size: 13px; corner-shape: squircle">Glass</div>
+</div>
+<div>
+<div style="font-size: 14px; line-height: 20px; font-weight: 500">3 · Glass</div>
+<div style="font-size: 12px; line-height: 17px; color: #A7A7A7">#141414 at 60 to 75%, blur 24, saturate 1.4. Menu bar, sheets.</div>
+</div>
+</div>
+
+</div>
+</div>
+
+<div style="margin-top: 28px">
+<div style="display: flex; align-items: center; gap: 16px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 16px; letter-spacing: 0.08em; text-transform: uppercase; color: #A7A7A7">
+<span>Icons</span>
+<span style="flex-grow: 1; height: 1px; background: rgba(100,100,100,0.4)"></span>
+<span>24 grid · 1.6 stroke · round caps · drawn at 12, 16, 20 · colour is currentColor</span>
+</div>
+<div style="margin-top: 14px; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 10px">
+
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+<div style="width: 56px; height: 56px; border-radius: 14px; border: 1px solid rgba(100,100,100,0.4); box-sizing: border-box; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F9F9F9" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg></div>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; line-height: 14px; color: #A7A7A7">terminal</span>
+</div>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+<div style="width: 56px; height: 56px; border-radius: 14px; border: 1px solid rgba(100,100,100,0.4); box-sizing: border-box; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F9F9F9" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg></div>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; line-height: 14px; color: #A7A7A7">folder</span>
+</div>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+<div style="width: 56px; height: 56px; border-radius: 14px; border: 1px solid rgba(100,100,100,0.4); box-sizing: border-box; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F9F9F9" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="3" x2="6" y2="15"></line><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><path d="M18 9a9 9 0 0 1-9 9"></path></svg></div>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; line-height: 14px; color: #A7A7A7">branch</span>
+</div>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+<div style="width: 56px; height: 56px; border-radius: 14px; border: 1px solid rgba(100,100,100,0.4); box-sizing: border-box; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F9F9F9" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></div>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; line-height: 14px; color: #A7A7A7">search</span>
+</div>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+<div style="width: 56px; height: 56px; border-radius: 14px; border: 1px solid rgba(100,100,100,0.4); box-sizing: border-box; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F9F9F9" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line></svg></div>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; line-height: 14px; color: #A7A7A7">mic</span>
+</div>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+<div style="width: 56px; height: 56px; border-radius: 14px; border: 1px solid rgba(100,100,100,0.4); box-sizing: border-box; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F9F9F9" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg></div>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; line-height: 14px; color: #A7A7A7">send</span>
+</div>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+<div style="width: 56px; height: 56px; border-radius: 14px; border: 1px solid rgba(100,100,100,0.4); box-sizing: border-box; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F9F9F9" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></div>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; line-height: 14px; color: #A7A7A7">lock</span>
+</div>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+<div style="width: 56px; height: 56px; border-radius: 14px; border: 1px solid rgba(100,100,100,0.4); box-sizing: border-box; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F9F9F9" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></div>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; line-height: 14px; color: #A7A7A7">sandbox</span>
+</div>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+<div style="width: 56px; height: 56px; border-radius: 14px; border: 1px solid rgba(100,100,100,0.4); box-sizing: border-box; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F9F9F9" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; line-height: 14px; color: #A7A7A7">check</span>
+</div>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+<div style="width: 56px; height: 56px; border-radius: 14px; border: 1px solid rgba(100,100,100,0.4); box-sizing: border-box; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F9F9F9" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; line-height: 14px; color: #A7A7A7">close</span>
+</div>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+<div style="width: 56px; height: 56px; border-radius: 14px; border: 1px solid rgba(100,100,100,0.4); box-sizing: border-box; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F9F9F9" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></div>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; line-height: 14px; color: #A7A7A7">caution</span>
+</div>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+<div style="width: 56px; height: 56px; border-radius: 14px; border: 1px solid rgba(100,100,100,0.4); box-sizing: border-box; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F9F9F9" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></div>
+<span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; line-height: 14px; color: #A7A7A7">add</span>
+</div>
+
+</div>
+</div>
+
+</div>
+
+</body>
+</html>
