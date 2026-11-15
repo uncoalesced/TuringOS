@@ -1,33 +1,53 @@
 # ui-shell
 
-**TuringOS** is the on-screen name. The codebase is still called TuringOS/ui-shell, and the CLI, data dir, branch and package name haven't changed. This is the assistant layer for our Claude-powered Linux OS (Debian base, Openbox kiosk session), and it's the part people see: a menu bar, a Raycast-style command bar, a permission sheet, notifications with Undo, and a side panel of widgets.
+The desktop shell of TuringOS: a menu bar, a clock and a prompt box in the
+middle, a dock, a side panel with widgets, a command palette and a store
+window for the Bazaar. It is a web page (`ui/web`) that `turingos-bridged-ws`
+serves to a Brave app window. A Rust service, `turingosd` (`daemon/`), does
+everything the page can't: reading `~/.turingos`, starting agents, calling out
+to the network.
 
+The code and the CLI are still called `turingos`. "TuringOS" is the name on
+screen.
 
 ## Status
 
-| Built | Not built yet |
-|---|---|
-| The page in `ui/web`, served by `turingos-bridged-ws` and shown in a Brave app window; the desktop service `turingosd` (`daemon/`) behind it. `./turingos ui` from a checkout | Command bar, PR views, Actions menu (Ctrl/⌘+K opens the command palette prototype) |
-| Menu bar: Claude spark + "TuringOS" brand, Wi-Fi, battery, light/dark toggle, clock (click to open the side panel) | Task view, permission sheet |
-| Desktop, vertically centred: clock, greeting with the user's first name, "What do you want to cook?" composer | Notifications with Undo |
-| @ (or +) project picker listing git repos; Enter runs `turingos agent start <project> <task>` | |
-| Weather in the top-right corner (Open-Meteo, geolocated by IP), click for the full card | |
-| Bottom-left corner: agent status (**idle** / **working** / **agentic**) and task; bottom-right: sandbox / game mode / CPU / memory | |
-| Live state from `~/.turingos/state.json`, sample data fallback | Running other `turingos` commands from the UI |
-| Light/dark in Claude brand colours, circular reveal | Spring engine, progressive blur |
-| macOS-style app icon (`assets/brand/app-icon.png`, squircle) | |
-| "Focused today", centred above the composer (placeholder; no focus-tracking backend yet) | |
-| Dock: hidden until the cursor hits the bottom edge. Floating (detached, all corners rounded, iOS-style continuous curvature via CSS `corner-shape: squircle`), tight resting spacing, macOS-style magnification toward the cursor with a name-label tooltip above the hovered icon. The magnification runs on a real spring (mass-spring-damper), not a CSS transition retargeting a JS value. Fixed set: Terminal, Files (wide fallback chain: xdg-open/dolphin/nautilus/pcmanfm/nemo/thunar), Browser, Settings, all launching real system commands via the Rust backend | Auto-discovered/configurable icon list |
-| Model picker in the composer (Fable 5.1 / Opus 5.5 / Sonnet 5.5 / Haiku 4.5, Effort submenu Low–Max), defaults to Sonnet 5.5 / Medium, persisted locally. The model is passed to Claude agents as `TURINGOS_AGENT_MODEL` (`claude --model`); chat answers use model and effort | Effort isn't passed to agent runs |
-| A composer message with no @project attached is a plain question, answered inline with one Claude call (the chosen model/effort). No sandbox, no agent. Attaching a project is what turns it into a real Claude Code task. That's the actual Claude-chat vs. Claude-Code distinction; there's no separate mode |
-| Mic button next to send: records on the machine and transcribes with local Whisper (model downloads on first use), or Wispr Flow via `turingos voice` (unofficial, falls back to Whisper) | Not yet verified with a real microphone on the ISO |
-| Clawd: patrols near the dock (slides only, no flip). Shake the cursor anywhere to open its chat (a real shake, meaning several quick reversals, not just fast motion). Ctrl/Cmd+Enter to send |
-| Side panel (Ctrl/⌘+J or click the clock): a right-edge slide-in shell | Calendar/"Your day"/Ask widgets beyond what's listed below |
-| GitHub widget in the side panel: My PRs + Review Requests via `gh` (assumes `gh auth login` already done), refreshed every 5 min, verified against a real authenticated account | |
-| Calendar widget in the side panel: real Google OAuth (system-browser consent + loopback redirect, with `state` and PKCE). Shows the next event once connected, and an honest "Connect Google Calendar" empty state otherwise, not fake data | Needs a real Google Cloud OAuth "Desktop app" client (see §9 below) |
-| Clawd: a small pixel mascot that patrols a corner near the dock and answers one-off questions (Haiku, single question → single answer, no history) in a popover | |
+What works in v1.3:
 
-The spec below describes the full target. Where it differs from what's built, the Status table wins.
+| Area | What it does |
+|---|---|
+| Menu bar | TuringOS brand mark and name, Wi-Fi, battery, light/dark toggle, date and time. The clock and the Wi-Fi icon open the side panel. |
+| Desktop | Clock, greeting with the user's first name, and the composer ("What do you want to cook?"). |
+| Composer, task | Type `@` or `+` to pick a project (git repos found by the daemon). Enter runs `turingos agent start <project> <task>`. `agent_start` only accepts paths that the project list returned. |
+| Composer, question | A message with no project attached is a plain question, answered inline with one Claude call. No sandbox, no agent. Attaching a project is what makes it a Claude Code task. |
+| Model picker | Fable 5.1, Opus 5.5, Sonnet 5.5 or Haiku 4.5, plus an effort level (Low, Medium, High, Extra, Max). Defaults to Sonnet 5.5 and Medium, kept in `localStorage`. Agent runs get the model as `TURINGOS_AGENT_MODEL` (passed to `claude --model`); chat answers use model and effort. Effort is not passed to agent runs. |
+| Shell mode | If the AI is unreachable the composer switches to shell mode and what you type runs as a command through `/shell`. `$ cmd` runs a command at any time. See `trust/README.md`. |
+| Voice | The mic button records on the machine and transcribes with local Whisper (the `ggml-base.en` model downloads on first use), or Wispr Flow if set up with `turingos voice`. |
+| Corners | Bottom-left: agent state (Agent idle, Starting, Agentic) and the task. Bottom-right: sandbox, game mode, CPU, memory. Top-right under the menu bar: weather (Open-Meteo, located by IP), with a detail card on click. |
+| Dock | Hidden until the cursor reaches the bottom edge. Terminal, Files, Browser, Bazaar, Settings, and Install TuringOS when the Calamares installer is present. Icons magnify toward the cursor on a mass-spring-damper. |
+| Side panel | Ctrl/⌘+J, or click the clock or the Wi-Fi icon. Holds Notifications, Wi-Fi, Google Calendar and GitHub. |
+| Wi-Fi | Scan and connect through NetworkManager (`nmcli`), from the side panel. |
+| GitHub widget | Your open PRs and review requests through `gh` (run `gh auth login` first). Refreshed every 5 minutes. |
+| Calendar widget | Google OAuth through the system browser, with PKCE and a loopback redirect. Shows the next event once connected, and a "Connect Google Calendar" empty state otherwise. Needs the keys in section 9. |
+| Command palette | Ctrl/⌘+K or Super+Space. Opens commands (Bazaar, Terminal, Browser, Files, Install, theme, Settings) and a plugin list. The plugin list is a prototype over a built-in catalogue; installing there only flips in-memory state. |
+| Bazaar window | Opens from the dock or the palette. Lists the registry's MCP servers from `turingosd`, installs and uninstalls them, and enables or disables them per project. Shows "[offline catalogue]" when it is serving the cache or the bundled registry. The skills and plugins tabs are still built-in sample entries. |
+| Clawd | A pixel mascot that patrols the bottom-right corner. Click it, or shake the cursor, to ask a one-off question (Haiku, one question and one answer, no history). Ctrl/⌘+Enter sends. |
+| Theme | Light and dark, following the system until the toggle is used; the choice is remembered. The switch is a circular reveal. |
+| Sample data | If `~/.turingos` doesn't exist the page shows sample agent data and says so at the bottom. CPU, memory, battery and Wi-Fi stay real. |
+
+Not built yet:
+
+- Streaming agent steps into the page (a plan, live steps, a result card).
+  The agent's output goes to `~/.turingos/logs/agent-session-*.log` and the
+  page only sees running or not.
+- The permission sheet. `ui/web/js/plan-renderer.js` draws a plan review
+  (Edit, Reject, Approve) against the `/plan` socket, but `index.html` does not
+  load it.
+- Notifications with Undo. The Notifications list is seeded with sample
+  entries, and the page adds one when an agent task finishes.
+- Pull request views and an Actions menu.
+- Running other `turingos` commands from the UI.
+- Passing effort to agent runs.
 
 ---
 
@@ -37,193 +57,267 @@ See [SETUP.md](SETUP.md). Short version:
 
 ```bash
 ./turingos ui                  # app window
-./ui/run.sh --gfx sw.lite      # the lighter look a VM without 3D gets (auto-detected on the ISO)
+./ui/run.sh --gfx sw.lite      # the lighter look a VM without 3D gets
 ```
 
-To preview on a Mac without the OS, run the same command or open `ui/web/index.html` in Chrome.
+To work on CSS you can also open `ui/web/index.html` in a browser. It runs on
+sample data without a backend.
 
-### Safety rules (hard rules for this project)
+Ground rules for working on it:
 
-- The OS only ever runs inside a VM (QEMU/UTM). Never on real hardware, and never on a work laptop's own boot disk.
-- Scripts never use `sudo` and refuse to run as root.
-- The UI reads `~/.turingos` and never writes system files itself.
-- The page is loaded from local files only; no network access from the UI.
-- Never write to `/dev/*` or run `dd`, `mkfs` or `diskutil` against anything outside the project's `build/` folder.
+- Develop and test inside a VM (QEMU, UTM, VMware).
+- `ui/run.sh` refuses to run as root.
+- The page can only reach the system through `window.shell`
+  (`ui/web/js/bridge.js`), and that only offers the calls in
+  `protocol/v1/README.md`. Its Content-Security-Policy is `default-src 'self'`
+  with `connect-src 'self'`, so the page makes no requests of its own.
+  Weather, GitHub, Google and Anthropic calls are made by `turingosd`.
 
 ---
 
-## 2. What's in it (target)
+## 2. Surfaces and keys
 
-| Surface | How to open | What it does |
-|---|---|---|
-| Menu bar | Always visible | Brand, assistant status, Wi-Fi, battery, search, light/dark toggle, date and time |
-| Command bar | **Ctrl/⌘+K**, search icon, or the status item | Raycast-style list of commands; anything typed that isn't a command runs as a task |
-| Pull requests | Command bar → My Pull Requests / Review Requests | List on the left, details and a streamed Claude summary on the right |
-| Actions menu | **Tab** in a PR list | Check Out Branch, Review with Claude, Open in Browser, Copy Branch Name |
-| Task view | Enter on a task | Plan, live steps, and a result card with a real control |
-| Permission sheet | Appears when a task needs approval | Plain-language summary, the exact commands behind "Show commands", Deny / Allow |
-| Notifications | Side panel | Every action the assistant takes, each with Undo |
-| Widgets | Side panel (**Ctrl/⌘+J** or click the clock) | Calendar, battery, "Your day", year progress, GitHub, Ask |
-
-### Keyboard
-
-| Keys | Action |
+| Key | Action |
 |---|---|
-| Ctrl/⌘+Q | Quit (built) |
-| Ctrl/⌘+K | Open or close the command bar |
+| Ctrl/⌘+K | Open or close the command palette |
+| Super+Space | Open the command palette; first stashes other windows on a side workspace (`session/turingos-omni`) |
 | Ctrl/⌘+J | Open or close the side panel |
-| ↑ / ↓ | Move through a list |
-| Enter | Run the selected item (in PR lists: check out the branch) |
-| Ctrl/⌘+Enter | Review the selected PR with Claude |
-| Tab | Open the Actions menu |
-| Backspace (empty input) | Back from a PR list to the root list |
-| Esc | Close the top-most thing: Actions → PR list → command bar → side panel. On the permission sheet, Esc means Deny. |
+| ↑ / ↓, Enter, Esc | Move, select and close in the palette |
+| Ctrl/⌘+Enter | Send, in Clawd's chat |
+| Ctrl/⌘+W | Close the Bazaar window |
+| Super+Esc | A plain terminal, whatever state the shell is in |
+
+The shell is a browser window underneath. `bridge.js` blocks the browser's
+own shortcuts (Ctrl+W, T, N, Q, R, zoom, F5, F11, F12, Alt+Left/Right), so
+Ctrl/⌘+Q does not quit it.
 
 ---
 
 ## 3. Connecting the backend
 
-The page never touches the system. The desktop service `turingosd` (`daemon/`) does, behind `turingos-bridged-ws`, and hands the page one snapshot at a time over `/desktop` (`ui/web/js/bridge.js` defines `window.shell`; the messages are in `protocol/v1/README.md`).
+The page never touches the system. It opens `/desktop` on the bridge, which
+forwards to `turingosd`, and gets one snapshot whenever something changes
+(`ui/web/js/bridge.js` defines `window.shell`; the messages are in
+`protocol/v1/README.md`).
 
-### What's wired today
-
-`daemon/src/state.rs` reads these and pushes a snapshot whenever one changes:
+`daemon/src/state.rs` builds the snapshot:
 
 | Snapshot field | Source |
 |---|---|
-| `live` | `~/.turingos` exists (TuringOS initialised) |
+| `live` | `~/.turingos` exists |
+| `user.name` | The login user's first name |
 | `agent.running` | `agent_pid` in `state.json` is a live process |
 | `agent.task` | `agent_task` in `state.json` |
 | `sandbox` | `active_sandbox` in `state.json` (folder name) |
-| `gameMode` | `game_mode == "on"` in `state.json` |
+| `gameMode` | `game_mode` is `on` in `state.json` |
 | `system.cpu`, `system.mem`, `system.host` | `/proc/stat`, `/proc/meminfo`, hostname |
-| `system.battery` | `/sys/class/power_supply/BAT*` (Linux) |
-| `system.wifi` | `nmcli` (Linux, NetworkManager) |
+| `system.battery` | `/sys/class/power_supply/BAT*` |
+| `system.wifi` | `nmcli` |
+| `system.installer` | Whether the Calamares launcher is present |
+| `weather` | Open-Meteo, every 15 minutes |
+| `github` | `gh`, every 5 minutes |
+| `calendar` | Google Calendar, every 5 minutes |
 
-### Next: live agent steps
+Starting an agent from the page runs `turingos agent start <project> <task>`
+with `TURINGOS_AGENT_MODEL` set, detached, so a run outlives a restart of the
+service.
 
-`turingos agent start` runs Claude with `--output-format stream-json` and writes the output to `~/.turingos/logs/agent-*.log`. The backend will tail the newest log and translate its lines into the events below.
-
-### Event protocol (target)
-
-#### Backend → UI
-
-| Event | Fields | Effect |
-|---|---|---|
-| `status` | `state`: `idle` \| `thinking` \| `working` \| `approval` \| `done` \| `error` | Menu bar status and the pulse dot |
-| `plan` | `text` | One line of intent above the steps |
-| `step` | `id`, `label`, `status`: `running` \| `waiting` \| `done` \| `skipped` \| `error`, `meta?` | Adds a step, or updates it if `id` exists |
-| `approval` | `id`, `title`, `summary`, `commands[]` | Shows the permission sheet; the UI replies with a decision |
-| `result` | `kind`: `diff` (`files`, `add`, `del`, `tests`) or `review` (`verdict`, `comments[]`) | Result card under the steps |
-| `timeline` | `id`, `label` | Notification with Undo |
-| `error` | `message` | Error step and error status |
-
-#### UI → backend
-
-| Message | Fields | When |
-|---|---|---|
-| `prompt` | `text` | The user runs a task from the command bar |
-| `approval_response` | `id`, `decision`: `allow` \| `deny` | The user answers the permission sheet |
-| `undo` | `id` | The user presses Undo on a notification |
-
-### Rules for the backend
-
-- Anything that changes the system must go through `approval` first. In TuringOS that means the agent works in a sandbox, and **Merge** / **Rollback** are the approval.
-- Read-only actions (reading settings, listing packages, `git status`) don't need approval.
-- `commands[]` must be the exact commands that will run, not a description of them.
-- Needed from the backend team: `sandbox merge`, `sandbox rollback` and `agent stop` currently ask a yes/no question in the terminal. The UI has no terminal, so these need a non-interactive flag (e.g. `--yes`) before the UI can call them.
+`turingos sandbox merge`, `sandbox rollback` and `agent stop` still ask a
+yes/no question on the terminal, so the page can't call them yet. They need a
+non-interactive flag first. `bazaar install` and `bazaar uninstall` already
+take `-y`.
 
 ---
 
-## 4. GitHub integration (target)
+## 4. GitHub
 
-The backend uses GitHub's official CLI, `gh`. Run `gh auth login` once on the machine.
+The widget uses GitHub's own CLI, `gh`:
 
-| UI data | Source |
+| UI data | Command |
 |---|---|
-| My Pull Requests | `gh pr list --author @me --json number,title,headRefName,additions,deletions,statusCheckRollup,reviewDecision,url` |
-| Review Requests | `gh search prs --review-requested=@me --state open --json number,title,repository,url` |
-| Summary and Risk | `gh pr diff <n>`, sent to Claude with a prompt for a 2–3 sentence summary and a one-line risk note |
-| Review with Claude | Diff + CI results → Claude → suggested comments |
-| Post review | `gh pr review <n> --comment --body-file review.md`, only after `approval` |
-| Check Out Branch | `gh pr checkout <n>` |
-| Where was I? | `git status`, `git log -5`, shell history, and TODOs in changed files, summarised by Claude |
+| My PRs | `gh pr list --author @me --json number,title,headRefName,additions,deletions,statusCheckRollup,reviewDecision,url` |
+| Review requests | `gh search prs --review-requested=@me --state open --json number,title,repository,url` |
+
+If `gh` is missing or logged out, the widget keeps its last reading.
 
 ---
 
 ## 5. Design system
 
-### Color
+The shell follows TuringOS design language v1.0. The reference is
+`assets/design-language/DESIGN_LANGUAGE.md` with boards in
+`assets/design-language/boards/`. The values the page uses are in
+`ui/web/css/tokens.css`, which is the copy to edit. The Anthropic and Claude
+palette is not used.
 
-Claude's brand colours, used as tokens in `ui/web/css/tokens.css`.
+### Principles
 
-| Brand colour | Hex |
-|---|---|
-| Japonica | `#D97757` |
-| Pampas | `#F4F3EE` |
-| Cloudy | `#B1ADA1` |
-| Tuatara | `#373734` |
-| White | `#FFFFFF` |
+1. Black is the room. Every surface is black or a tint of it; chrome stays grayscale.
+2. Orange is the signal. One orange moment per view: the live thing (an agent working, the primary action, focus). Never decoration.
+3. Nothing lands unreviewed. States follow the sandbox: plan, diff, approve, merge. Approval and destructive states carry a label, never colour alone.
+4. Soft, light, local. Squircle corners, floating surfaces, glass that switches off without a GPU, fonts bundled.
 
-| Token | Light | Dark | Use |
+### Palette
+
+| Name | Hex | Token |
+|---|---|---|
+| Branding Orange | `#E85002` | `--tos-brand-orange` |
+| Black (Primary) | `#000000` | `--tos-primary-bg` |
+| Dark Gray | `#333333` | `--tos-dark-gray` |
+| Gray | `#646464` | `--tos-gray` |
+| Light Gray | `#A7A7A7` | `--tos-light-gray` |
+| White | `#F9F9F9` | `--tos-white` |
+
+The brand gradient runs at 135deg through `#000000` (0%), `#C10801` (35%),
+`#F16001` (70%) and `#D9C3AB` (100%). Those stops are
+`--tos-gradient-stop-1` to `--tos-gradient-stop-4`, and the gradient itself is
+`--tos-brand-gradient`. Use it on heroes, boot and installer art, and active
+borders: one per view, never behind body text. Two more gradients are
+derived from it: `--tos-active-border-gradient` and `--tos-tile-gradient`
+(app tiles in the Bazaar and the dock).
+
+The palette has no green, blue or yellow, and none should be added. Every
+other colour is a tint of these (alpha, or a mix with black or white). The
+stop colours double as states: `#C10801` is the danger fill, `#F16001` the
+orange hover, `#D9C3AB` (cream) means done or an added line.
+
+### Roles
+
+`tokens.css` defines these under `:root[data-theme="dark"]` and
+`:root[data-theme="light"]`:
+
+| Token | Dark | Light | Use |
 |---|---|---|---|
-| `--bg` | Pampas | `#262624` (deeper Tuatara) | Page background |
-| `--surface` | White | Tuatara | Cards, chips |
-| `--text` | Tuatara | Pampas | Primary text |
-| `--muted` | `#6F6C64` | Cloudy | Secondary text |
-| `--faint` | Cloudy | `#8A877E` | Hints, idle dot |
-| `--accent` | Japonica | Japonica | Pulse dot, brand mark, active states |
-| `--danger` | `#BF4D43` | `#E07A70` | Errors |
+| `--bg` | `#000000` | `#F9F9F9` | Page background |
+| `--surface` | `#141414` | `#EFEFEF` | Cards, chips |
+| `--surface-2` | `#242424` | `#E5E5E5` | Raised surfaces |
+| `--surface-strong` | `#333333` | `#D4D4D4` | Strongest fill |
+| `--line` | Gray at 28% | Dark Gray at 14% | Hairlines |
+| `--text` | `#F9F9F9` | `#000000` | Primary text |
+| `--muted` | `#A7A7A7` | `#333333` | Secondary text |
+| `--faint` | `#646464` | `#646464` | Graphics and 24px+ text on dark; fine for text on light |
+| `--accent` | `#E85002` | `#E85002` | Fills |
+| `--accent-text` | `#E85002` | `#C10801` | Text and links |
+| `--accent-hover` | `#F16001` | `#F16001` | Hover |
+| `--on-accent` | `#000000` | `#000000` | Labels on orange |
+| `--danger` | `#C10801` | `#C10801` | Fill only, with a white label |
+| `--danger-text` | `#D76864` | `#C10801` | Error text |
+| `--done` | `#D9C3AB` | `#6B5A48` | Done, added lines |
+| `--glow` | orange at 25% | orange at 18% | Desktop glow |
+| `--bar` | `#141414` at 75% | `#F9F9F9` at 75% | Menu bar fill |
+| `--focus-ring`, `--focus-outline` | black gap, white ring | reversed | Focus |
 
-`#262624`, `#6F6C64` and `#8A877E` aren't brand colours. They're there for contrast (Cloudy on Pampas is too faint for body text).
+Labels on orange fills are black (5.58:1). White on orange is 3.57:1, so only
+at 24px and up. Red `#C10801` on black is 3.30:1, so it is never used for
+text on dark. The full contrast table is in the design language file.
 
-Light/dark follows the system. The half-circle icon in the menu bar overrides it with a circular reveal, and the choice is remembered.
+State colours: idle is a Light Gray dot; working is an orange dot with a soft
+halo; needs approval is an orange outline chip with a lock; done and added
+lines are cream with a check or `+`; failed and removed lines are a red fill
+with a white label and an ✕ or `−`.
 
-### Typography
+### Type
 
-- Timeless Sans (`--sans`, weights 300–800) for the UI and Timeless Serif (`--serif`, 200–700) for the greeting and "Your day". Both are variable fonts bundled in `ui/web/fonts/`, so they work offline in the VM.
-- `--mono` (system mono) for eyebrow labels, commands and code.
-- Big numbers (clock, stats) use light weights (250–300) with tight letter spacing.
-- Eyebrow labels use the mono font, uppercase, with wide letter spacing.
+- Timeless Sans (`--sans`, weights 300 to 800) for the interface.
+- Timeless Serif (`--serif`, weights 200 to 700) for moments of voice: the clock, the greeting, sheet titles.
+- JetBrains Mono (`--mono`) for anything the machine said or you would copy: commands, paths, diffs, small caps labels. It is named first in the stack but is not bundled, so machines without it fall back to SF Mono or the system monospace font.
 
-### Icons
+Both Timeless fonts are variable fonts in `ui/web/fonts/` (MIT), loaded with
+`@font-face` in `tokens.css`, so they work offline.
 
-[Feather](https://feathericons.com) (MIT), 24×24, 2px stroke, round caps. Only the glyphs in use ship (inline, in the sprite); `ui/web/assets/icons/feather/LICENSE` covers them. To add one, add it to the sprite in `ui/web/index.html` as `<symbol id="ic-name">`, with shape data only (no `width`/`height`/`stroke`; those come from `.icon`/`.wx`). Weather glyphs (`wx-*`) are Feather paths too. The "partly cloudy" symbols combine a small sun or moon (scaled down, shifted top-left) with Feather's cloud so they read at both 26px (menu bar) and 52px (weather card). If Feather doesn't have an icon for something, Lucide and Phosphor match its style.
+| Name | Spec |
+|---|---|
+| Clock | Serif 300, 96px/1, clamped up to 164px, -0.03em |
+| Display | Serif 400, 64/1.05, -0.02em |
+| Heading | Serif 400, 46/1.1, -0.01em |
+| Title | Serif 500, 22/1.3 |
+| Lead | Sans 400, 17/1.5 |
+| Body | Sans 400, 14/1.5 |
+| UI | Sans 400, 13/18 |
+| Label | Sans 500, 12/16 |
+| Caption | Mono 500, 11/16, capitals, +0.08em |
+| Code | Mono 400, 12/18 |
 
-Brand: official Claude assets live in `ui/web/assets/brand/`. The Claude spark is the menu bar mark. `app-icon.png` is the window and launcher icon (squircle). Don't use GitHub's logo.
+### Shape and space
+
+Radii: `--r-xs` 4px (key caps), `--r-sm` 8px (buttons, fields), `--r-md` 12px
+(cards, rows), `--r-lg` 16px (panels, popovers), `--r-xl` 22px (sheets, the
+composer), `--r-pill` for chips, `--r-icon` 26% for app icons. Floating
+surfaces (dock, sheets, composer, icons) use `corner-shape: squircle`.
+
+Space is a 4px scale: `--s-1` 4, `--s-2` 8, `--s-3` 12, `--s-4` 16, `--s-5` 20,
+`--s-6` 24, `--s-7` 32, `--s-8` 48, `--s-9` 64. The menu bar is
+`--menubar-h`, 34px.
+
+### Elevation and glass
+
+Surfaces separate by tint, a hairline and `inset 0 0 0 0.5px` of white at
+20%. Floating surfaces add `0 20px 48px` of black at 50% on dark (18% on
+light). Frosted glass goes through `--glass-sm`, `--glass-md`, `--glass-lg` and
+`--glass-xl` (20, 24, 28 and 40px blur). They are set to `none` when
+`<html data-gfx>` is `lite` or `minimal`, which is how the page drops blur on
+machines without a GPU (`boot.js`, `css/gfx.css`).
 
 ### Motion
 
-- **No opacity animations.** Things appear and disappear with blur, scale and position.
-- **Springs for interactive motion** (`snappy`, `smooth`, `bouncy`) so interruptions keep their velocity. The current build uses a custom ease-out curve for entrances; the spring engine isn't built yet.
-- **Only animate `transform`, `filter` and `backdrop-filter`.** The theme reveal's `clip-path` is the one exception.
-- Stagger: list items enter 45 ms apart.
-- Buttons scale to 0.96 on press.
-- `prefers-reduced-motion` turns every animation into an instant change.
+- One easing, `--ease-out`: `cubic-bezier(0.23, 1, 0.32, 1)`.
+- Durations: `--dur-exit` 150ms, `--dur-base` 160ms (hover, press), `--dur-enter` 220ms (pop-ins, menus), `--dur-slow` 360ms (the panel slide).
+- The dock's magnification is the only thing driven by a spring (a mass-spring-damper). Everything else uses the easing above, not springs.
+- Primary buttons press to `scale(.97)` with `--btn-press-overlay`, an 8% black inset.
+- `prefers-reduced-motion` turns off every animation and transition (`base.css`).
+
+### Icons
+
+Feather-style line icons: 1.6px stroke, round caps and joins, 16px by
+default, drawn in `currentColor`. `.icon` in `base.css` sets this. The glyphs
+are inline `<symbol>`s in `ui/web/index.html`, and their licence is
+`ui/web/assets/icons/feather/LICENSE`. To add one, add a `<symbol id="ic-name">`
+with shape data only, no `width`, `height` or `stroke`. Brand logos for
+plugins are in `ui/web/assets/icons/brands/`.
+
+### Controls
+
+Buttons are 36px high with an 8px radius and 13px/500 type.
+
+| Kind | Look |
+|---|---|
+| Primary | Orange fill, black label. Hover `--accent-hover`. Pressed: `scale(.97)` plus the 8% black overlay. Disabled: Dark Gray fill, Gray label. |
+| Secondary | Dark Gray fill, white label, hover `--btn-secondary-hover` (`#434343`). |
+| Ghost | Transparent, hover `--btn-ghost-hover` (white at 8%), pressed `--btn-ghost-press` (12%). |
+| Danger | `#C10801` fill, white label, hover `--btn-danger-hover` (`#C61B15`). |
+
+Focus is a 2px gap in the ground colour and then a 2px ring in the text
+colour (`--focus-ring`). On orange fills the ring is always white.
+
+### Brand mark
+
+The menu bar and the greeting still draw the Claude spark
+(`#claude-spark` in `index.html`, from `ui/web/assets/brand/claude-symbol.svg`).
+The design language calls for a vector TuringOS mark there instead; the spark
+should stay only where it means Claude itself, such as Claude notifications.
+`ui/web/assets/brand/app-icon.png` is the window and launcher icon.
 
 ---
 
 ## 6. Demo script (about 3 minutes)
 
-1. **Open on the desktop.** "This is an OS where the assistant is part of the system, not an app."
-2. **Start a task.** Ctrl+K → "Refactor the auth module and run the tests". The sandbox note appears in the bottom-right corner; the original project is protected.
-3. **Watch it work.** Steps tick through live from the agent's output.
-4. **Review changes.** The sheet shows files changed, lines added/removed, test results.
-5. **Merge or roll back.** "Nothing is permanent until a human says so."
-6. **Game mode.** Toggle it; the agent drops to background priority and keeps running.
-7. **Light/dark.** Click the toggle to end on the circular reveal.
-
-Backup: record the full run once as a video before presenting.
+1. Open on the desktop. The assistant is part of the system here, not an app.
+2. Type `@`, pick a project, describe a task, press Enter. The bottom-left corner changes to Agentic and the bottom-right shows "Sandbox active". The original project is untouched.
+3. Open a terminal from the dock and run `turingos agent status`, then `turingos sandbox diff`.
+4. Merge or roll back with `turingos sandbox merge` or `turingos sandbox rollback`. Nothing reaches the project until a person says so.
+5. Run `turingos game on` and show the corner. The agent drops to low priority and keeps running.
+6. Open the Bazaar from the dock and install a tool.
+7. Click the light/dark toggle to finish on the circular reveal.
 
 ---
 
-## 7. Likely judge questions
+## 7. Likely questions
 
-- **What stops the AI from doing damage?** The agent works in a copy-on-write sandbox. Nothing reaches the real project until a human merges it, and rollback discards it.
-- **What leaves the machine?** Only the prompt and the context needed for the task. API keys stay local.
-- **Why an OS and not an app?** Sandboxes, process priorities and a permission layer need OS-level access that an app can't enforce.
-- **What happens offline?** The shell and system status still work; tasks that need Claude show an error instead of hanging.
-- **What did you build versus what already existed?** Debian is the base. We built the TuringOS control layer, the sandbox flow, and the ui-shell UI.
+- **What stops the AI from doing damage?** The agent works in a copy of the project. Nothing reaches the real project until a person merges it, and rollback discards it. The trust daemons add scoped, expiring grants and an audit log (`trust/README.md`).
+- **What leaves the machine?** The prompt and whatever the agent reads in its sandbox go to the model provider. API keys stay in `~/.turingos/config.env` (mode 600).
+- **Why an OS and not an app?** Sandboxes, process priorities and the permission layer need OS-level access that an app can't enforce.
+- **What happens offline?** The shell and system status still work. Tasks that need Claude show an error, and the composer falls back to shell mode.
+- **What is built and what is borrowed?** Debian is the base. The control layer, the sandbox flow, the trust daemons, the Bazaar and the shell are ours.
 
 ---
 
@@ -231,33 +325,35 @@ Backup: record the full run once as a video before presenting.
 
 | File | Purpose |
 |---|---|
-| `ui/run.sh` | Launcher for a checkout: builds and opens the app |
-| `daemon/src/` | `turingosd`, the desktop service, one module per job: `state` (snapshots), `system`, `projects`, `agent`, `launch` (dock, links), `weather`, `github`, `google` (Calendar OAuth), `anthropic` (Clawd, chat), `voice` |
-| `ui/web/js/bridge.js` | `window.shell`: the only bridge between the page and the system |
-| `ui/web/index.html` | Markup, the icon sprite (`<symbol>`s), and the script/style load order |
+| `ui/run.sh` | Launcher for a checkout: bridge, shell helper, `turingosd` and the app window |
+| `daemon/src/` | `turingosd`, one module per job: `state` (snapshots), `system`, `projects`, `agent`, `launch` (dock, links), `weather`, `github`, `google` (Calendar OAuth), `anthropic` (Clawd, chat), `voice`, `bazaar`, `gfx`, `control` (hotkey and status socket), `session` (the page's socket), `rpc` |
+| `ui/web/js/bridge.js` | `window.shell`: the only way from the page to the system |
+| `ui/web/index.html` | Markup, the icon sprite, and the script and style load order |
 | `ui/web/css/` | Design tokens (`tokens.css`), then one stylesheet per feature |
-| `ui/web/js/` | One classic script per feature (weather, widgets, composer, model picker, voice, dock, Clawd, palette, Bazaar...), sharing one global scope |
+| `ui/web/js/` | One classic script per feature, sharing one global scope |
 | `ui/web/js/theme.js` | Picks the theme before first paint |
+| `ui/web/boot.js` | Picks the graphics level before first paint |
 | `ui/web/fonts/` | Timeless Sans and Serif (variable, bundled) |
-| `ui/web/assets/brand/` | Claude symbol, logo, app icon |
-| `ui/web/assets/icons/feather/LICENSE` | License for the inline Feather glyphs |
-| `ui-docs/SETUP.md` | Running it in the VM, troubleshooting |
+| `ui/web/assets/brand/` | Claude symbol, app icon |
+| `ui/web/assets/icons/` | Feather licence, plugin brand logos, other icon sets with their licences |
+| `assets/design-language/` | Design language v1.0: the spec, tokens, boards |
+| `ui-docs/SETUP.md` | Running it, troubleshooting |
 | `ui-docs/UI_SHELL.md` | This document |
-| `ui-docs/NEXT_FEATURES.md` | The plan these features were built from, kept as a record of what was decided and why |
+| `ui-docs/NEXT_FEATURES.md` | The plan the side panel, GitHub, Calendar and Clawd were built from |
 
 ## 9. Config keys (`~/.turingos/config.env`)
 
-The side panel's Calendar widget and Clawd need these. Use plain `KEY=VALUE`
-lines (`turingos` shell-quotes what it writes). The backend parses this file
-itself, because on the ISO the UI starts from the openbox session, not from a
-shell that sourced it. A real environment variable still wins.
+Calendar and Clawd need these. Use plain `KEY=VALUE` lines (`turingos`
+shell-quotes what it writes). `turingosd` parses the file itself, because on
+the ISO the desktop starts from the session, not from a shell that sourced it.
+A real environment variable wins over the file.
 
 | Key | Used by | Where to get it |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | Clawd's chat popover | An Anthropic API key |
-| `GOOGLE_CLIENT_ID` | Calendar widget | A Google Cloud OAuth **"Desktop app"** client (Google Cloud Console → APIs & Services → Credentials) |
-| `GOOGLE_CLIENT_SECRET` | Calendar widget | Same OAuth client as above |
+| `ANTHROPIC_API_KEY` | Clawd and composer answers | An Anthropic API key |
+| `GOOGLE_CLIENT_ID` | Calendar widget | A Google Cloud OAuth "Desktop app" client (Cloud Console, APIs & Services, Credentials) |
+| `GOOGLE_CLIENT_SECRET` | Calendar widget | The same OAuth client |
 
-Without these keys, Clawd shows a "needs an API key" error when you ask it
-something, and the Calendar widget shows an honest "Connect Google Calendar"
-empty state instead of a fake meeting. Both fail visibly, not silently.
+Without them, Clawd and the composer report that they need an API key, and
+the Calendar widget shows its connect prompt. The Google refresh token is
+stored in `~/.turingos/google-tokens.json`.

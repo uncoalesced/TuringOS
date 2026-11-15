@@ -1,8 +1,8 @@
 # Desktop protocol, version 1
 
 How the desktop page talks to `turingosd`, the desktop service: menu bar
-state, widgets, projects, starting the agent, dock apps, voice, Google
-sign-in. (The trust stack, `/plan`, `/shell` and the rest, has its own
+state, widgets, projects, starting the agent, dock apps, the Bazaar, Wi-Fi,
+voice, Google sign-in. (The trust stack, `/plan`, `/shell` and the rest, has its own
 messages on turingos-bridged-ws; see trust/README.md.)
 
 ```
@@ -110,6 +110,12 @@ show.
 |---|---|---|
 | `state_get` | `{}` | Snapshot |
 | `projects_list` | `{}` | `[{ "name": string, "path": string }]` |
+| `bazaar_list` | `{ "project"?: string }` | `{ "ok": true, "offline": boolean, "count": number, "entries": [Entry] }`. Each entry is the registry entry plus `id`, `installed`, `enabled` (false if disabled for `project`) and, when installed, `installed_at`. |
+| `bazaar_info` | `{ "key": string }` | `{ "ok": true, "entry": Entry }` or `{ "ok": false, "error": string }` |
+| `bazaar_install` | `{ "key": string }` | `{ "ok": boolean, "key"?: string, "message"?: string, "error"?: string }`. Runs `turingos bazaar install -y <key>`. |
+| `bazaar_uninstall` | `{ "key": string }` | `{ "ok": boolean, "key"?: string, "message"?: string, "error"?: string }` |
+| `bazaar_project_rules` | `{ "path": string }` | `{ "ok": true, "path": string, "disabled": [string] }` |
+| `bazaar_set_rule` | `{ "path": string, "id": string, "enabled": boolean }` | `{ "ok": boolean, "path"?: string, "id"?: string, "enabled"?: boolean, "error"?: string }` |
 | `agent_start` | `{ "project": string, "task": string, "model"?: string }` | `{ "ok": boolean, "error"?: string }` |
 | `dock_launch` | `{ "id": "terminal" \| "files" \| "browser" \| "install" \| "settings" }` | `{ "ok": boolean, "error"?: string }` |
 | `open_external` | `{ "url": string }` | `boolean` |

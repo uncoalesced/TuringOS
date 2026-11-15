@@ -1,6 +1,6 @@
 # Code of Conduct
 
-This Code of Conduct is adapted from the [Contributor Covenant, version 2.1](https://www.contributor-covenant.org/version/2/1/code_of_conduct/).
+This Code of Conduct is adapted from the [Contributor Covenant, version 2.1](https://www.contributor-covenant.org/version/2/1/code_of_conduct.html). The Attribution section at the end has the details.
 
 ## Our Pledge
 
@@ -25,7 +25,7 @@ Examples of unacceptable behavior:
 - Trolling, insulting or derogatory comments, and personal or political attacks
 - Public or private harassment
 - Publishing others' private information, such as a physical or email address, without their explicit permission
-- Publicly disclosing security vulnerabilities before coordinated disclosure (see [SECURITY.md](SECURITY.md))
+- Disclosing a security vulnerability in public before coordinated disclosure (see [SECURITY.md](SECURITY.md))
 - Other conduct which could reasonably be considered inappropriate in a professional setting
 
 ## Enforcement Responsibilities
@@ -36,13 +36,15 @@ Maintainers have the right and responsibility to remove, edit, or reject comment
 
 ## Scope
 
-This Code of Conduct applies within all community spaces, including GitHub issues, pull requests, discussions, and any chat channels (Discord, Matrix, etc.). It also applies when an individual is officially representing the community in public spaces.
+This Code of Conduct applies in all community spaces: GitHub issues, pull requests and discussions, and any chat channel the project runs. It also applies when someone is officially representing the community in public.
 
 ## Reporting
 
-Report instances of abusive, harassing, or otherwise unacceptable behavior to the maintainers at **[mail@uncoalesced.com](mailto:mail@uncoalesced.com)**, or by contacting [@uncoalesced](https://github.com/uncoalesced) on GitHub. All complaints will be reviewed and investigated promptly and fairly.
+Report abusive, harassing or otherwise unacceptable behavior to the maintainers at **[mail@uncoalesced.com](mailto:mail@uncoalesced.com)**, or by contacting [@uncoalesced](https://github.com/uncoalesced) on GitHub. All complaints will be reviewed and investigated promptly and fairly.
 
-Maintainers are obligated to respect the privacy and security of the reporter of any incident.
+Maintainers must respect the privacy and security of the person who reports an incident.
+
+To report a security vulnerability, use the private process in [SECURITY.md](SECURITY.md) instead.
 
 ## Enforcement Guidelines
 

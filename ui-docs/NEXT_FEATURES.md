@@ -1,18 +1,29 @@
 # Next three features: plan
 
 **Status: all five pieces below are built** (Finder Option A, side panel
-shell, GitHub widget, Gmail/Calendar OAuth widget, Clawd). The Status table
-in `ui-docs/UI_SHELL.md` has a one-line summary of each, and its new §9
-lists the exact `~/.turingos/config.env` keys the project owner needs to set:
-`ANTHROPIC_API_KEY` for Clawd, `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` for
-Calendar. The Google keys need a real Google Cloud OAuth "Desktop app"
-client registered first, which can't be done from inside this repo. The
-rest of this document is left as written, as a record of what we planned
-and why.
+shell, GitHub widget, Google Calendar OAuth widget, Clawd). The Status table
+in `ui-docs/UI_SHELL.md` has a line for each, and its section 9 lists the
+`~/.turingos/config.env` keys they need: `ANTHROPIC_API_KEY` for Clawd,
+`GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` for Calendar. The Google keys
+need a Google Cloud OAuth "Desktop app" client registered first, which can't
+be done from inside this repo.
+
+The rest of this document is the plan as it was written, kept as a record of
+what was decided and why. It was written when the UI was an Electron app. The
+architecture has changed since: the page in `ui/web` now talks to `turingosd`
+(`daemon/`) through `turingos-bridged-ws`. So the file names below map like
+this:
+
+| In the plan | Now |
+|---|---|
+| `ui/main.js`, `ui/preload.js` (IPC handlers, `readConfigEnv()`) | `daemon/src/` modules (`anthropic.rs`, `github.rs`, `google.rs`, `launch.rs`, `config_env.rs`) and `ui/web/js/bridge.js` (`window.shell`) |
+| `ui/app.js`, `ui/styles.css` | `ui/web/js/*.js` and `ui/web/css/*.css`, one file per feature |
+| `snapshot()` | `state::snapshot` in `daemon/src/state.rs` |
+| `dock:launch` | the `dock_launch` call (`daemon/src/launch.rs`) |
 
 This is a research doc, not a spec. It came out of a planning pass over the
-codebase before any of this was built. Two facts shape every section below,
-and both were confirmed by reading the code, not assumed:
+codebase before any of this was built. Two facts shaped every section below,
+and both were confirmed by reading the code at the time:
 
 1. **The renderer can't touch the network at all.** `ui/web/index.html`'s CSP
    (`default-src 'self'`) and `ui/preload.js`'s five exposed methods
@@ -29,6 +40,10 @@ and both were confirmed by reading the code, not assumed:
    only inherits real environment variables. A key like `ANTHROPIC_API_KEY`
    in `config.env` will **not** reach `ui/main.js`'s `process.env` this
    way, so `ui/main.js` has to parse the file itself.
+
+   Today `config::load()` does export (`set -a`), but the desktop session
+   starts `turingosd` directly rather than through `turingos ui`, so the
+   service still parses the file itself (`daemon/src/config_env.rs`).
 
 ---
 
@@ -253,17 +268,22 @@ or commit to a real in-app file browser (B)?
 
 Deliberately left for later, so they don't get lost:
 
-- **Dock: Debian apps drawer.** The dock's Files and Settings buttons still
-  try KDE apps first (`dolphin`, `systemsettings`), which the ISO doesn't
-  ship. Plan: a drawer of the apps the ISO does have (Thunar, xterm,
-  NetworkManager settings), auto-listed from their `.desktop` files.
-- **Packages the dock and widgets assume:** `gh` (GitHub widget) and a
-  notification daemon such as `dunst` (`notify-send` does nothing
-  without one). Each grows the ISO; decide per item. The browser is done —
-  Brave ships via `0420-install-brave`, covering the Browser button and
-  Google sign-in's `xdg-open`.
+- **Dock: Debian apps drawer.** The dock is a fixed set (Terminal, Files,
+  Browser, Bazaar, Settings, and Install when the installer is present). Files
+  tries `xdg-open` first and Settings tries `lxqt-config` first, both of which
+  the ISO ships (`thunar`, `lxqt-config`). Plan: a drawer of the apps the ISO
+  has, auto-listed from their `.desktop` files.
+- **Packages the dock and widgets assume:** `gh` (the GitHub widget; it is not
+  in the package list, and Homebrew is on the image) and a notification daemon
+  such as `dunst` (`libnotify-bin` is installed, but `notify-send` does nothing
+  without a daemon). Each grows the ISO; decide per item. The browser is done:
+  Brave ships via `0420-install-brave`, covering the Browser button and Google
+  sign-in's `xdg-open`.
 - **Wispr Flow:** the voice backend uses the unofficial `wisprflow-re`
   client with a session copied from another machine. Switch to an official
   client or API if Wispr ships one for Linux.
 - **Effort for agent runs:** the model picker's effort is used for chat
-  answers only; `agent/claude.sh` passes the model, not the effort.
+  answers only; `agent/claude.sh` passes the model (`--model`), not the effort.
+- **Permission sheet and notifications with Undo:** `ui/web/js/plan-renderer.js`
+  exists but `index.html` doesn't load it, and the Notifications list is
+  seeded with sample entries.

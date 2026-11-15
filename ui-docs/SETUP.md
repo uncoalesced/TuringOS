@@ -1,8 +1,8 @@
 # ui-shell: desktop UI for TuringOS
 
-On the live ISO the UI starts on boot: the openbox session opens the page
-`turingos-bridged-ws` serves in a Brave app window. These steps are for
-running it from a checkout.
+On the live ISO the UI starts on boot: the session (Hyprland, or openbox when
+it falls back to X) opens the page `turingos-bridged-ws` serves in a Brave app
+window. These steps are for running it from a checkout.
 
 ## Run it from a checkout (Debian)
 
@@ -19,7 +19,8 @@ sudo apt install -y cargo-web build-essential pkg-config cmake clang libclang-de
 ```
 
 That starts the bridge, the shell helper and `turingosd` on this checkout and
-opens the page in an app window; Ctrl+C in the terminal stops all of it.
+opens the page in an app window with its own browser profile
+(`~/.local/state/turingos/dev-profile`). Ctrl+C in the terminal stops all of it.
 
 Options:
 
@@ -28,7 +29,7 @@ Options:
 ./ui/run.sh --gfx sw.minimal                       # lightest
 TURINGOS_BROWSER=chromium ./turingos ui            # pick the browser
 TURINGOS_UI_PORT=8081 ./turingos ui                # when 8080 is taken
-TURINGOS_WEATHER=off ./turingos ui                  # hide the weather widget
+TURINGOS_WEATHER=off ./turingos ui                 # hide the weather widget
 TURINGOS_WEATHER="12.97,77.59,Bengaluru" ./turingos ui  # fixed location instead of IP geolocation
 ```
 
@@ -41,8 +42,10 @@ The page has three: `full` (frosted glass, blur in the motion), `lite` (no
 blur, nearly opaque surfaces) and `minimal` (solid surfaces, short fades).
 On the ISO `session/turingos-gfx-detect` picks one from the graphics driver:
 a real GPU gets `full`; software drawing (a VM without 3D) gets `lite`, or
-`minimal` on 2 CPUs or a very large screen. `localStorage.gfx` set to a level
-in the page overrides it.
+`minimal` on 2 CPUs or fewer, or a very large screen. `localStorage.gfx` set
+to a level in the page overrides it, and the page steps itself down if frames
+turn out slow. `TURINGOS_GFX=gpu|sw` and `TURINGOS_GFX_TIER=full|lite|minimal`
+skip the detection.
 
 ## Real data vs sample data
 
@@ -53,10 +56,17 @@ in the page overrides it.
   - `./turingos game on` → the bottom-right corner shows "Game mode"
 - CPU, memory, battery and Wi-Fi are always real (Wi-Fi needs NetworkManager).
 
+## API keys and accounts
+
+Clawd, composer answers and the Calendar widget need keys in
+`~/.turingos/config.env`: `ANTHROPIC_API_KEY`, `GOOGLE_CLIENT_ID` and
+`GOOGLE_CLIENT_SECRET`. See section 9 of [UI_SHELL.md](UI_SHELL.md). The GitHub
+widget needs `gh auth login`.
+
 ## Voice input
 
 The mic button records and transcribes on the machine with Whisper. The
-first click downloads the speech model (~142 MB, to `~/.turingos/models/`).
+first click downloads the speech model (about 142 MB, to `~/.turingos/models/`).
 `turingos voice` switches to Wispr Flow instead (unofficial, needs a session
 imported from a machine signed in to Wispr Flow).
 
@@ -79,10 +89,10 @@ If none of these work, send the full terminal output to the UI owner.
 | File | What it is |
 |---|---|
 | `ui/run.sh` | Launcher for a checkout: the bridge, shell helper and desktop service, plus the app window |
-| `daemon/` | `turingosd`, the desktop service: reads `~/.turingos`, system stats, weather, GitHub, calendar; starts agents; voice input |
+| `daemon/` | `turingosd`, the desktop service: reads `~/.turingos`, system stats, weather, GitHub, calendar; starts agents; Bazaar installs; voice input |
 | `trust/daemons/bridged-ws.py` | The bridge: serves the page, forwards `/desktop` to `turingosd` and `/shell` to the shell helper |
 | `protocol/v1/` | The messages between the page and `turingosd` |
-| `session/` | The shell window's launcher, graphics detection, Super+Space |
+| `session/` | The shell window's launcher, graphics detection, Super+Space, the Hyprland session |
 | `ui/web/js/bridge.js` | `window.shell`, the page's only way to reach the system |
 | `ui/web/index.html`, `ui/web/css/`, `ui/web/js/` | The UI itself, one file per feature |
-| `ui/web/fonts/`, `ui/web/assets/` | Bundled Timeless fonts, Claude brand assets, icons — each with its own `LICENSE` |
+| `ui/web/fonts/`, `ui/web/assets/` | Bundled Timeless fonts, brand assets, icons, each with its own `LICENSE` |
