@@ -45,9 +45,9 @@ The full list is in [CHANGELOG.md](https://github.com/uncoalesced/TuringOS/blob/
 | Architecture | File | Size | SHA-256 |
 | :--- | :--- | :--- | :--- |
 | amd64 | `turingos-amd64.hybrid.iso` | 1.89 GB (1,886,568,448 bytes) | `0f7b89fa97edcb89044d50078b26a23dd61451f59833bf9151443fb01c81c400` |
-| arm64 | `turingos-arm64.hybrid.iso` | not yet published | pending |
+| arm64 | `turingos-arm64.hybrid.iso` | 1.90 GB (1901096960 bytes) | `378659bf109bb2f3331fd9b82841c68c4bfdfde2c46345dcc87766d09cfa1615` |
 
-The arm64 image is built but not yet boot-tested, so it is not attached. It will be added to this release once it has been tested.
+The arm64 image was built on a native arm64 runner. It has not been boot-tested yet, so treat it as untested.
 
 Verify your download before you boot it. Put the ISO and `SHA256SUMS.txt` in the same folder, then run:
 

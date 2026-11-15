@@ -37,7 +37,7 @@ Get the images from the [latest release](https://github.com/uncoalesced/TuringOS
 | Image | Size | SHA-256 |
 |---|---|---|
 | `turingos-amd64.hybrid.iso` | 1.89 GB (1,886,568,448 bytes) | `0f7b89fa97edcb89044d50078b26a23dd61451f59833bf9151443fb01c81c400` |
-| `turingos-arm64.hybrid.iso` | not yet published | pending |
+| `turingos-arm64.hybrid.iso` | 1.90 GB (1901096960 bytes) | `378659bf109bb2f3331fd9b82841c68c4bfdfde2c46345dcc87766d09cfa1615` |
 
 Check the file you downloaded against the table before you boot it:
 
