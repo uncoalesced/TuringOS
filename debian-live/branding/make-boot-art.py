@@ -141,7 +141,38 @@ def slide(size, heading, body):
     return img
 
 
+def banner(size=(1280, 320)):
+    """README banner: logo and wordmark on black, one glow from below, one strip.
+
+    The tagline sits on black in Light Gray (7.9:1); the gradient is only the
+    strip at the bottom edge, never behind text.
+    """
+    w, h = size
+    img = glow(size, 0.30)
+    mark = logo(188)
+    gap = 44
+    d = ImageDraw.Draw(img)
+    word = serif(96, 400)
+    tag = ImageFont.truetype(str(SANS), 24)
+    word_box = d.textbbox((0, 0), "TuringOS", font=word)
+    tag_text = "An operating system for AI agents. Nothing lands unreviewed."
+    tag_box = d.textbbox((0, 0), tag_text, font=tag)
+    text_w = max(word_box[2] - word_box[0], tag_box[2] - tag_box[0])
+    total_w = mark.width + gap + text_w
+    x0 = (w - total_w) // 2
+    top = (h - mark.height) // 2 - 6
+    img.paste(mark, (x0, top), mark)
+    tx = x0 + mark.width + gap
+    d.text((tx - word_box[0], top + 14 - word_box[1]), "TuringOS", font=word, fill=WHITE)
+    d.text((tx - tag_box[0], top + 14 + (word_box[3] - word_box[1]) + 26 - tag_box[1]), tag_text, font=tag, fill=LIGHT_GRAY)
+    img.paste(strip(w, 4), (0, h - 4))
+    return img
+
+
 def main():
+    out = ROOT / "assets/banner"
+    out.mkdir(parents=True, exist_ok=True)
+    banner().save(out / "turingos-banner.png", optimize=True)
     ply = HERE / "plymouth/turingos"
     ply.mkdir(parents=True, exist_ok=True)
     slides = HERE / "slides"
