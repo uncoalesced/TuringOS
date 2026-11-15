@@ -40,10 +40,9 @@ jobs:
             -e BUILD_SCRIPT -e DEBIAN_FRONTEND=noninteractive \
             -v "$PWD:/work" -w /work debian:trixie bash -euxc '
               apt-get update
-              apt-get install -y --no-install-recommends \
-                live-build sudo rsync git ca-certificates xorriso squashfs-tools \
-                debootstrap dosfstools mtools grub-efi-amd64-bin grub-efi-arm64-bin \
-                grub-pc-bin syslinux syslinux-common isolinux
+              # live-build recommends the bootloader and image tools for the
+              # host architecture, so let apt pick them instead of naming them
+              apt-get install -y live-build sudo rsync git ca-certificates
               git config --global --add safe.directory /work
               bash "$BUILD_SCRIPT"
             '
