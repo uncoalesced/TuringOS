@@ -1,104 +1,129 @@
+<p align="center"><img src="assets/banner/turingos-banner.png" alt="TuringOS" width="100%"></p>
+
 # TuringOS
 
-An agentic execution layer built on Debian. It runs Claude Code agents in safe sandboxes and comes with a live desktop UI, an MCP tool registry, and Game Mode.
+TuringOS is a Debian-based operating system for running Claude Code agents. Each agent works in a sandboxed copy of your project, and nothing reaches the real thing until you have read the diff and approved the merge. The image boots into a desktop shell, and it includes a signed MCP tool catalogue (the Bazaar) and a Game Mode that keeps agents from competing with your games.
 
-**[Download the ISO (amd64)](https://github.com/uncoalesced/TuringOS/releases/latest/download/live-image-amd64.hybrid.iso)** · [SHA-256](https://github.com/uncoalesced/TuringOS/releases/latest/download/live-image-amd64.hybrid.iso.sha256) · [All releases](https://github.com/uncoalesced/TuringOS/releases)
+**Version 1.3-stable.** [Download the ISO](https://github.com/uncoalesced/TuringOS/releases/latest) · [Documentation](DOCUMENTATION.md) · [Changelog](CHANGELOG.md) · [All releases](https://github.com/uncoalesced/TuringOS/releases)
 
 ---
 
 ## What it is
 
-TuringOS wraps Claude Code in a policy layer between the agent and your filesystem. Every agent task runs inside an ephemeral Btrfs snapshot, and nothing touches your real project until you review a diff and approve the merge.
+TuringOS puts a policy layer between Claude Code and your files. Every agent task runs in a throwaway snapshot of the project, and you decide what comes back.
 
 ```
 You
  ↓
-Intent (natural language task)
+Intent (a task in plain language)
  ↓
-Claude Agent
+Claude agent
  ↓
-TuringOS Policy Layer
+TuringOS policy layer
  ↓
-Ephemeral Btrfs Sandbox
+Ephemeral sandbox (Btrfs snapshot, or an rsync copy)
  ↓
-Filesystem
- ↓
-Diff + Human Approval
+Diff + human approval
  ↓
 Merge
 ```
 
-We ship it as a bootable Debian live ISO with the UI and all tooling pre-installed.
+It ships as a bootable Debian 13 live ISO for amd64 and arm64, with the desktop shell and all the tooling already installed.
 
 ### Download
 
-Latest release: [TuringOS 1.2](https://github.com/uncoalesced/TuringOS/releases/latest).
+Get the images from the [latest release](https://github.com/uncoalesced/TuringOS/releases/latest).
 
-| Image | Checksum |
-|---|---|
-| [`live-image-amd64.hybrid.iso`](https://github.com/uncoalesced/TuringOS/releases/latest/download/live-image-amd64.hybrid.iso) | [`.sha256`](https://github.com/uncoalesced/TuringOS/releases/latest/download/live-image-amd64.hybrid.iso.sha256) |
-| [`live-image-arm64.hybrid.iso`](https://github.com/uncoalesced/TuringOS/releases/latest/download/live-image-arm64.hybrid.iso) | not published for 1.2 yet |
+| Image | Size | SHA-256 |
+|---|---|---|
+| `turingos-amd64.hybrid.iso` | 1.89 GB (1,886,568,448 bytes) | `0f7b89fa97edcb89044d50078b26a23dd61451f59833bf9151443fb01c81c400` |
+| `turingos-arm64.hybrid.iso` | not yet published | pending |
 
-Check the amd64 image before booting it:
+Check the file you downloaded against the table before you boot it:
 
 ```bash
-sha256sum -c live-image-amd64.hybrid.iso.sha256
+sha256sum turingos-amd64.hybrid.iso
 ```
 
-The 1.2 release has no `.sha256` for arm64, so compare `sha256sum live-image-arm64.hybrid.iso` against a hash from a maintainer until one is published. The arm64 image boots on Apple Silicon through UTM.
+Boot it in a VM (QEMU or VMware, with 4 GB of RAM or more) or write it to a USB stick. It logs in by itself and opens the TuringOS shell fullscreen. Brave is the default browser and the Claude extension is installed by policy, so `claude` then `/login`, the [Anthropic Console](https://console.anthropic.com) and Google sign-in all open in it. Homebrew is set up too: `brew install <formula>`.
 
-Boot it in a VM (VMware, VirtualBox, QEMU: 4 GB RAM, 2 CPUs, EFI or BIOS) or write it to a USB stick. It logs in by itself and opens the TuringOS UI fullscreen. Brave is the default browser and comes with the Claude extension, so `claude` → `/login`, the [Anthropic Console](https://console.anthropic.com) (API keys) and Google sign-in open right there. Homebrew is ready too: `brew install <formula>`.
+The boot menu has the normal entry, a persistence entry and a safe mode entry. Safe mode starts no agent and no TuringOS UI, only a plain desktop and a terminal, for when something in the agent stack is broken.
 
-The live session runs from RAM: a reboot forgets logins, keys and installs. To keep them, click **Install** in the dock (or search "Install TuringOS" with Ctrl+K). The Calamares installer partitions the disk, creates your account (which logs in automatically, like the live session) and installs GRUB for BIOS or UEFI. It works offline. Give the VM or machine a disk of 20 GB or more.
+A live session keeps nothing by default: a reboot forgets logins, keys and installs. You have two ways to keep them:
 
-Debug login: `user` / `live`.
+- **Install to disk.** Click **Install** in the dock (or press Ctrl+K and pick "Install TuringOS"). The Calamares installer partitions the disk, creates your account (which logs in automatically, like the live session) and installs GRUB for BIOS or UEFI. It works offline. A disk of 20 GB or more is a comfortable size.
+- **Persistence on a USB stick.** Run `pkg/make-persistence.sh` once to add a partition labelled `persistence` (see [Persistence](#persistence)).
+
+Debug login on the live image: `user` / `live`.
 
 ### Why it exists
 
-TuringOS is built for AI-first consumer hardware: a laptop, tablet, or phone whose whole job is working with Claude. You boot straight into Claude. The agent sandbox is the environment, not an app you open, and help is always one cursor shake away. We want a distro that a hardware maker could put on a Claude-dedicated device and ship.
+We want an operating system built around working with Claude. You boot into the UI, the agent sandbox is part of the system and not an app you open, and a shake of the cursor opens a quick chat with Clawd, the pixel mascot. A hardware maker could put this on a device meant for Claude and ship it.
 
-It also runs on hardware without a cloud connection. If the device has a decent GPU, you can point TuringOS at a local model and keep working (see [Models](#models)).
+It also works without a cloud connection. If the machine has a decent GPU, point TuringOS at a local model and keep going (see [Models](#models)).
 
 ### Known issues
 
-- BIOS installs and Secure Boot haven't been tested yet.
-- Raspberry Pi bootloaders and BIOS on arm64 haven't been tested yet.
-- The installer's "Erase disk" option makes a swap partition as large as your RAM.
-- TuringOS is a work in progress. Please file what breaks.
+- BIOS installs and Secure Boot have not been tested.
+- Raspberry Pi bootloaders and BIOS on arm64 have not been tested.
+- The microphone check cannot tell "no microphone" from silence, because PulseAudio always offers a capture device. Silent recordings are dropped, not transcribed.
+- OpenCode is the biggest single item in the image, about 730 MB unpacked.
+
+The full list, with what was fixed, is in [`debian-live/KNOWN_ISSUES.md`](debian-live/KNOWN_ISSUES.md). TuringOS is still a work in progress, so please file what breaks.
 
 ---
 
 ## Preview
 
 <video src="assets/turingos-v1.2-demo.mp4" controls width="720">
-  Your browser doesn't support inline video. <a href="assets/turingos-v1.2-demo.mp4">download the clip</a> instead.
+  Your browser doesn't support inline video. <a href="assets/turingos-v1.2-demo.mp4">Download the clip</a> instead.
 </video>
 
-*Walkthrough of the v1.2 desktop UI.*
+*A walkthrough of the v1.2 desktop UI. The look has changed since this was recorded.*
 
 ---
 
 ## Features
 
-### Btrfs agent sandboxing
+### Agent sandboxing
 
-The agent works in an instant copy-on-write snapshot of your project, isolated from the original. You see every change before anything becomes permanent, and one keystroke merges or rolls back.
+`turingos agent start` snapshots your project into `~/.turingos/sandboxes/`, writes the task prompt into it and runs the agent there. On Btrfs the snapshot is instant and copy-on-write; on any other filesystem TuringOS falls back to an rsync copy (set `TURINGOS_SANDBOX_BACKEND=copy` to force it). When the agent finishes, `turingos sandbox diff` shows what changed, and you merge it or roll it back. A merge never touches your project's `.git`.
+
+The sandbox protects your project's files. It does not confine the agent process: the agent runs as your user, with Claude Code's permission prompts switched off because the sandbox copy is the thing you review. Read the diff before you merge.
 
 ### Clawd Bazaar
 
-A terminal registry of MCP tools. You can browse tools, install them, and register them with Claude Code (`~/.claude.json`) with one command. It ships with GitHub, Postgres, Filesystem, Brave Search, and Memory servers.
+The Bazaar is a catalogue of MCP tools. `turingos bazaar` opens a browser for it, and `turingos bazaar install <tool>` installs a tool and registers it with Claude Code in `~/.claude.json`. The catalogue that ships with the image lists GitHub, Filesystem, Postgres, Brave Search and Memory.
+
+It is built so a tampered catalogue is rejected:
+
+- The online index (`https://uncoalesced.github.io/turingos-bazaar/v1/index.json`) must come with a detached Ed25519 signature that verifies against the public key in `trust/keys/bazaar.pub`. If the signature is missing or invalid, or the key or `openssl` is absent, TuringOS rejects the index.
+- Each tool is pinned to a version and a SHA-256. The installer refuses an entry with no pin and aborts if the downloaded package does not match.
+- A good index is cached for 24 hours. With no network, TuringOS uses the stale cache, then the bundled `bazaar/registry.json`, and labels the screen "[offline catalogue]".
+- Tools can be switched off per project: `turingos bazaar disable <tool> [dir]` records the tool in `disabledMcpServers` in that directory's `.claude/settings.json`.
 
 ### Game Mode
 
-When you launch a game, TuringOS drops agent and build processes to low priority. Agents keep working in the background, and you get a notification when the task finishes.
+`turingos game on` lowers the CPU priority (`renice`) and IO priority (`ionice`) of agent and build processes such as `claude`, `opencode`, `ollama`, `node`, `cargo` and `make`. The agent keeps working in the background, and a desktop notification tells you when its task finishes. `turingos game watch` turns Game Mode on by itself when it sees Steam, Lutris, Heroic, Wine or gamescope start. `turingos game off` puts the original priorities back.
 
-### Live desktop UI
+### Desktop shell
 
-A desktop shell (a web page in a Brave app window, served by the trust stack's bridge, with a small Rust desktop service behind it) that shows agent state, sandbox status, system stats, and MCP connections in real time. It launches fullscreen on boot. The mic button dictates into the composer with local Whisper (the model downloads on first use), or with Wispr Flow via `turingos voice wispr-import` (unofficial, opt-in). The image ships Brave as its browser: links and Google sign-in open there, and being Chromium-based it runs the Claude in Chrome extension.
+The desktop is a web page in a frameless Brave app window. The page is served by `turingos-bridged-ws` on `127.0.0.1:8080`, and a small Rust service, `turingosd`, supplies it with live state: agent and sandbox status, system stats, the dock, weather, Wi-Fi and voice. The default session is Hyprland. If the machine has no render node or Hyprland exits with an error, the session starts X with Openbox instead.
+
+- **Command bar:** Ctrl+K inside the page, or Super+Space from anywhere.
+- **Terminal:** Super+Esc opens one in the Hyprland and Openbox sessions.
+- **Voice:** the mic button dictates into the composer with local Whisper (the base.en model, about 142 MB, downloads on first use) or with Wispr Flow through `turingos voice wispr-import` (unofficial, opt-in).
+- **Clawd:** shake the cursor or click the mascot for a one-off question to Claude Haiku.
+
+If the AI or the bridge fails, the machine stays usable: the composer falls back to a plain shell, and a crashed shell window is restarted. [`trust/README.md`](trust/README.md) has the full fallback table.
+
+### Trust stack
+
+Behind the shell sits a set of small daemons: an append-only, hash-chained audit log, scoped and expiring capability grants, a plan the user approves before anything runs, and tools launched inside bubblewrap. Their design and the schemas are in [`trust/README.md`](trust/README.md).
 
 ### Models
 
-Claude is the default. You can also run agents on open models through [OpenCode](https://opencode.ai):
+Claude is the default. You can also run agents on other models through [OpenCode](https://opencode.ai):
 
 ```bash
 turingos model set nvidia                                # NVIDIA NIM: pick models, backups, API key
@@ -109,22 +134,22 @@ turingos model set claude                                # back to Claude
 turingos model status                                    # show provider, ping endpoint
 ```
 
-For a non-Claude provider, `turingos agent start` runs `opencode run --model <provider>/<model>` inside the sandbox instead of `claude`. The live ISO ships OpenCode; install Ollama yourself, since its GPU libraries are too big for the image:
+With a non-Claude provider, `turingos agent start` runs `opencode run --model <provider>/<model>` inside the sandbox instead of `claude`. The ISO ships OpenCode. Ollama is not included because its GPU libraries are too big for the image:
 
 ```bash
 curl -fsSL https://ollama.com/install.sh | sh
 ```
 
-For `ollama` and `custom`, TuringOS writes the OpenCode provider config itself (`~/.turingos/opencode-<provider>.json`, pointed at `<endpoint>/v1`), so nothing needs adding to your `opencode.json`. Put `OPENROUTER_API_KEY` in `~/.turingos/config.env` or your shell. TuringOS unsets it for every other provider before launching OpenCode, and `model status` only sends it to OpenRouter.
+For `ollama` and `custom`, TuringOS writes the OpenCode provider config itself (`~/.turingos/opencode-<provider>.json`, pointed at `<endpoint>/v1`), so your `opencode.json` stays as it is. Put `OPENROUTER_API_KEY` in `~/.turingos/config.env` or your shell. Before launching an agent TuringOS unsets the API keys that belong to other providers, so `OPENROUTER_API_KEY` is only visible to OpenRouter runs.
 
 #### NVIDIA NIM
 
-`turingos model set nvidia` (also offered during `turingos init`) sets up [NVIDIA's hosted models](https://build.nvidia.com/models):
+`turingos model set nvidia` (also offered by `turingos init`) sets up [NVIDIA's hosted models](https://build.nvidia.com/models):
 
-1. Pick the models you want from a curated list of text, code and vision models (Nemotron, Kimi, GLM, DeepSeek, gpt-oss, Gemma, Mistral, Codestral, Llama Vision and more). You can also type any other model ID from build.nvidia.com.
-2. Choose a default model and up to 3 backups. If the default fails, `turingos agent start` tries each backup in order and only reports an error once all of them have failed.
+1. Pick models from a curated list of text, code and vision models (Nemotron, Kimi, GLM, DeepSeek, gpt-oss, Gemma, Mistral, Codestral and others). You can also type any other model ID from build.nvidia.com.
+2. Choose a default model and up to 3 backups. If the default fails, `turingos agent start` tries each backup in order and reports an error only when all of them have failed.
 3. Choose the image model for `turingos image` (FLUX.1 dev or schnell).
-4. Paste your API key (`nvapi-...`, free at build.nvidia.com). It's saved as `NVIDIA_API_KEY` in `~/.turingos/config.env`, readable only by you.
+4. Paste your API key (`nvapi-...`). It is saved as `NVIDIA_API_KEY` in `~/.turingos/config.env`, readable only by you.
 
 ```bash
 turingos model use moonshotai/kimi-k3                    # switch the default model
@@ -132,18 +157,16 @@ turingos image "a lighthouse at dusk, oil painting"      # saves image-<time>.jp
 turingos image "app icon, flat style" icon.jpg
 ```
 
-TuringOS points OpenCode at your picked models with its own config file (`~/.turingos/opencode-nvidia.json`), so your `opencode.json` stays untouched. `NVIDIA_API_KEY` is unset for every other provider.
-
 ### System monitor
 
-One HUD for GPU VRAM, CPU load, RAM, the active agent PID, the sandbox name, and API token spend.
+`turingos status` prints one HUD with GPU VRAM (through `nvidia-smi`), CPU load, RAM, the agent PID, the active sandbox and Game Mode state. `turingos monitor watch` refreshes it in place, and `turingos monitor spend` adds up token usage from the agent logs.
 
 ---
 
 ## Repo structure
 
 ```
-turingos/
+TuringOS/
 ├── turingos                  # main CLI entrypoint
 ├── core/
 │   ├── config.sh             # paths, state, PID files
@@ -158,34 +181,44 @@ turingos/
 │   ├── btrfs.sh              # create / merge / rollback
 │   └── diff.sh               # diff inspector + action menu
 ├── bazaar/
-│   ├── registry.json         # MCP tool registry
-│   ├── registry.sh           # browse / search / info
+│   ├── registry.json         # bundled offline catalogue
+│   ├── registry.sh           # fetch + verify index, browse / search / info
 │   └── install.sh            # install + register with Claude Code
 ├── game/
 │   └── gamemode.sh           # renice / ionice + auto-detect
 ├── monitor/
 │   └── system.sh             # GPU / CPU / RAM / agent HUD
 ├── voice/                    # `turingos voice` + Wispr Flow helper
-├── ui/                       # desktop shell: the page (web/: css/, js/)
-├── daemon/                   # turingosd, the desktop service behind the bridge
-├── assets/                   # branding, palette, UI preview media
+├── trust/                    # trust stack: daemons, schemas, tool manifests, Bazaar public key, tests
+├── protocol/v1/              # desktop page <-> turingosd message protocol
+├── ui/                       # desktop page (web/: css/, js/, fonts/)
+├── ui-docs/                  # UI setup notes, shell spec, next features
+├── daemon/                   # turingosd, the Rust desktop service
+├── session/                  # Hyprland / kiosk session launchers, command bar, systemd unit
+├── assets/                   # banner, logo, design language, demo video
 ├── pkg/                      # Claude CLI installer, persistence setup, first-run banner, ISO docs
-├── debian-live/              # Debian live-build config + hooks
+├── debian-live/              # live-build config + hooks
+│   ├── build-amd64.sh        # build the amd64 ISO
 │   ├── sync-scripts.sh       # stage the install into includes.chroot
+│   ├── branding/             # boot art and plymouth theme
 │   └── config/
-│       ├── hooks/normal/     # build-time hooks (trim, install, UI build, kiosk, boot menus)
+│       ├── hooks/normal/     # build-time hooks (trim, install, daemon build, session, boot menus)
 │       └── package-lists/    # explicit apt package list
 ├── arm/                      # arm64 ISO build + QEMU test scripts
 ├── tests/                    # bash regression tests (run in CI)
+├── test-evidence/            # results of the manual ISO test pass
+├── .github/workflows/        # CI, Codacy scan, manual ISO build
 ├── WORKFLOW.md               # end-to-end usage guide
-└── plan.md                   # architecture + build plan
+├── plan.md                   # architecture + build plan
+├── release_notes_v1.3-beta.md
+└── release_notes_v1.3-stable.md
 ```
 
 ---
 
 ## Quick start (CLI only)
 
-Requires: `git`, `jq`. Optional but recommended: `gum`, `fzf`.
+Requires `bash` 4.2+, `git`, `jq` and `curl`. Recommended: `gum`, `fzf`, `rsync`, `btrfs-progs`.
 
 ```bash
 git clone https://github.com/uncoalesced/TuringOS
@@ -194,7 +227,13 @@ chmod +x turingos
 ./turingos init
 ```
 
-Set your API key when prompted, then:
+`turingos init` creates `~/.turingos`, checks your dependencies, offers to install Claude Code and offers to set a model provider. If `ANTHROPIC_API_KEY` is not set, it tells you how to save one:
+
+```bash
+bash pkg/turingos-install-claude-cli.sh --api-key
+```
+
+Then start an agent:
 
 ```bash
 ./turingos agent start /path/to/project "Refactor auth module and run tests"
@@ -206,54 +245,45 @@ When the agent finishes:
 ./turingos sandbox diff
 ```
 
-Choose merge, rollback, or view the full patch.
+Choose merge, rollback, view the full patch or save it to a file. [`WORKFLOW.md`](WORKFLOW.md) walks through the whole flow.
 
 ---
 
-## Build the ISO (Debian live)
+## Build the ISO
 
-Requires a Debian Trixie machine with `live-build` installed.
+You need a Debian 13 (trixie) machine. The arm64 build has its own notes in [`arm/README.md`](arm/README.md).
 
 ```bash
-# Install live-build
-sudo apt install live-build
+sudo apt install live-build rsync git
 
-# Clone the repo
 git clone https://github.com/uncoalesced/TuringOS
 cd TuringOS
 
-# Stage TuringOS + the UI source into the image
-./debian-live/sync-scripts.sh
-
-# Build (takes 20–40 min, needs internet: crates, Brave, Homebrew, Claude Code, OpenCode)
-cd debian-live
-sudo lb config --distribution trixie --architectures amd64 \
-    --archive-areas "main contrib non-free-firmware"
-sudo lb build
+./debian-live/build-amd64.sh     # amd64
+./arm/build.sh                   # arm64, on an arm64 host (or with qemu-user-static)
 ```
 
-The ISO lands in `debian-live/live-image-amd64.hybrid.iso`. Boot it in a VM or write it to USB with:
+Run these as your normal user: they call `sudo` themselves. Each script stages the repo with `debian-live/sync-scripts.sh`, runs `lb config` and `lb build`, and clears a previous build for the other architecture first. A build takes 20 to 40 minutes and needs internet, because the hooks fetch Rust crates, Brave, Homebrew, Claude Code and OpenCode.
+
+The ISO lands in `debian-live/` as `turingos-amd64.hybrid.iso` or `turingos-arm64.hybrid.iso`, next to `live-image-<arch>.hybrid.iso` links to the same file. Boot it in a VM or write it to USB:
 
 ```bash
-sudo dd if=live-image-amd64.hybrid.iso of=/dev/sdX bs=4M status=progress
+sudo dd if=debian-live/turingos-amd64.hybrid.iso of=/dev/sdX bs=4M status=progress
 ```
 
-On first boot the UI launches fullscreen. Open a terminal and run `turingos init` to configure your API key.
+The **ISO** workflow in `.github/workflows/iso.yml` builds both architectures on native GitHub runners. It is started by hand, because a build takes about an hour.
 
-**Architectures:** amd64 (above) and arm64 — build the arm64 image with
-[`./arm/build.sh`](arm/README.md); it has the exact same feature set.
+On first boot the shell opens fullscreen. The first terminal you open shows the welcome banner and asks once for an Anthropic API key. You can skip it and use `claude` then `/login`, or run `turingos init` later.
 
-**Persistence:** like Kali, the boot menu offers a *Live system
-(persistence)* entry. Prepare the stick once — it adds an ext4 partition
-labelled `persistence` in the disk's free space:
+### Persistence
+
+Prepare a USB stick once, from any Linux machine:
 
 ```bash
 sudo ./pkg/make-persistence.sh /dev/sdX
 ```
 
-then pick that entry when booting: files you change (including
-`~/.turingos` and your API key) survive reboots. The plain entry stays
-ephemeral.
+The script adds an ext4 partition labelled `persistence` in the disk's free space, with a `persistence.conf` of `/ union`. The normal and persistence boot entries both pass the `persistence` option, so files you change, including `~/.turingos` and your API key, survive reboots. Without the partition the session stays in RAM.
 
 Full build instructions: [`pkg/ISO_BUILD.md`](pkg/ISO_BUILD.md)
 
@@ -262,22 +292,31 @@ Full build instructions: [`pkg/ISO_BUILD.md`](pkg/ISO_BUILD.md)
 ## CLI reference
 
 ```
-turingos agent start [project] [task]   Start Claude in a sandbox
+turingos agent start [project] [task]   Start the agent in a sandbox
 turingos agent stop                     Stop the running agent
 turingos agent status                   Show agent state
 turingos agent logs                     Tail agent output
 
-turingos sandbox create [project]       Create sandbox
-turingos sandbox diff                   Review what the agent changed
-turingos sandbox merge                  Apply changes to original project
-turingos sandbox rollback               Discard sandbox
+turingos sandbox create [project] [label]   Create a sandbox
+turingos sandbox diff [sandbox]         Review what the agent changed
+turingos sandbox merge [sandbox]        Apply changes to the original project
+turingos sandbox rollback [sandbox]     Discard the sandbox
+turingos sandbox list                   List all sandboxes
+turingos sandbox status                 Show the active sandbox
 
 turingos bazaar                         Browse MCP tools (fzf UI)
+turingos bazaar search <query>          Search the catalogue
+turingos bazaar info <tool>             Show tool details
 turingos bazaar install <tool>          Install + register with Claude Code
+turingos bazaar uninstall <tool>        Remove the tool and its MCP entry
 turingos bazaar installed               List installed tools
+turingos bazaar disable|enable <tool> [dir]   Switch a tool off or on for a directory
+turingos bazaar rules [dir]             Show disabled tools for a directory
+turingos bazaar toggle [dir]            Interactive toggle for a directory
 
 turingos game on                        Deprioritize agents for gaming
 turingos game off                       Restore priorities
+turingos game status                    Show Game Mode state
 turingos game watch                     Auto-detect game launches
 
 turingos status                         System + agent HUD
@@ -290,11 +329,16 @@ turingos model set <provider> [endpoint] [model]
 turingos model use <model>              Change the default model
 turingos image "<prompt>" [out.jpg]     Generate an image with NVIDIA FLUX
 
-turingos voice                          Show the speech-to-text backend
+turingos voice status                   Show the speech-to-text backend
 turingos voice backend whisper|wispr    Pick local Whisper or Wispr Flow
+turingos voice wispr-import <session.json> [config.json]
+                                        Use a Wispr Flow session (unofficial)
 
-turingos init                           First-time setup
+turingos init                           First-time setup + dependency check
 turingos dashboard                      Interactive menu
+turingos ui                             Open the desktop UI
+turingos logs [N]                       Last N lines of the TuringOS log
+turingos version                        Print the version
 turingos help                           Full command list
 ```
 
@@ -304,17 +348,22 @@ turingos help                           Full command list
 
 | Hook | What it does |
 |---|---|
-| `0200-trim` | Purges LibreOffice, CUPS, Bluetooth, unused GPU drivers (~1GB) |
-| `0300-locale-trim` | Strips locale data, man pages, docs (~200MB) |
+| `0200-trim` | Purges office suites, printing, Bluetooth and unused GPU drivers |
+| `0300-locale-trim` | Strips locales, man pages and docs |
+| `0350-hyprland` | Hyprland, XWayland and the desktop portal from trixie-backports |
 | `0400-install-turingos` | Checks the staged install, adds gum and the launcher entry |
 | `0420-install-brave` | Brave from its signed apt repo as the default browser (`xdg-open`, `x-www-browser`, `$BROWSER`), Claude extension installed and pinned by policy |
 | `0450-build-daemon` | Builds the desktop service (`turingosd`) against the image's libraries, then removes the toolchain |
-| `0470-autologin-kiosk` | lightdm autologin into openbox, ordered after live-config |
+| `0460-plymouth-theme` | Sets the TuringOS boot splash |
+| `0470-autologin-kiosk` | lightdm autologin into the `turingos-hyprland` session, with the X + Openbox fallback, ordered after live-config |
+| `0475-fallback` | Openbox key bindings (Super+Esc, Super+Space) and the rule that makes the shell window the desktop |
+| `0480-install-trust-model` | The trust daemons, the bridge that serves the UI, and their systemd units |
 | `0490-install-homebrew` | Homebrew in `/home/linuxbrew/.linuxbrew`, owned by the live user, on `PATH` |
-| `0495-installer` | Calamares installer (TuringOS branding, `turingos-install` launcher, autologin + Homebrew handed to the new account) |
+| `0495-installer` | Calamares installer (TuringOS branding, `turingos-install` launcher, offline GRUB, autologin and Homebrew handed to the new account) |
 | `0500-install-claude-cli` | Installs Claude Code (native installer, npm fallback) and OpenCode |
 | `0900-boot-timeout` (binary) | Boot menus default to the live entry after 3 seconds (isolinux + GRUB) |
-| `0910-persistence-menu` (binary) | Adds the Kali-style *Live system (persistence)* boot entry (isolinux + GRUB) |
+| `0910-persistence-menu` (binary) | Adds the "(persistence)" and "(safe mode)" boot entries (isolinux + GRUB) |
+| `0920-boot-brand` (binary) | TuringOS boot art and menu colors, and the "TuringOS" entry names |
 
 ---
 
@@ -324,24 +373,30 @@ turingos help                           Full command list
 
 | Dependency | Required | Purpose |
 |---|---|---|
-| `bash` 4+ | Yes | Shell runtime |
-| `git` | Yes | Sandbox diff/merge |
+| `bash` 4.2+ | Yes | Shell runtime |
+| `git` | Yes | Sandbox diff and merge |
 | `jq` | Yes | State, MCP config, registry |
-| `btrfs-progs` | Yes (Btrfs) | CoW snapshots |
-| `rsync` | Yes | Sandbox copy, diff and merge |
-| `curl` | Yes | Model endpoints, installers |
+| `curl` | Yes | Model endpoints, installers, Bazaar index |
 | `claude` CLI | Yes | Agent execution |
+| `rsync` | Yes | Copy backend, diff and merge |
+| `btrfs-progs` | For Btrfs snapshots | Copy-on-write sandboxes |
+| `openssl` | For the Bazaar | Verifies the index signature |
+| `node` / `npm` | For npx-based Bazaar tools | Run the MCP servers |
 | `gum` | Recommended | Interactive UI |
 | `fzf` | Recommended | Fuzzy search |
 | `libnotify` | Optional | Desktop notifications |
 
 **Build (ISO)**
 
-- Debian Trixie host
-- `live-build`
-- Internet access during build (Rust crates, Brave, Homebrew, Claude Code, OpenCode)
+- Debian 13 (trixie) host
+- `live-build`, `rsync`, `git`
+- Internet access during the build (Rust crates, Brave, Homebrew, Claude Code, OpenCode)
 
 ---
+
+## Contributing and security
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) to get involved and [SECURITY.md](SECURITY.md) to report a vulnerability. Everyone taking part follows the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## License
 
